@@ -199,7 +199,12 @@ router.post("/admin/quiz/upload", adminAuth, upload.single("file"), async (req, 
     }
 
     const text = req.file.buffer.toString("utf-8");
-    const { lessonTitle, questions } = parseQuizText(text);
+    let { lessonTitle, questions } = parseQuizText(text);
+
+    // Override with manual title if provided
+    if (req.body.lessonTitle) {
+      lessonTitle = req.body.lessonTitle;
+    }
 
     if (!lessonTitle) {
       return res.status(400).json({ message: "Lesson title is missing" });

@@ -4,332 +4,666 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="dentalprep-api" content="http://localhost:4000/api">
-    <title>DentalPrep Admin</title>
+    <title>DentalPrep - Admin Dashboard</title>
+    <link rel="stylesheet" href="../static/css/DAstyles.css">
+    <link rel="stylesheet" href="../static/css/style.css">
     <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        /* Admin Specific Overrides */
+        body {
+            background-color: var(--gray-50);
+            padding-top: 5rem;
+            /* Space for fixed header */
+        }
+
+        .admin-container {
+            max-width: 1280px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            min-height: calc(100vh - 5rem - 300px);
+            /* Adjust for header/footer */
+        }
+
+        .login-card {
+            max-width: 400px;
+            margin: 5rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-200);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .admin-card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+            transition: var(--transition-all);
+        }
+
+        .admin-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--border-radius-md);
+            font-family: inherit;
+            transition: var(--transition-all);
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 4px var(--accent-color);
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--gray-200);
+            padding-bottom: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-radius: var(--border-radius-md);
+            transition: var(--transition-all);
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            background: var(--accent-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .status-msg {
+            padding: 1rem;
+            border-radius: var(--border-radius-md);
+            margin-bottom: 1rem;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* Matching the Site Header */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+        }
     </style>
 </head>
 
-<body class="bg-pink-50">
-    <div id="root"></div>
+<body>
+    <!-- Overlay for mobile menu -->
+    <div class="overlay" id="overlay"></div>
 
+    <!-- Enhanced Modern Header -->
+    <header>
+        <div class="header-container">
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <nav class="nav-menu" id="nav-menu" role="navigation" aria-label="Main navigation">
+                <a href="/">Home</a>
+                <a href="/about/">About Us</a>
+                <a href="/faqs/">FAQs</a>
+                <a href="/contact/">Contact Us</a>
+            </nav>
+
+            <a href="/" class="logo" aria-label="DentalPrep - Home"
+                style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                <div class="logo-icon" style="font-size: 2rem; color: var(--arterial-red);">
+                    <i class="fas fa-tooth"></i>
+                </div>
+                <div class="logo-text"
+                    style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                    Dental<span style="color: var(--arterial-red);">Prep</span>
+                </div>
+            </a>
+
+            <div class="auth-buttons">
+                <button id="logout-btn" class="auth-btn logout-btn hidden"><span>Logout</span> <i
+                        class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Login View -->
+    <div id="login-view" class="admin-container hidden">
+        <div class="login-card">
+            <h2 class="text-2xl font-bold text-center mb-6" style="color: var(--primary-color);">Admin Login</h2>
+            <div id="login-msg" class="status-msg"></div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="email" class="form-input" placeholder="admin@dentalprep.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="cta-btn cta-primary" style="width: 100%;">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="dashboard-view" class="admin-container hidden">
+        <div class="section-header" style="text-align: center; margin-bottom: 2rem;">
+            <h1 class="section-title"
+                style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 3rem; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                Admin Dashboard</h1>
+            <p class="section-subtitle" style="font-size: 1rem; color: var(--text-light); margin-top: 0.5rem;">Manage
+                courses, lessons, and content.</p>
+        </div>
+
+        <nav class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('courses')">Courses</button>
+            <button class="tab-btn" onclick="switchTab('lessons')">Lessons</button>
+            <button class="tab-btn" onclick="switchTab('quizzes')">Quizzes</button>
+            <button class="tab-btn" onclick="switchTab('upload')">Bulk Upload</button>
+        </nav>
+
+        <div id="general-msg" class="status-msg"></div>
+
+        <!-- Add Course Tab -->
+        <div id="tab-courses" class="tab-content">
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Add New Course</h3>
+                <form id="course-form">
+                    <div class="form-group">
+                        <label class="form-label">Course Title</label>
+                        <input type="text" name="title" class="form-input" placeholder="e.g., Dental Anatomy" required>
+                    </div>
+                    <button type="submit" class="cta-btn cta-primary">Save Course</button>
+                </form>
+            </div>
+
+            <div class="mt-8">
+                <h3 class="text-xl font-bold mb-4">Existing Courses</h3>
+                <div id="courses-list" class="grid gap-2">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Lesson Tab -->
+        <div id="tab-lessons" class="tab-content hidden">
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Add New Lesson</h3>
+                <form id="lesson-form">
+                    <div class="form-group">
+                        <label class="form-label">Select Course</label>
+                        <select name="courseId" id="lesson-course-select" class="form-select" required>
+                            <option value="">Loading courses...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Lesson Title</label>
+                        <input type="text" name="title" class="form-input" placeholder="e.g., Tooth Morphology"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Video URL (YouTube)</label>
+                        <input type="text" name="videoUrl" class="form-input" placeholder="https://youtube.com/..."
+                            required>
+                    </div>
+                    <button type="submit" class="cta-btn cta-primary">Save Lesson</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Quiz Tab -->
+        <div id="tab-quizzes" class="tab-content hidden">
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Add Quiz (Manual)</h3>
+                <form id="quiz-form">
+                    <div class="form-group">
+                        <label class="form-label">Select Lesson</label>
+                        <select name="lessonId" id="quiz-lesson-select" class="form-select" required>
+                            <option value="">Loading lessons...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quiz Title</label>
+                        <input type="text" name="title" class="form-input" placeholder="Quiz Title" required>
+                    </div>
+
+                    <div id="questions-container" class="space-y-4 mb-4">
+                        <!-- Questions injected here -->
+                    </div>
+
+                    <button type="button" onclick="addQuestionField()" class="cta-btn cta-secondary mb-4"
+                        style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">+ Add Question</button>
+                    <br>
+                    <button type="submit" class="cta-btn cta-primary">Save Quiz</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Upload Tab -->
+        <div id="tab-upload" class="tab-content hidden">
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Bulk Upload Quiz</h3>
+                <p class="mb-4 text-sm text-gray-500">Upload a .txt or .csv file containing quiz questions.</p>
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label class="form-label">Lesson Title</label>
+                        <input type="text" name="lessonTitle" class="form-input"
+                            placeholder="e.g., Dental Materials Basics" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quiz File</label>
+                        <input type="file" name="file" class="form-input" accept=".txt,.csv" required>
+                    </div>
+                    <button type="submit" class="cta-btn cta-primary">Upload</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Enhanced Footer -->
+    <!-- Enhanced Footer (Compact Admin Version) -->
+    <footer style="background: var(--gray-900); padding: 1rem 0; margin-top: auto;">
+        <div class="container"
+            style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
+
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-tooth" style="color: var(--arterial-red); font-size: 1.25rem;"></i>
+                    <span
+                        style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.25rem; color: white;">
+                        Dental<span style="color: var(--arterial-red);">Prep</span>
+                    </span>
+                </div>
+                <span style="color: rgba(255,255,255,0.3);">|</span>
+                <span style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Admin Console v2.0</span>
+            </div>
+
+            <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
+                &copy; 2026 DentalPrep. All rights reserved.
+            </div>
+
+        </div>
+    </footer>
+
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/landing.js"></script>
     <script>
-        const { useState, useEffect } = React;
+        // --- Admin Application Logic ---
 
-        const apiBase = document.querySelector("meta[name='dentalprep-api']")?.content || "http://localhost:4000/api";
+        const API_BASE = "http://localhost:4000/api";
+        let adminToken = localStorage.getItem("dentalprep_admin_token");
 
-        function AdminApp() {
-            const [adminToken, setAdminToken] = useState(localStorage.getItem("dentalprep_admin_token") || "");
-            const [courses, setCourses] = useState([]);
-            const [lessons, setLessons] = useState([]);
-            const [loading, setLoading] = useState(false);
-            const [message, setMessage] = useState("");
-            const [loginEmail, setLoginEmail] = useState("");
-            const [loginPassword, setLoginPassword] = useState("");
+        // UI References
+        const loginView = document.getElementById("login-view");
+        const dashboardView = document.getElementById("dashboard-view");
+        const logoutBtn = document.getElementById("logout-btn");
+        const loginForm = document.getElementById("login-form");
+        const loginMsg = document.getElementById("login-msg");
+        const generalMsg = document.getElementById("general-msg");
 
-            const fetchData = async () => {
-                setLoading(true);
-                try {
-                    const [coursesRes, lessonsRes] = await Promise.all([
-                        fetch(`${apiBase}/courses`, { headers: { Authorization: `Bearer ${adminToken}` } }),
-                        fetch(`${apiBase}/lessons`, { headers: { Authorization: `Bearer ${adminToken}` } })
-                    ]);
-                    const coursesData = await coursesRes.json();
-                    const lessonsData = await lessonsRes.json();
-                    setCourses(coursesData.courses || []);
-                    setLessons(lessonsData.lessons || []);
-                } catch (err) {
-                    setMessage("Unable to load data.");
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            useEffect(() => {
-                if (adminToken) {
-                    fetchData();
-                }
-            }, [adminToken]);
-
-            const handleSubmit = async (url, payload, isFormData = false) => {
-                setLoading(true);
-                setMessage("");
-                try {
-                    const response = await fetch(`${apiBase}${url}`, {
-                        method: "POST",
-                        headers: isFormData
-                            ? { Authorization: `Bearer ${adminToken}` }
-                            : { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
-                        body: isFormData ? payload : JSON.stringify(payload)
-                    });
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.message || "Request failed");
-                    }
-                    setMessage("Saved successfully.");
-                    fetchData();
-                } catch (err) {
-                    setMessage(err.message || "Request failed.");
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            const handleLogin = async (event) => {
-                event.preventDefault();
-                setMessage("");
-                try {
-                    const response = await fetch(`${apiBase}/admin/login`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ email: loginEmail, password: loginPassword })
-                    });
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.message || "Login failed");
-                    }
-                    localStorage.setItem("dentalprep_admin_token", data.token);
-                    setAdminToken(data.token);
-                    setMessage("Login successful.");
-                } catch (err) {
-                    setMessage(err.message || "Login failed.");
-                }
-            };
-
-            const handleLogout = () => {
-                localStorage.removeItem("dentalprep_admin_token");
-                setAdminToken("");
-                setMessage("");
-            };
-
-            if (!adminToken) {
-                return React.createElement("div", { className: "min-h-screen flex items-center justify-center p-6" },
-                    React.createElement("div", { className: "bg-white border border-pink-200 rounded-xl p-6 w-full max-w-md" },
-                        React.createElement("h1", { className: "text-2xl font-bold text-pink-700 mb-4" }, "Admin Login"),
-                        message && React.createElement("div", { className: "mb-3 p-3 rounded bg-pink-50 text-pink-700 border border-pink-200" }, message),
-                        React.createElement("form", { onSubmit: handleLogin, className: "space-y-3" },
-                            React.createElement(Input, { label: "Email", value: loginEmail, onChange: setLoginEmail }),
-                            React.createElement(Input, { label: "Password", value: loginPassword, onChange: setLoginPassword, type: "password" }),
-                            React.createElement(Button, { text: "Login" })
-                        )
-                    )
-                );
+        // Initialize
+        function init() {
+            if (adminToken) {
+                showDashboard();
+            } else {
+                showLogin();
             }
 
-            return (
-                React.createElement("div", { className: "min-h-screen flex flex-col" },
-                    React.createElement("header", { className: "bg-white border-b border-pink-100" },
-                        React.createElement("div", { className: "max-w-6xl mx-auto px-6 py-4 flex items-center justify-between" },
-                            React.createElement("div", { className: "text-xl font-bold text-pink-700" }, "DentalPrep Admin"),
-                            React.createElement("button", {
-                                onClick: handleLogout,
-                                className: "text-pink-600 font-semibold"
-                            }, "Logout")
-                        )
-                    ),
-                    React.createElement("div", { className: "flex-1 p-6" },
-                    React.createElement("div", { className: "max-w-6xl mx-auto" },
-                        React.createElement("header", { className: "mb-6" },
-                            React.createElement("h1", { className: "text-3xl font-bold text-pink-700" }, "DentalPrep Admin"),
-                            React.createElement("p", { className: "text-pink-500" }, "Manage courses, lessons, and quizzes."),
-                            message && React.createElement("div", { className: "mt-4 p-3 rounded bg-white border border-pink-200 text-pink-700" }, message)
-                        ),
-                        React.createElement("div", { className: "grid gap-6 md:grid-cols-2" },
-                            React.createElement(SectionCard, { title: "Add Course" },
-                                React.createElement(CourseForm, { onSubmit: (payload) => handleSubmit("/admin/course", payload) })
-                            ),
-                            React.createElement(SectionCard, { title: "Add Lesson" },
-                                React.createElement(LessonForm, { courses, onSubmit: (payload) => handleSubmit("/admin/lesson", payload) })
-                            ),
-                            React.createElement(SectionCard, { title: "Add Quiz (Manual)" },
-                                React.createElement(QuizForm, { lessons, onSubmit: (payload) => handleSubmit("/admin/quiz", payload) })
-                            ),
-                            React.createElement(SectionCard, { title: "Upload Quiz (TXT/CSV)" },
-                                React.createElement(UploadForm, { onSubmit: (payload) => handleSubmit("/admin/quiz/upload", payload, true) })
-                            )
-                        ),
-                        React.createElement("div", { className: "mt-10 grid gap-4" },
-                            React.createElement("h2", { className: "text-xl font-semibold text-pink-700" }, "Existing Courses"),
-                            loading && React.createElement("p", { className: "text-pink-400" }, "Loading..."),
-                            courses.map(course => React.createElement("div", { key: course.id, className: "bg-white border border-pink-100 p-4 rounded" }, `${course.title} (${course.id})`))
-                        )
-                    )
-                    ),
-                    React.createElement("footer", { className: "bg-white border-t border-pink-100" },
-                        React.createElement("div", { className: "max-w-6xl mx-auto px-6 py-4 text-sm text-pink-500" },
-                            "© 2026 DentalPrep Admin"
-                        )
-                    )
-                )
-            );
+            // Add initial question to quiz form
+            addQuestionField();
         }
 
-        function SectionCard({ title, children }) {
-            return React.createElement("div", { className: "bg-white border border-pink-100 rounded-xl p-5 shadow-sm" },
-                React.createElement("h2", { className: "text-lg font-semibold text-pink-600 mb-4" }, title),
-                children
-            );
+        function showLogin() {
+            loginView.classList.remove("hidden");
+            dashboardView.classList.add("hidden");
+            logoutBtn.classList.add("hidden");
         }
 
-        function CourseForm({ onSubmit }) {
-            const [title, setTitle] = useState("");
-            return React.createElement("form", {
-                onSubmit: (e) => {
-                    e.preventDefault();
-                    if (!title.trim()) return;
-                    onSubmit({ title });
-                },
-                className: "space-y-3"
-            },
-                React.createElement(Input, { label: "Course Title", value: title, onChange: setTitle }),
-                React.createElement(Button, { text: "Save Course" })
-            );
+        function showDashboard() {
+            loginView.classList.add("hidden");
+            dashboardView.classList.remove("hidden");
+            logoutBtn.classList.remove("hidden");
+            loadCourses();
+            loadLessons();
         }
 
-        function LessonForm({ courses, onSubmit }) {
-            const [title, setTitle] = useState("");
-            const [courseId, setCourseId] = useState("");
-            const [videoUrl, setVideoUrl] = useState("");
+        // Login Handler
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const btn = loginForm.querySelector("button");
 
-            return React.createElement("form", {
-                onSubmit: (e) => {
-                    e.preventDefault();
-                    if (!title.trim() || !courseId || !videoUrl.trim()) return;
-                    onSubmit({ title, courseId, videoUrl });
-                },
-                className: "space-y-3"
-            },
-                React.createElement(Input, { label: "Lesson Title", value: title, onChange: setTitle }),
-                React.createElement("div", { className: "space-y-1" },
-                    React.createElement("label", { className: "text-sm font-medium text-pink-700" }, "Course"),
-                    React.createElement("select", {
-                        className: "w-full rounded border border-pink-200 px-3 py-2",
-                        value: courseId,
-                        onChange: (e) => setCourseId(e.target.value)
+            setLoading(btn, true);
+            showMessage(loginMsg, "", null);
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.message || "Login failed");
+
+                localStorage.setItem("dentalprep_admin_token", data.token);
+                adminToken = data.token;
+                showDashboard();
+            } catch (err) {
+                showMessage(loginMsg, err.message, "error");
+            } finally {
+                setLoading(btn, false, "Login");
+            }
+        });
+
+        // Logout Handler
+        logoutBtn.addEventListener("click", () => {
+            localStorage.removeItem("dentalprep_admin_token");
+            adminToken = null;
+            window.location.href = '/login/';
+        });
+
+        // --- Data Loading ---
+
+        async function loadCourses() {
+            try {
+                const res = await fetch(`${API_BASE}/courses`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                const data = await res.json();
+
+                const list = document.getElementById("courses-list");
+                const select = document.getElementById("lesson-course-select");
+
+                list.innerHTML = "";
+                select.innerHTML = '<option value="">Select a course</option>';
+
+                if (data.courses) {
+                    data.courses.forEach(c => {
+                        // Populate list
+                        list.innerHTML += `<div class="p-3 bg-white border border-gray-200 rounded shadow-sm flex justify-between items-center">
+                            <span class="font-semibold text-gray-800">${c.title}</span>
+                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${c.id}</span>
+                        </div>`;
+
+                        // Populate select
+                        select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load courses", err);
+            }
+        }
+
+        async function loadLessons() {
+            try {
+                const res = await fetch(`${API_BASE}/lessons`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                const data = await res.json();
+                const select = document.getElementById("quiz-lesson-select");
+
+                select.innerHTML = '<option value="">Select a lesson</option>';
+
+                if (data.lessons) {
+                    data.lessons.forEach(l => {
+                        select.innerHTML += `<option value="${l.id}">${l.title}</option>`;
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load lessons", err);
+            }
+        }
+
+
+        // --- Form Handlers ---
+
+        // Add Course
+        document.getElementById("course-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button");
+            const title = e.target.title.value;
+
+            await handleAdminAction("/admin/course", { title }, btn);
+            loadCourses();
+            e.target.reset();
+        });
+
+        // Add Lesson
+        document.getElementById("lesson-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button");
+            const payload = {
+                courseId: e.target.courseId.value,
+                title: e.target.title.value,
+                videoUrl: e.target.videoUrl.value
+            };
+
+            await handleAdminAction("/admin/lesson", payload, btn);
+            loadLessons();
+            e.target.reset();
+        });
+
+        // Add Quiz
+        document.getElementById("quiz-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button");
+
+            // Collect questions
+            const questionDivs = document.querySelectorAll(".question-block");
+            const questions = Array.from(questionDivs).map((div, idx) => ({
+                id: `q${idx + 1}`,
+                question: div.querySelector(".q-input").value,
+                options: [
+                    div.querySelector(".opt-0").value,
+                    div.querySelector(".opt-1").value,
+                    div.querySelector(".opt-2").value,
+                    div.querySelector(".opt-3").value
+                ],
+                correctAnswer: div.querySelector(".ans-input").value
+            }));
+
+            const payload = {
+                lessonId: e.target.lessonId.value,
+                title: e.target.title.value,
+                questions
+            };
+
+            await handleAdminAction("/admin/quiz", payload, btn);
+            e.target.reset();
+            document.getElementById("questions-container").innerHTML = "";
+            addQuestionField();
+        });
+
+        // Upload Quiz
+        document.getElementById("upload-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button");
+            const formData = new FormData(e.target);
+
+            setLoading(btn, true);
+            try {
+                const res = await fetch(`${API_BASE}/admin/quiz/upload`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${adminToken}` },
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Action failed");
+
+                showMessage(generalMsg, "Quiz Uploaded Successfully!", "success");
+                e.target.reset();
+            } catch (err) {
+                showMessage(generalMsg, err.message, "error");
+            } finally {
+                setLoading(btn, false, "Upload");
+            }
+        });
+
+
+        // --- Helpers ---
+
+        async function handleAdminAction(url, body, btn) {
+            setLoading(btn, true);
+            showMessage(generalMsg, "", null);
+
+            try {
+                const res = await fetch(`${API_BASE}${url}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${adminToken}`
                     },
-                        React.createElement("option", { value: "" }, "Select a course"),
-                        courses.map(course => React.createElement("option", { key: course.id, value: course.id }, course.title))
-                    )
-                ),
-                React.createElement(Input, { label: "YouTube URL", value: videoUrl, onChange: setVideoUrl }),
-                React.createElement(Button, { text: "Save Lesson" })
-            );
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Action failed");
+
+                showMessage(generalMsg, "Action completed successfully!", "success");
+            } catch (err) {
+                showMessage(generalMsg, err.message, "error");
+            } finally {
+                setLoading(btn, false);
+            }
         }
 
-        function QuizForm({ lessons, onSubmit }) {
-            const [lessonId, setLessonId] = useState("");
-            const [title, setTitle] = useState("");
-            const [questions, setQuestions] = useState([{ question: "", options: ["", "", "", ""], correctAnswer: "" }]);
+        function switchTab(tabName) {
+            // Hide all
+            document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+            document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
 
-            const updateQuestion = (index, field, value) => {
-                const next = [...questions];
-                next[index][field] = value;
-                setQuestions(next);
-            };
-
-            const updateOption = (index, optionIndex, value) => {
-                const next = [...questions];
-                next[index].options[optionIndex] = value;
-                setQuestions(next);
-            };
-
-            const addQuestion = () => {
-                setQuestions([...questions, { question: "", options: ["", "", "", ""], correctAnswer: "" }]);
-            };
-
-            return React.createElement("form", {
-                onSubmit: (e) => {
-                    e.preventDefault();
-                    if (!lessonId || !title.trim()) return;
-                    const payload = {
-                        lessonId,
-                        title,
-                        questions: questions.map((q, idx) => ({
-                            id: `q${idx + 1}`,
-                            question: q.question,
-                            options: q.options,
-                            correctAnswer: q.correctAnswer
-                        }))
-                    };
-                    onSubmit(payload);
-                },
-                className: "space-y-3"
-            },
-                React.createElement("div", { className: "space-y-1" },
-                    React.createElement("label", { className: "text-sm font-medium text-pink-700" }, "Lesson"),
-                    React.createElement("select", {
-                        className: "w-full rounded border border-pink-200 px-3 py-2",
-                        value: lessonId,
-                        onChange: (e) => setLessonId(e.target.value)
-                    },
-                        React.createElement("option", { value: "" }, "Select a lesson"),
-                        lessons.map(lesson => React.createElement("option", { key: lesson.id, value: lesson.id }, lesson.title))
-                    )
-                ),
-                React.createElement(Input, { label: "Quiz Title", value: title, onChange: setTitle }),
-                questions.map((q, idx) => React.createElement("div", { key: idx, className: "border border-pink-100 p-3 rounded" },
-                    React.createElement(Input, { label: `Question ${idx + 1}`, value: q.question, onChange: (value) => updateQuestion(idx, "question", value) }),
-                    q.options.map((opt, optIdx) => React.createElement(Input, {
-                        key: optIdx,
-                        label: `Option ${String.fromCharCode(65 + optIdx)}`,
-                        value: opt,
-                        onChange: (value) => updateOption(idx, optIdx, value)
-                    })),
-                    React.createElement(Input, { label: "Correct Answer (text)", value: q.correctAnswer, onChange: (value) => updateQuestion(idx, "correctAnswer", value) })
-                )),
-                React.createElement("button", { type: "button", onClick: addQuestion, className: "text-pink-600 font-semibold" }, "+ Add Question"),
-                React.createElement(Button, { text: "Save Quiz" })
-            );
+            // Show selected
+            document.getElementById(`tab-${tabName}`).classList.remove("hidden");
+            // Highlight button (simple match)
+            const btns = document.querySelectorAll(".tab-btn");
+            if (tabName === 'courses') btns[0].classList.add("active");
+            if (tabName === 'lessons') btns[1].classList.add("active");
+            if (tabName === 'quizzes') btns[2].classList.add("active");
+            if (tabName === 'upload') btns[3].classList.add("active");
         }
 
-        function UploadForm({ onSubmit }) {
-            const [file, setFile] = useState(null);
+        window.switchTab = switchTab; // make global for onclick
 
-            return React.createElement("form", {
-                onSubmit: (e) => {
-                    e.preventDefault();
-                    if (!file) return;
-                    const formData = new FormData();
-                    formData.append("file", file);
-                    onSubmit(formData);
-                },
-                className: "space-y-3"
-            },
-                React.createElement("input", {
-                    type: "file",
-                    accept: ".txt,.csv",
-                    className: "w-full",
-                    onChange: (e) => setFile(e.target.files[0])
-                }),
-                React.createElement(Button, { text: "Upload Quiz" })
-            );
+        function addQuestionField() {
+            const container = document.getElementById("questions-container");
+            const idx = container.children.length;
+            const html = `
+                <div class="question-block p-4 border border-gray-200 rounded bg-gray-50">
+                    <div class="form-group">
+                        <label class="form-label text-sm">Question ${idx + 1}</label>
+                        <input type="text" class="form-input q-input" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <input type="text" class="form-input opt-0" placeholder="Option A" required>
+                        <input type="text" class="form-input opt-1" placeholder="Option B" required>
+                        <input type="text" class="form-input opt-2" placeholder="Option C" required>
+                        <input type="text" class="form-input opt-3" placeholder="Option D" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-input ans-input" placeholder="Correct Answer (Exact Text)" required>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+        window.addQuestionField = addQuestionField;
+
+        function setLoading(btn, isLoading, originalText) {
+            if (isLoading) {
+                btn.dataset.text = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = "Processing...";
+            } else {
+                btn.disabled = false;
+                btn.innerText = originalText || btn.dataset.text || "Submit";
+            }
         }
 
-        function Input({ label, value, onChange, type = "text" }) {
-            return React.createElement("div", { className: "space-y-1" },
-                React.createElement("label", { className: "text-sm font-medium text-pink-700" }, label),
-                React.createElement("input", {
-                    className: "w-full rounded border border-pink-200 px-3 py-2",
-                    type,
-                    value,
-                    onChange: (e) => onChange(e.target.value)
-                })
-            );
+        function showMessage(el, msg, type) {
+            el.innerText = msg;
+            el.className = "status-msg " + (type === "success" ? "status-success" : "status-error");
+            el.style.display = msg ? "block" : "none";
+
+            if (msg) {
+                setTimeout(() => {
+                    el.style.display = "none";
+                }, 5000);
+            }
         }
 
-        function Button({ text }) {
-            return React.createElement("button", {
-                type: "submit",
-                className: "w-full bg-pink-600 text-white py-2 rounded hover:bg-pink-700"
-            }, text);
+        // Mobile Menu fix for admin specifically if landing.js doesn't catch it
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const navMenu = document.getElementById('nav-menu');
+        const overlay = document.getElementById('overlay');
+        if (menuBtn) {
+            menuBtn.addEventListener('click', () => {
+                navMenu.classList.toggle('show');
+                overlay.classList.toggle('show');
+            });
+            overlay.addEventListener('click', () => {
+                navMenu.classList.remove('show');
+                overlay.classList.remove('show');
+            });
         }
 
-        ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AdminApp));
+        init();
     </script>
 </body>
 

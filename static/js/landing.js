@@ -2,6 +2,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const api = window.DentalPrepApi;
   if (!api) return;
 
+  // Show Dashboard link if logged in
+  const token = api.getToken();
+  const navDashboard = document.getElementById("nav-dashboard");
+  if (token && navDashboard) {
+    navDashboard.classList.remove("hidden");
+  }
+
   const handleAuthRoute = (event) => {
     const token = api.getToken();
     if (token) {

@@ -9,17 +9,32 @@ const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
 
-router.get("/courses", authMiddleware, (req, res) => {
-  Course.find({})
-    .sort({ title: 1 })
-    .then((courses) => {
-      const data = courses.map((course) => ({
+router.get("/courses", authMiddleware, async (req, res) => {
+  try {
+    const courses = await Course.find({}).sort({ title: 1 });
+
+    const data = await Promise.all(courses.map(async (course) => {
+      const lessonsCount = await Lesson.countDocuments({ courseId: course.courseId });
+      // simplistic quiz count: count unique quizzes linked to lessons of this course?
+      // Or just quizzes with this courseId
+      const quizCount = await Quiz.countDocuments({ courseId: course.courseId });
+
+      // Mock progress for now (random 0-100 or 0)
+      const progress = 0;
+
+      return {
         id: course.courseId,
-        title: course.title
-      }));
-      res.json({ courses: data });
-    })
-    .catch(() => res.status(500).json({ message: "Server error" }));
+        title: course.title,
+        lessonsCount,
+        quizCount,
+        progress
+      };
+    }));
+
+    res.json({ courses: data });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 router.get("/lessons", authMiddleware, (req, res) => {

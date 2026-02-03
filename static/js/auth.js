@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   if (getToken() && (loginForm || signupForm)) {
-    window.location.href = "/dashboard/";
+    window.location.href = "/learning/";
     return;
   }
 
@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setToken(data.token);
         showMessage(loginForm, "Login successful. Redirecting...", "success");
         setTimeout(() => {
-          window.location.href = "/dashboard/";
+          window.location.href = "/learning/";
         }, 800);
       } catch (err) {
         showMessage(loginForm, err.message || "Login failed.");

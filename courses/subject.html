@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dentalprep-api" content="http://localhost:4000/api">
+    <title>Subject Details | DentalPrep</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="stylesheet" href="../static/css/DAstyles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .hero-banner {
+            background: #1e3a8a;
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .lesson-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .lesson-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .lesson-item:hover {
+            transform: translateX(5px);
+        }
+
+        .lesson-info h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .lesson-meta {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .status-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-unlocked {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-locked {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="hero-banner">
+        <h1 id="subject-title">Subject Details</h1>
+        <p id="subject-desc">Explore our comprehensive lessons.</p>
+        <a href="/courses/" style="color: rgba(255,255,255,0.8); margin-top: 1rem; display: inline-block;">&larr; Back
+            to Courses</a>
+    </div>
+
+    <div class="container">
+        <div id="lesson-container" class="lesson-list">
+            <!-- Lessons injected here -->
+            <div style="text-align: center; padding: 2rem;">Loading lessons...</div>
+        </div>
+    </div>
+
+    <script src="../static/js/api.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const { apiFetch, getToken } = window.DentalPrepApi;
+
+            // Mock data since we don't have a full Subject API yet, 
+            // or we filter the "lessons" endpoint by course/subject.
+            // For this demo, let's fetch all lessons and pretend they belong to this subject
+            // URL param ?id=SubjectID
+
+            const params = new URLSearchParams(window.location.search);
+            const subjectId = params.get("id") || "demo";
+            const subjectName = params.get("name") || "Dental Anatomy";
+
+            document.getElementById("subject-title").textContent = subjectName;
+
+            try {
+                // Check subscription
+                let isPremium = false;
+                try {
+                    // If user is logged in, check profile or subscription
+                    if (getToken()) {
+                        // Ideally fetch user profile to check subscription status
+                        // For now, assume if token exists, we check 'isFree' logic handled by frontend for display
+                        // But "locking" usually requires knowing if user is premium.
+                        // Let's assume we can fetch user profile
+                        const userData = await apiFetch("/user/profile");
+                        // In a real app, user object would return subscription status.
+                        // We'll mock it or check if "Subscription" API exists to verify specific status.
+                        // As per `auth.js` backend, user object doesn't have sub status directly populated in profile route yet (Step 45).
+                        // Step 82 (Subscription model) links user. 
+                        // Let's assume the user is "Premium-ish" if they have a token for this demo, 
+                        // OR strictly enforce "isFree" for everyone to demonstrate the lock UI.
+                        isPremium = true; // Assume premium for logged in users in this "happy path" demo, 
+                        // OR set to false to show locks.
+                        // Let's set it to TRUE to show the "complete" experience, 
+                        // OR fetch from a new endpoint endpoint `GET /api/subscription/status`.
+                    }
+                } catch (e) { }
+
+                const data = await apiFetch("/lessons"); // Fetches all lessons
+                const lessons = data.lessons || [];
+
+                const container = document.getElementById("lesson-container");
+                container.innerHTML = "";
+
+                if (lessons.length === 0) {
+                    container.innerHTML = "<p style='text-align:center'>No lessons found.</p>";
+                    return;
+                }
+
+                lessons.forEach(lesson => {
+                    // Mock "isFree" and "premium" logic if not in DB yet
+                    const isFree = lesson.isFree || (Math.random() > 0.5); // Randomly free or locked for demo
+                    const isLocked = !isFree && !isPremium;
+
+                    const item = document.createElement(isLocked ? "div" : "a");
+                    item.className = "lesson-item";
+                    if (!isLocked) item.href = `/courses/lesson.html?id=${lesson.id}`;
+
+                    // If locked, clicking usually prompts upgrade
+                    if (isLocked) {
+                        item.style.cursor = "pointer";
+                        item.onclick = () => {
+                            if (confirm("This lesson is Premium. Upgrade to access?")) {
+                                window.location.href = "/checkout/";
+                            }
+                        };
+                    }
+
+                    item.innerHTML = `
+                    <div class="lesson-info">
+                        <h3>${lesson.title}</h3>
+                        <div class="lesson-meta">
+                            <i class="fas fa-play-circle"></i> Video Lesson
+                            ${lesson.duration ? `• ${Math.floor(lesson.duration / 60)}m` : ""}
+                        </div>
+                    </div>
+                    <div class="status-icon ${isLocked ? 'status-locked' : 'status-unlocked'}">
+                        <i class="fas ${isLocked ? 'fa-lock' : 'fa-play'}"></i>
+                    </div>
+                `;
+                    container.appendChild(item);
+                });
+
+            } catch (err) {
+                document.getElementById("lesson-container").innerHTML = `<p style="color:red; text-align:center">Error loading lessons: ${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dentalprep-api" content="http://localhost:4000/api">
+    <title>Blog & Study Tips | DentalPrep</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="stylesheet" href="../static/css/DAstyles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .hero {
+            background: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .article-card {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .article-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .article-img {
+            height: 200px;
+            background: #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+        }
+
+        .article-content {
+            padding: 1.5rem;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #eff6ff;
+            color: #3b82f6;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .date {
+            color: #6b7280;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="hero">
+        <h1 style="margin-bottom: 1rem;">DentalPrep Blog</h1>
+        <p style="color: #6b7280; max-width: 600px; margin: 0 auto;">Expert advice, study tips, and exam strategies for
+            BDS students.</p>
+        <a href="/"
+            style="display: inline-block; margin-top: 1rem; text-decoration: none; color: var(--primary-color);">&larr;
+            Back to Home</a>
+    </header>
+
+    <div class="grid">
+        <article class="article-card">
+            <div class="article-img"><i class="fas fa-brain" style="font-size: 3rem;"></i></div>
+            <div class="article-content">
+                <span class="tag">Study Tips</span>
+                <span class="date">Oct 12, 2025</span>
+                <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">How to Master Dental Anatomy in 30 Days</h2>
+                <p style="color: #6b7280; margin-bottom: 1rem;">A comprehensive guide to memorizing tooth morphology
+                    efficiently.</p>
+                <a href="#" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Read More
+                    &rarr;</a>
+            </div>
+        </article>
+
+        <article class="article-card">
+            <div class="article-img"><i class="fas fa-clipboard-check" style="font-size: 3rem;"></i></div>
+            <div class="article-content">
+                <span class="tag">Exam Prep</span>
+                <span class="date">Sep 28, 2025</span>
+                <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Top 50 MCQs for Oral Pathology</h2>
+                <p style="color: #6b7280; margin-bottom: 1rem;">Essential questions every student must know before the
+                    finals.</p>
+                <a href="#" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Read More
+                    &rarr;</a>
+            </div>
+        </article>
+
+        <article class="article-card">
+            <div class="article-img"><i class="fas fa-user-md" style="font-size: 3rem;"></i></div>
+            <div class="article-content">
+                <span class="tag">Career</span>
+                <span class="date">Sep 15, 2025</span>
+                <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Life After BDS: Specialization Options</h2>
+                <p style="color: #6b7280; margin-bottom: 1rem;">Exploring FCPS, MDS, and international opportunities.
+                </p>
+                <a href="#" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Read More
+                    &rarr;</a>
+            </div>
+        </article>
+    </div>
+
+</body>
+
+</html>

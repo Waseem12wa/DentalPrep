@@ -41,6 +41,7 @@ app.use("/api", authRoutes);
 app.use("/api", progressRoutes);
 app.use("/api", contactRoutes);
 app.use("/api", learningRoutes);
+app.use("/api/subscription", require("./routes/subscription")); // Prefix with /subscription
 app.use("/api", adminRoutes);
 
 const port = process.env.PORT || 4000;

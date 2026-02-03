@@ -1,15 +1,16 @@
 /* CSS Variables */
 :root {
-    --primary-color: #82272e;
-    --secondary-color: #13406a;
-    --accent-color: #f1d7dc;
+    --primary-color: #1e3a8a;
+    --secondary-color: #3b82f6;
+    --accent-color: #dbeafe;
     --text-color: #333;
     --light-gray: #f8f9fa;
     --medium-gray: #e9ecef;
     --dark-gray: #343a40;
     --success-color: #28a745;
-    --warning-color: #ffa800;
-    --danger-color: #dc3545;
+    --warning-color: #f59e0b;
+    --danger-color: #ea580c;
+    /* Orange-Red instead of Pink-Red */
     --info-color: #17a2b8;
     --border-radius: 12px;
     --border-radius-sm: 8px;

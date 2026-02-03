@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dentalprep-api" content="http://localhost:4000/api">
+    <title>My Certificates | DentalPrep</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="stylesheet" href="../../static/css/DAstyles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            padding: 2rem;
+        }
+
+        .cert-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .cert-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .cert-info h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .cert-info p {
+            color: #6b7280;
+            margin: 0;
+        }
+
+        .btn-download {
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="cert-container">
+        <h1 style="margin-bottom: 2rem;">My Certificates</h1>
+
+        <div class="cert-card">
+            <div class="cert-info">
+                <h3>Certified: Dental Anatomy Masterclass</h3>
+                <p>Completed on Oct 10, 2025</p>
+            </div>
+            <a href="#" class="btn-download"><i class="fas fa-certificate"></i> Download PDF</a>
+        </div>
+
+        <div class="cert-card">
+            <div class="cert-info">
+                <h3>Certified: Oral Surgery Basics</h3>
+                <p>Completed on Sep 22, 2025</p>
+            </div>
+            <a href="#" class="btn-download"><i class="fas fa-certificate"></i> Download PDF</a>
+        </div>
+
+        <p style="text-align: center; color: #6b7280; margin-top: 3rem;">Complete more courses to earn certificates!</p>
+        <div style="text-align: center; margin-top: 1rem;">
+            <a href="/dashboard/" style="color: var(--primary-color);">Back to Dashboard</a>
+        </div>
+    </div>
+
+</body>
+
+</html>

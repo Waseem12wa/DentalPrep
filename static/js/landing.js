@@ -15,24 +15,27 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.querySelectorAll("[data-plan]").forEach((button) => {
-    button.addEventListener("click", async (event) => {
+    button.addEventListener("click", (event) => {
       event.preventDefault();
       const plan = button.getAttribute("data-plan");
 
+      // Map 'mbbs'/'bds' to 'annual' for now or keep distinct if backend supports it
+      // Based on pricing section, plans are trial, monthly, annual.
+      // The MBBS/BDS cards in index.html (lines 494/529) use 'mbbs'/'bds' but have Annual features.
+      // Let's map them to 'annual' for simplicity in this demo, or pass them as is.
+      // Passing as is allows future differentiation.
+
+      let checkoutPlan = plan;
+      if (plan === 'mbbs' || plan === 'bds') checkoutPlan = 'annual';
+
       if (!api.getToken()) {
+        // If not logged in, go to signup with redirect intent
+        // Simplified: go to signup
         window.location.href = "/signup/";
         return;
       }
 
-      try {
-        await api.apiFetch("/subscribe", {
-          method: "POST",
-          body: JSON.stringify({ plan })
-        });
-        window.location.href = "/learning/";
-      } catch (err) {
-        alert(err.message || "Unable to activate subscription.");
-      }
+      window.location.href = `/checkout/?plan=${checkoutPlan}`;
     });
   });
 });

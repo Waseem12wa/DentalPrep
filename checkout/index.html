@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dentalprep-api" content="http://localhost:4000/api">
+    <title>Checkout | DentalPrep</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="stylesheet" href="../static/css/DAstyles.css">
+    <style>
+        body {
+            background: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .checkout-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-card {
+            background: #1f2937;
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-pay {
+            width: 100%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-pay:hover {
+            opacity: 0.9;
+        }
+
+        .order-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .checkout-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="checkout-container">
+        <div class="card summary-card">
+            <h2 style="margin-bottom: 1.5rem;">Order Summary</h2>
+            <div class="order-row">
+                <span id="plan-name">Standard Plan</span>
+                <span id="plan-price">Rs. 0</span>
+            </div>
+            <div class="order-row" style="border: none; font-size: 1.25rem; font-weight: 700;">
+                <span>Total</span>
+                <span id="total-price">Rs. 0</span>
+            </div>
+            <div style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.8;">
+                <p><i class="fas fa-shield-alt"></i> Secure Payment (Mock)</p>
+                <p style="margin-top: 0.5rem;">Includes access to all video lectures, quizzes, and notes.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 1.5rem;">Payment Details</h2>
+            <form id="payment-form">
+                <div class="form-group">
+                    <label class="form-label">Cardholder Name</label>
+                    <input type="text" class="form-input" placeholder="e.g. John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Card Number</label>
+                    <input type="text" class="form-input" placeholder="0000 0000 0000 0000" maxlength="19" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Expiry Date</label>
+                        <input type="text" class="form-input" placeholder="MM/YY" maxlength="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CVC</label>
+                        <input type="text" class="form-input" placeholder="123" maxlength="3" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-pay" id="pay-btn">Pay Now</button>
+            </form>
+            <p id="error-msg" style="color: #ef4444; margin-top: 1rem; display: none; text-align: center;"></p>
+        </div>
+    </div>
+
+    <script src="../static/js/api.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const { apiFetch, getToken } = window.DentalPrepApi;
+            if (!getToken()) window.location.href = "/login/?redirect=" + encodeURIComponent(window.location.href);
+
+            const params = new URLSearchParams(window.location.search);
+            const plan = params.get("plan") || "monthly";
+
+            const plans = {
+                "trial": { name: "Free Trial", price: 0 },
+                "monthly": { name: "Monthly Subscription", price: 500 },
+                "annual": { name: "Annual Subscription", price: 1700 }
+            };
+
+            const selected = plans[plan] || plans["monthly"];
+            document.getElementById("plan-name").textContent = selected.name;
+            document.getElementById("plan-price").textContent = `Rs. ${selected.price}`;
+            document.getElementById("total-price").textContent = `Rs. ${selected.price}`;
+
+            const form = document.getElementById("payment-form");
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById("pay-btn");
+                const err = document.getElementById("error-msg");
+
+                btn.disabled = true;
+                btn.textContent = "Processing...";
+                err.style.display = "none";
+
+                try {
+                    // Simulate payment
+                    await apiFetch("/subscription/confirm-payment", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            plan: plan,
+                            paymentDetails: { mock: true }
+                        })
+                    });
+
+                    btn.style.background = "#22c55e";
+                    btn.textContent = "Success!";
+                    setTimeout(() => window.location.href = "/dashboard/", 1000);
+                } catch (error) {
+                    btn.disabled = false;
+                    btn.textContent = "Pay Now";
+                    err.textContent = error.message || "Payment Failed";
+                    err.style.display = "block";
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -6,7 +6,10 @@ const lessonSchema = new mongoose.Schema(
     courseId: { type: String, required: true },
     title: { type: String, required: true },
     videoUrl: { type: String, required: true },
-    quizId: { type: String, required: true }
+    quizId: { type: String, required: true },
+    audioUrl: { type: String },
+    notesUrl: { type: String },
+    isFree: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

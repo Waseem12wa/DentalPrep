@@ -1,7 +1,15 @@
 (function () {
-  const DEFAULT_API_BASE = "http://localhost:4000/api";
-
+  // Auto-detect API base URL
   function getApiBase() {
+    // Check if we're on localhost
+    const isLocalhost = window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1';
+
+    // If localhost, use localhost:4000, otherwise use same origin
+    const DEFAULT_API_BASE = isLocalhost
+      ? "http://localhost:4000/api"
+      : window.location.origin + "/api";
+
     const meta = document.querySelector("meta[name='dentalprep-api']");
     const metaValue = meta ? meta.getAttribute("content") : null;
 

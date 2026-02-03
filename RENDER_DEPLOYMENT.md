@@ -20,7 +20,6 @@ cd backend && npm start
 
 ```
 PORT=4000
-MONGO_URI=<your_mongodb_connection_string>
 JWT_SECRET=<your_secure_random_string>
 CORS_ORIGIN=*
 ADMIN_EMAIL=admin@dentalprep.com
@@ -29,9 +28,10 @@ ADMIN_PASSWORD=<your_secure_admin_password>
 
 ### Important Notes:
 
-1. **MongoDB Atlas:** Create a free cluster at https://www.mongodb.com/cloud/atlas
-   - Get your connection string and replace `<your_mongodb_connection_string>`
-   - Format: `mongodb+srv://username:password@cluster.mongodb.net/dentalprep?retryWrites=true&w=majority`
+1. **NO MongoDB Required!** 
+   - The app now uses JSON file storage
+   - Data is stored in `backend/data/` directory
+   - No external database setup needed
 
 2. **JWT Secret:** Generate a secure random string (at least 32 characters)
    - You can use: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
@@ -46,9 +46,11 @@ ADMIN_PASSWORD=<your_secure_admin_password>
 1. Push your code to GitHub
 2. Create a new Web Service on Render
 3. Connect your GitHub repository
-4. Set the Build Command and Start Command as shown above
-5. Add all Environment Variables
-6. Deploy!
+4. **Language:** Node
+5. **Root Directory:** Leave blank or set to `.`
+6. Set the Build Command and Start Command as shown above
+7. Add all Environment Variables
+8. Deploy!
 
 ### Post-Deployment:
 
@@ -64,3 +66,9 @@ https://your-app-name.onrender.com/api/health
 ```
 
 Should return: `{"status":"ok","time":"..."}`
+
+### Data Persistence:
+
+- Data is stored in JSON files in `backend/data/`
+- Render's free tier may reset files on restart
+- For production, consider upgrading to a paid plan with persistent disk

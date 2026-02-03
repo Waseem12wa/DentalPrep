@@ -346,7 +346,8 @@
     <script>
         // --- Admin Application Logic ---
 
-        const API_BASE = "http://localhost:4000/api";
+        const { getApiBase } = window.DentalPrepApi || {};
+        const API_BASE = getApiBase ? getApiBase() : "http://localhost:4000/api";
         let adminToken = localStorage.getItem("dentalprep_admin_token");
 
         // UI References

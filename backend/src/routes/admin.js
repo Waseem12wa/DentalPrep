@@ -1,11 +1,9 @@
 const express = require("express");
-const multer = require("multer");
-const jwt = require("jsonwebtoken");
-const Course = require("../models/Course");
-const Lesson = require("../models/Lesson");
-const Quiz = require("../models/Quiz");
-
 const router = express.Router();
+const jwt = require("jsonwebtoken");
+const authMiddleware = require("../middleware/auth");
+const { Course, Lesson, Quiz } = require("../db");
+const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 
 const normalizeId = (value) =>

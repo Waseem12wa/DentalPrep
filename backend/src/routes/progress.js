@@ -1,5 +1,5 @@
 const express = require("express");
-const Progress = require("../models/Progress");
+const { Progress } = require("../db");
 const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();

@@ -1,5 +1,5 @@
 const express = require("express");
-const ContactMessage = require("../models/ContactMessage");
+const { Contact } = require("../db");
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ router.post("/contact", async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const saved = await ContactMessage.create({
+    const saved = await Contact.create({
       name,
       email,
       subject,

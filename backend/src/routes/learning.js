@@ -1,10 +1,5 @@
 const express = require("express");
-const mongoose = require("mongoose");
-const Progress = require("../models/Progress");
-const Subscription = require("../models/Subscription");
-const Course = require("../models/Course");
-const Lesson = require("../models/Lesson");
-const Quiz = require("../models/Quiz");
+const { Course, Lesson, Quiz } = require("../db");
 const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();

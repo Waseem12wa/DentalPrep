@@ -63,9 +63,45 @@
 </head>
 
 <body>
+    <!-- Overlay for mobile menu -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Enhanced Modern Header -->
+    <header>
+        <div class="header-container">
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <nav class="nav-menu" id="nav-menu" role="navigation" aria-label="Main navigation">
+                <a href="/">Home</a>
+                <a href="/about/">About Us</a>
+                <a href="/faqs/">FAQs</a>
+                <a href="/contact/">Contact Us</a>
+            </nav>
+
+            <a href="/" class="logo" aria-label="DentalPrep - Home"
+                style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                <div class="logo-icon" style="font-size: 2rem; color: var(--arterial-red);">
+                    <i class="fas fa-tooth"></i>
+                </div>
+                <div class="logo-text"
+                    style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                    Dental<span style="color: var(--arterial-red);">Prep</span>
+                </div>
+            </a>
+
+            <div class="auth-buttons">
+                <a href="/login/" class="auth-btn login-btn"><span>Log in</span></a>
+                <a href="/signup/" class="auth-btn signup-btn"><span>Sign up</span></a>
+            </div>
+        </div>
+    </header>
 
     <div class="contact-container">
-        <h1 style="text-align: center; margin-bottom: 2rem;">Get in Touch</h1>
+        <h1
+            style="text-align: center; margin-bottom: 2rem; font-family: 'Outfit', sans-serif; color: var(--text-dark);">
+            Get in Touch</h1>
 
         <div class="card">
             <form id="contact-form">
@@ -87,41 +123,114 @@
         </div>
     </div>
 
+    <!-- Enhanced Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <!-- Brand Column -->
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <i class="fas fa-tooth" style="color: var(--arterial-red); font-size: 1.5rem;"></i>
+                        <div class="brand-name"
+                            style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: white;">
+                            Dental<span style="color: var(--arterial-red);">Prep</span></div>
+                    </div>
+                    <p class="footer-tagline">Empowering Dental Excellence Through Smart Learning</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="footer-section">
+                    <h3>Platform</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/about/">About Us</a></li>
+                        <li><a href="/contact/">Contact</a></li>
+                        <li><a href="/faqs/">FAQs</a></li>
+                    </ul>
+                </div>
+
+                <!-- Community Links -->
+                <div class="footer-section">
+                    <h3>Community</h3>
+                    <ul>
+                        <li><a href="#">Contributors</a></li>
+                        <li><a href="#">Partners</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <div class="copyright">&copy; 2025 DentalPrep. All rights reserved.</div>
+            </div>
+        </div>
+    </footer>
+
     <script src="../static/js/api.js"></script>
+    <script src="../static/js/landing.js"></script>
+    <!-- Reusing landing script for header functionality if applicable, or custom script -->
     <script>
+        // Custom Mobile Menu Script for inner pages if landing.js doesn't cover it or assumes strictly / path
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const navMenu = document.getElementById('nav-menu');
+        const overlay = document.getElementById('overlay');
+
+        if (menuBtn) {
+            menuBtn.addEventListener('click', () => {
+                navMenu.classList.toggle('show');
+                overlay.classList.toggle('show');
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                navMenu.classList.remove('show');
+                overlay.classList.remove('show');
+            });
+        }
+
+        // Contact Form Logic
         document.addEventListener("DOMContentLoaded", () => {
             const form = document.getElementById("contact-form");
             const msg = document.getElementById("msg-response");
-            const { apiFetch } = window.DentalPrepApi;
+            const { apiFetch } = window.DentalPrepApi || {};
 
-            form.addEventListener("submit", async (e) => {
-                e.preventDefault();
-                const btn = form.querySelector("button");
-                btn.disabled = true;
-                btn.textContent = "Sending...";
+            if (form && apiFetch) {
+                form.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    const btn = form.querySelector("button");
+                    btn.disabled = true;
+                    btn.textContent = "Sending...";
 
-                const name = form.querySelector("[name='name']").value;
-                const email = form.querySelector("[name='email']").value;
-                const message = form.querySelector("[name='message']").value;
+                    const name = form.querySelector("[name='name']").value;
+                    const email = form.querySelector("[name='email']").value;
+                    const message = form.querySelector("[name='message']").value;
 
-                try {
-                    await apiFetch("/contact", {
-                        method: "POST",
-                        body: JSON.stringify({ name, email, message })
-                    });
-                    msg.style.display = "block";
-                    msg.style.color = "green";
-                    msg.textContent = "Message sent successfully!";
-                    form.reset();
-                } catch (err) {
-                    msg.style.display = "block";
-                    msg.style.color = "red";
-                    msg.textContent = "Failed to send: " + err.message;
-                } finally {
-                    btn.disabled = false;
-                    btn.textContent = "Send Message";
-                }
-            });
+                    try {
+                        await apiFetch("/contact", {
+                            method: "POST",
+                            body: JSON.stringify({ name, email, message })
+                        });
+                        msg.style.display = "block";
+                        msg.style.color = "#166534"; // Success Green
+                        msg.textContent = "Message sent successfully!";
+                        form.reset();
+                    } catch (err) {
+                        msg.style.display = "block";
+                        msg.style.color = "#991b1b"; // Error Red
+                        msg.textContent = "Failed to send: " + err.message;
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = "Send Message";
+                    }
+                });
+            }
         });
     </script>
 </body>

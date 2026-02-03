@@ -1416,3 +1416,112 @@ body {
         border: 1px solid currentColor;
     }
 }
+
+/* =========================================
+   MOBILE RESPONSIVENESS PATCH
+   ========================================= */
+
+@media (max-width: 1024px) {
+
+    /* Tablet Tweaks */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    /* Mobile Layout */
+
+    /* Sidebar: Hidden by default */
+    .sidebar {
+        transform: translateX(-100%);
+        box-shadow: none;
+        /* Only show shadow when open */
+    }
+
+    /* Sidebar Open State (Requires JS toggle class 'active' on sidebar) */
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Main Content: Full width */
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    /* Header */
+    .header {
+        padding: 0 1rem;
+        height: 60px;
+    }
+
+    /* Mobile Menu Toggle visibility */
+    .mobile-menu {
+        display: block;
+        /* Show hamburger if markup exists */
+        font-size: 1.5rem;
+        cursor: pointer;
+        margin-right: 1rem;
+    }
+
+    /* Stats Grid: Stack */
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Users Container */
+    .users-container {
+        grid-template-columns: 1fr;
+    }
+
+    /* Charts */
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-content {
+        height: 200px;
+        /* Reduce height for mobile */
+    }
+
+    /* Stat Cards */
+    .stat-value {
+        font-size: 28px;
+    }
+
+    /* Header Info */
+    .header-info h1 {
+        font-size: 20px;
+    }
+
+    /* Hide non-essential header items */
+    .header-meta,
+    .header-stats {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-content {
+        padding: 15px;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .view-detail-btn,
+    .refresh-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}

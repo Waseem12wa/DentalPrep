@@ -33,6 +33,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Serve static files from the parent directory (frontend)
+const path = require("path");
+app.use(express.static(path.join(__dirname, "../../")));
+
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
@@ -43,6 +48,12 @@ app.use("/api", contactRoutes);
 app.use("/api", learningRoutes);
 app.use("/api/subscription", require("./routes/subscription")); // Prefix with /subscription
 app.use("/api", adminRoutes);
+
+// Catch-all route to serve index.html for frontend routing
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../../index.html"));
+});
+
 
 const port = process.env.PORT || 4000;
 

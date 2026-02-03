@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dentalprep-api" content="http://localhost:4000/api">
+    <title>Quiz | DentalPrep</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="stylesheet" href="../static/css/DAstyles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 280px;
+        }
+
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            position: fixed;
+            height: 100vh;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 3rem;
+            text-decoration: none;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            color: #4b5563;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: #eff6ff;
+            color: var(--primary-color);
+        }
+
+        .section-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .question-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .result-banner {
+            padding: 1rem 1.25rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <a href="/" class="logo-area">
+                <i class="fas fa-tooth" style="font-size: 2rem; color: var(--arterial-red);"></i>
+                <div
+                    style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                    Dental<span style="color: var(--arterial-red);">Prep</span>
+                </div>
+            </a>
+
+            <nav>
+                <a href="/dashboard/" class="nav-link">
+                    <i class="fas fa-th-large"></i> Dashboard
+                </a>
+                <a href="/courses/" class="nav-link">
+                    <i class="fas fa-book-open"></i> My Courses
+                </a>
+                <a href="/learning/" class="nav-link active">
+                    <i class="fas fa-play-circle"></i> Learning Hub
+                </a>
+            </nav>
+
+            <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                <a href="/" class="nav-link logout-link" style="color: #ef4444;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="section-card">
+                <h1 id="quiz-title" style="font-size: 1.8rem; font-weight: 700;">Quiz</h1>
+                <div id="quiz-meta" style="color: #6b7280; margin-bottom: 1rem;"></div>
+                <div id="quiz-result"></div>
+                <form id="quiz-form"></form>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                    <button class="btn-primary" id="submit-quiz" type="button">Submit Quiz</button>
+                    <a href="/learning/" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center;">Back to Learning</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/dashboard.js"></script>
+    <script src="../static/js/quiz.js"></script>
+</body>
+
+</html>

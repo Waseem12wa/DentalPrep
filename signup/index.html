@@ -1,0 +1,81 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../static/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../static/images/favicon-16x16.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dentalprep-api" content="http://localhost:4000/api">
+    <title>Sign Up | DentalPrep</title>
+    <link rel="stylesheet" href="../static/css/DAstyles.css">
+    <link rel="stylesheet" href="../static/css/user_management/signup.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Additional styles for layout consistency if needed */
+        body {
+            background-color: var(--light-gray);
+        }
+    </style>
+</head>
+
+<body class="">
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-image-container" style="text-align: center; margin-bottom: 2rem;">
+                <div style="display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                    <i class="fas fa-tooth" style="font-size: 2.5rem; color: var(--arterial-red);"></i>
+                    <div
+                        style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 2rem; color: var(--venous-blue);">
+                        Dental<span style="color: var(--arterial-red);">Prep</span>
+                    </div>
+                </div>
+                <div class="auth-content">
+                    <h2>Join DentalPrep</h2>
+                    <p>Create an account to get started and explore all our features and benefits for dental education
+                        excellence.</p>
+                </div>
+            </div>
+
+            <div class="auth-form-container">
+
+                <h1 style="text-align: center; margin-bottom: 2rem;">Create Account</h1>
+
+                <form class="auth-form" method="post" action="" data-auth="signup">
+
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="full_name" class="form-input" placeholder="Your Name">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" name="email" class="form-input" placeholder="your@email.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-input" placeholder="Create a password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" name="password_confirm" class="form-input"
+                            placeholder="Confirm password">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create
+                        Account</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="/login/">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/auth.js"></script>
+</body>
+
+</html>

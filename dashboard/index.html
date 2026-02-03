@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dentalprep-api" content="http://localhost:4000/api">
+    <title>Student Dashboard | DentalPrep</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="stylesheet" href="../static/css/DAstyles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --header-height: 70px;
+        }
+
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            position: fixed;
+            height: 100vh;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 3rem;
+            text-decoration: none;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            color: #4b5563;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: #eff6ff;
+            color: var(--primary-color);
+        }
+
+        .nav-link i {
+            width: 24px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .course-card {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .course-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .course-img {
+            height: 160px;
+            background: #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+        }
+
+        .course-content {
+            padding: 1.5rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="/" class="logo-area">
+                <i class="fas fa-tooth" style="font-size: 2rem; color: var(--arterial-red);"></i>
+                <div
+                    style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                    Dental<span style="color: var(--arterial-red);">Prep</span>
+                </div>
+            </a>
+
+            <nav>
+                <a href="#" class="nav-link active">
+                    <i class="fas fa-th-large"></i> Dashboard
+                </a>
+                <a href="../courses/" class="nav-link">
+                    <i class="fas fa-book-open"></i> My Courses
+                </a>
+                <a href="../learning/#analytics" class="nav-link">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                </a>
+                <a href="../learning/#quizzes" class="nav-link">
+                    <i class="fas fa-file-alt"></i> Quizzes
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </nav>
+
+            <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                <a href="/" class="nav-link logout-link" style="color: #ef4444;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="dashboard-header">
+                <div>
+                    <h1 style="font-size: 1.8rem; font-weight: 700;">Welcome back, Dr. Student! 👋</h1>
+                    <p style="color: #6b7280;">Here's what's happening with your learning today.</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button
+                        style="background: white; border: 1px solid #e5e7eb; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">
+                        <i class="fas fa-bell" style="color: #6b7280;"></i>
+                    </button>
+                    <div data-initials
+                        style="width: 40px; height: 40px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                        DS</div>
+                </div>
+            </header>
+
+            <!-- Stats -->
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: #6b7280;">Enrolled Courses</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">4</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #f0fdf4; color: #22c55e;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: #6b7280;">Completed Modules</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">12</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #fff7ed; color: #f97316;">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: #6b7280;">Study Hours</div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">28.5</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Continue Learning -->
+            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem;">Continue Learning</h2>
+            <div class="course-grid">
+                <!-- Course 1 -->
+                <div class="course-card">
+                    <div class="course-img" style="background: #1e3a8a; color: white;">
+                        <i class="fas fa-tooth" style="font-size: 3rem;"></i>
+                    </div>
+                    <div class="course-content">
+                        <h3 style="font-weight: 700; margin-bottom: 0.5rem;">Dental Anatomy 101</h3>
+                        <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">Module 3: Tooth Morphology
+                        </p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 65%;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.875rem;">
+                            <span>65% Complete</span>
+                            <a href="../courses/"
+                                style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Resume</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course 2 -->
+                <div class="course-card">
+                    <div class="course-img" style="background: #dc143c; color: white;">
+                        <i class="fas fa-tools" style="font-size: 3rem;"></i>
+                    </div>
+                    <div class="course-content">
+                        <h3 style="font-weight: 700; margin-bottom: 0.5rem;">Oral Surgery Basics</h3>
+                        <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">Module 1: Sterilization</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 25%;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.875rem;">
+                            <span>25% Complete</span>
+                            <a href="../courses/"
+                                style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Resume</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/dashboard.js"></script>
+</body>
+
+</html>

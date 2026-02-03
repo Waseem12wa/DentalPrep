@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../static/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../static/images/favicon-16x16.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - DentalPrep</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+
+<body>
+    <!-- Overlay for mobile menu -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Enhanced Modern Header -->
+    <header>
+        <div class="header-container">
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <nav class="nav-menu" id="nav-menu" role="navigation" aria-label="Main navigation">
+                <a href="/">Home</a>
+                <a href="/about/">About Us</a>
+                <a href="/faqs/">FAQs</a>
+                <a href="/contact/">Contact Us</a>
+            </nav>
+
+            <a href="/" class="logo" aria-label="DentalPrep - Home"
+                style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                <div class="logo-icon" style="font-size: 2rem; color: var(--arterial-red);">
+                    <i class="fas fa-tooth"></i>
+                </div>
+                <div class="logo-text"
+                    style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                    Dental<span style="color: var(--arterial-red);">Prep</span>
+                </div>
+            </a>
+
+            <div class="auth-buttons">
+                <a href="/login/" class="auth-btn login-btn"><span>Log in</span></a>
+                <a href="/signup/" class="auth-btn signup-btn"><span>Sign up</span></a>
+            </div>
+        </div>
+    </header>
+
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">About Us</span>
+                <h2 class="section-title">Founding Team</h2>
+                <p class="section-subtitle">Meet the dental visionaries behind DentalPrep who are reshaping dental
+                    education in
+                    Pakistan.</p>
+            </div>
+
+            <div class="team-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 3rem;">
+                <!-- Team Member: Dr. Muhammad Shahab -->
+                <div class="team-card scroll-animate animate"
+                    style="text-align: center; background: white; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e5e7eb;">
+                    <div class="member-image" style="margin-bottom: 1.5rem;">
+                        <img src="../static/images/Shahab.jpg" alt="Dr. Bilal Ahmed"
+                            style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    </div>
+                    <h3
+                        style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.5rem;">
+                        Dr. Bilal Ahmed</h3>
+                    <p style="color: #dc143c; font-weight: 600; font-size: 0.9375rem; margin-bottom: 1rem;">Founder
+                        &amp; CEO</p>
+                    <p style="color: #6b7280; line-height: 1.6; font-size: 0.9375rem;">BDS, FCPS (Orthodontics). Gold
+                        Medalist from KEMU. Dedicated to simplifying dental concepts for the next generation of
+                        dentists.</p>
+                </div>
+
+                <!-- Team Member: Dr. Aishah -->
+                <div class="team-card scroll-animate animate"
+                    style="text-align: center; background: white; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e5e7eb;">
+                    <div class="member-image" style="margin-bottom: 1.5rem;">
+                        <img src="../static/images/Aishah.jpg" alt="Dr. Sara Khan"
+                            style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    </div>
+                    <h3
+                        style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.5rem;">
+                        Dr. Sara Khan</h3>
+                    <p style="color: #dc143c; font-weight: 600; font-size: 0.9375rem; margin-bottom: 1rem;">Co-Founder
+                        &amp; Dir. Academics</p>
+                    <p style="color: #6b7280; line-height: 1.6; font-size: 0.9375rem;">BDS, RDS, Masters in Dental
+                        Education. Ensuring curriculum alignment with PMDC standards and clinical relevance.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Compact Modern Footer -->
+    <footer>
+        <div class="footer-main">
+            <div class="footer-container">
+                <!-- Brand Section -->
+                <div class="footer-brand">
+                    <div class="footer-logo"
+                        style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        <i class="fas fa-tooth" style="font-size: 1.8rem; color: var(--arterial-red);"></i>
+                        <div class="brand-name"
+                            style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: white;">
+                            Dental<span style="color: var(--arterial-red);">Prep</span></div>
+                    </div>
+                    <p class="footer-tagline">Empowering Dental Excellence Through Smart Learning</p>
+                    <div class="social-icons">
+                        <a href="https://facebook.com/profile.php?id=61576776451528" target="_blank"
+                            rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.youtube.com/@pulseprepofficial" target="_blank"
+                            rel="noopener noreferrer"><i class="fab fa-youtube"></i></a>
+                        <a href="https://instagram.com/pulseprepofficial" target="_blank" rel="noopener noreferrer"><i
+                                class="fab fa-instagram"></i></a>
+                        <a href="https://linkedin.com/in/pulse-prep-778292368" target="_blank"
+                            rel="noopener noreferrer"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="footer-section">
+                    <h3>Platform</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/about/">About Us</a></li>
+                        <li><a href="/contact/">Contact</a></li>
+                        <li><a href="/faqs/">FAQs</a></li>
+                        <li><a href="/signup/">Join Now</a></li>
+                    </ul>
+                </div>
+
+                <!-- Community Links -->
+                <div class="footer-section">
+                    <h3>Community</h3>
+                    <ul>
+                        <li><a href="/about/">Proud Collaborators</a></li>
+                        <li><a href="/about/">Founding Team</a></li>
+                        <li><a href="/about/">Academic Contributors</a></li>
+                        <li><a href="/about/">Supporters Recognition</a></li>
+                        <li><a href="/about/">Technical Partners</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <div class="copyright">
+                    &copy; 2025 DentalPrep. All rights reserved.
+                </div>
+                <div class="made-with">
+                    Made with <span class="heart-beat">❤️</span> for Dental Students in Pakistan
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../static/js/script.js"></script>
+</body>
+
+</html>

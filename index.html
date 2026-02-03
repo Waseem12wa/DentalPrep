@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+
+    <link rel="shortcut icon" type="image/x-icon" href="static/images/favicon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="static/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="static/images/favicon-16x16.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="dentalprep-api" content="http://localhost:4000/api">
+    <title>DentalPrep - Smart Dental Learning Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+
+<body>
+    <!-- Overlay for mobile menu -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Enhanced Modern Header -->
+    <header>
+        <div class="header-container">
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <nav class="nav-menu" id="nav-menu" role="navigation" aria-label="Main navigation">
+                <a href="/">Home</a>
+                <a href="/about/">About Us</a>
+                <a href="/faqs/">FAQs</a>
+                <a href="/contact/">Contact Us</a>
+            </nav>
+
+            <a href="/" class="logo" aria-label="DentalPrep - Home"
+                style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                <div class="logo-icon" style="font-size: 2rem; color: var(--arterial-red);">
+                    <i class="fas fa-tooth"></i>
+                </div>
+                <div class="logo-text"
+                    style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                    Dental<span style="color: var(--arterial-red);">Prep</span>
+                </div>
+            </a>
+
+            <div class="auth-buttons">
+
+                <a href="/login/" class="auth-btn login-btn">
+                    <span>Log in</span>
+                </a>
+                <a href="/signup/" class="auth-btn signup-btn">
+                    <span>Sign up</span>
+                </a>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- Enhanced Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-star" aria-hidden="true"></i>
+                    <span>Trusted by Medical Students</span>
+                </div>
+
+                <h1 style="font-size: 3.5rem; line-height: 1.2; margin-bottom: 1.5rem;">
+                    <span class="hero-gradient-text">DentalPrep Academy</span><br>
+                    <span style="color: #1f2937; font-size: 2.5rem;">Complete BDS Learning System</span>
+                </h1>
+
+                <p class="hero-subtitle">The all-in-one Online Academy for Dental Students. Access Video Lectures, Audio
+                    Lessons, Smart MCQs, and Study Notes in one place.</p>
+
+                <div class="hero-cta">
+                    <a href="/signup/" class="cta-btn cta-primary" data-auth-route>
+                        <span>Start Your Journey</span>
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                    <a href="#features" class="cta-btn cta-secondary">
+                        <span>Explore Features</span>
+                        <i class="fas fa-play" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <div class="profile-images">
+                    <img src="static/images/Shahab.jpg" alt="Student Success Story" />
+                    <img src="static/images/Aishah.jpg" alt="Student Success Story" />
+                    <img src="static/images/waqar.jpg" alt="Student Success Story" />
+                    <img src="static/images/Noorullah.jpg" alt="Student Success Story" />
+                    <div
+                        style="width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                        <i class="fas fa-tooth" style="color: var(--arterial-red); font-size: 20px;"></i>
+                    </div>
+                    <img src="static/images/zia.jpg" alt="Student Success Story" />
+                    <img src="static/images/Arooba.png" alt="Student Success Story" />
+                    <img src="static/images/Mahnoor.png" alt="Student Success Story" />
+                    <img src="static/images/Alyan.jpg" alt="Student Success Story" />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Why DentalPrep Section -->
+    <section class="why-pulseprep section scroll-animate">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Why Choose Us</span>
+                <h2 class="section-title">Why Choose DentalPrep?</h2>
+                <p class="section-subtitle">Built by Dental Toppers. Tailored for Your Success. Experience the
+                    difference with Pakistan's most advanced dental learning platform.</p>
+            </div>
+            <div class="why-features-grid">
+                <div class="why-feature scroll-animate">
+                    <div class="why-icon">
+                        <i class="fas fa-flag" aria-hidden="true"></i>
+                    </div>
+                    <h3>Pakistan-Centric Content</h3>
+                    <p>Aligned with KMU/PMDC and local medical standards for authentic preparation</p>
+                </div>
+
+                <div class="why-feature scroll-animate">
+                    <span class="coming-soon-badge">Coming Soon</span>
+                    <div class="why-icon">
+                        <i class="fas fa-brain" aria-hidden="true"></i>
+                    </div>
+                    <h3>AI Integration</h3>
+                    <p>Get quick and intelligent explanations support to improve your efficiency</p>
+                </div>
+
+                <div class="why-feature scroll-animate">
+                    <div class="why-icon">
+                        <i class="fas fa-stethoscope" aria-hidden="true"></i>
+                    </div>
+                    <h3>Clinical Relevance</h3>
+                    <p>Real-world medical scenarios and clinical applications from day one of your studies</p>
+                </div>
+
+                <div class="why-feature scroll-animate">
+                    <div class="why-icon">
+                        <i class="fas fa-video" aria-hidden="true"></i>
+                    </div>
+                    <h3>Video Lectures</h3>
+                    <p>High-quality video explanations for Anatomy, Pharmacology, and Dental Materials.</p>
+                </div>
+
+                <div class="why-feature scroll-animate">
+                    <div class="why-icon">
+                        <i class="fas fa-headphones" aria-hidden="true"></i>
+                    </div>
+                    <h3>Audio Lessons</h3>
+                    <p>Listen to easy-to-digest audio summaries for revision on the go.</p>
+                </div>
+
+                <div class="why-feature scroll-animate">
+                    <div class="why-icon">
+                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                    </div>
+                    <h3>Study Materials</h3>
+                    <p>Download comprehensive PDF notes, assignments, and past papers.</p>
+                </div>
+
+                <div class="why-feature scroll-animate">
+                    <div class="why-icon">
+                        <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    </div>
+                    <h3>Progress Analytics</h3>
+                    <p>Advanced weakness tracking and detailed performance insights for targeted improvement</p>
+                </div>
+
+                <div class="why-feature scroll-animate">
+                    <div class="why-icon">
+                        <i class="fas fa-mobile-alt" aria-hidden="true"></i>
+                    </div>
+                    <h3>Dynamic and Smart System</h3>
+                    <p>DentalPrep is developed as a dynamic and efficient system that will evolve along with the times
+                        to
+                        ensure always updated content and study material</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced About Section -->
+    <section class="about section scroll-animate">
+        <div class="container">
+            <div class="about-container">
+                <div class="about-content">
+                    <h2>About DentalPrep</h2>
+                    <p>
+                        DentalPrep is Pakistan's leading dental education platform designed specifically for
+                        BDS students. Our comprehensive system combines expert-verified content with cutting-edge
+                        technology to create an unparalleled learning experience.
+                    </p>
+                    <p>
+                        Built by dental professionals for dental students, DentalPrep features over 10,000 carefully
+                        curated questions, video lectures, audio lessons, and a hierarchical learning system.
+                    </p>
+                    <a href="/about/" class="learn-more">
+                        Learn More About Us
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <div class="about-img"
+                    style="display: flex; justify-content: center; align-items: center; background: white; border-radius: 20px; padding: 2rem;">
+                    <div style="text-align: center;">
+                        <i class="fas fa-tooth"
+                            style="font-size: 5rem; color: var(--arterial-red); margin-bottom: 1rem;"></i>
+                        <div
+                            style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 2.5rem; color: var(--venous-blue);">
+                            Dental<span style="color: var(--arterial-red);">Prep</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Pricing Section with Comparison Table -->
+    <section class="pricing section scroll-animate">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Pricing Plans</span>
+                <h2 class="section-title">Choose Your Perfect Plan</h2>
+                <p class="section-subtitle">Simple, affordable pricing for medical students. No hidden fees, cancel
+                    anytime.</p>
+            </div>
+
+            <!-- Simple Pricing Cards -->
+            <div class="pricing-cards">
+                <!-- Free Trial Plan -->
+                <div class="pricing-card free-trial">
+                    <div class="pricing-card-header">
+                        <h3 class="plan-name">Free Trial</h3>
+                        <div class="plan-price">Rs. 0</div>
+                    </div>
+                </div>
+
+                <!-- 1-Month Plan -->
+                <div class="pricing-card">
+                    <div class="pricing-card-header">
+                        <h3 class="plan-name">1-Month</h3>
+                        <div class="plan-price">Rs. 500</div>
+                    </div>
+                </div>
+
+                <!-- Annual Plan -->
+                <div class="pricing-card featured">
+                    <div class="pricing-card-header">
+                        <h3 class="plan-name">Annual</h3>
+                        <div class="plan-price">Rs. 1,700</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Comparison Table -->
+            <div class="feature-comparison">
+                <div class="comparison-header">
+                    <h3>Feature Comparison</h3>
+                    <p>Compare all plans and choose what works best for your medical education journey</p>
+                </div>
+
+                <div class="comparison-table-wrapper">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th class="plan-column-free">Free Trial</th>
+                                <th class="plan-column-monthly">Monthly</th>
+                                <th class="plan-column-annual">Annual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Degree/Year Based Access</td>
+                                <td><span class="feature-check">✓</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                            </tr>
+                            <tr>
+                                <td>Basic Questions</td>
+                                <td><span class="feature-check">✓</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                            </tr>
+                            <tr>
+                                <td>Full Question Bank</td>
+                                <td><span class="feature-cross">✗</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                            </tr>
+                            <tr>
+                                <td>Progress Tracking</td>
+                                <td><span class="feature-cross">✗</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                            </tr>
+                            <tr>
+                                <td>Detailed Analytics</td>
+                                <td><span class="feature-cross">✗</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                                <td><span class="feature-check">✓</span></td>
+                            </tr>
+                            <tr>
+                                <td>Notes</td>
+                                <td><span class="feature-limited">Up to 10 notes</span></td>
+                                <td><span class="feature-limited">Up to 10 notes</span></td>
+                                <td><span class="feature-check">Unlimited</span></td>
+                            </tr>
+                            <tr>
+                                <td>Mock Tests</td>
+                                <td><span class="feature-limited">1 Free Trial Mock</span></td>
+                                <td><span class="feature-limited">1 Free Trial Mock</span></td>
+                                <td><span class="feature-check">All Tests</span></td>
+                            </tr>
+                            <tr>
+                                <td>Model Papers</td>
+                                <td><span class="feature-limited">1 Free Trial Model Paper</span></td>
+                                <td><span class="feature-limited">1 Free Trial Model Paper</span></td>
+                                <td><span class="feature-check">All Model Papers</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pricing-note">
+                <strong>Note:</strong> Cancel anytime. No hidden fees.
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Features Section -->
+    <section class="features section scroll-animate" id="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Platform Features</span>
+                <h2 class="section-title">Platform Highlights</h2>
+                <p class="section-subtitle">Discover the comprehensive tools and features designed to accelerate your
+                    medical education journey.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card scroll-animate">
+                    <div class="icon">
+                        <i class="fas fa-video" aria-hidden="true"></i>
+                    </div>
+                    <h3>Video Lectures</h3>
+                    <p>High-quality video lessons covering complex dental topics, surgical procedures, and anatomical
+                        demonstrations for visual learning.</p>
+                    <a href="/about/" class="details">
+                        Watch Demo <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <div class="feature-card scroll-animate">
+                    <div class="icon">
+                        <i class="fas fa-headphones" aria-hidden="true"></i>
+                    </div>
+                    <h3>Audio Lessons</h3>
+                    <p>Listen to expert lectures on the go. Perfect for revision and utilizing your commute time
+                        effectively.</p>
+                    <a href="/signup/" class="details">
+                        Listen Now <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <div class="feature-card scroll-animate">
+                    <div class="icon">
+                        <i class="fas fa-database" aria-hidden="true"></i>
+                    </div>
+                    <h3>Smart Question Bank</h3>
+                    <p>10,000+ expert-verified MCQs covering all BDS subjects with detailed explanations and references.
+                    </p>
+                    <a href="/signup/" class="details">
+                        Try Demo <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <div class="feature-card scroll-animate">
+                    <div class="icon">
+                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                    </div>
+                    <h3>Study Materials</h3>
+                    <p>Download comprehensive PDF notes, diagrams, and reference materials to supplement your learning.
+                    </p>
+                    <a href="/signup/" class="details">
+                        Access Docs <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <div class="feature-card scroll-animate">
+                    <div class="icon">
+                        <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    </div>
+                    <h3>Progress Tracking</h3>
+                    <p>Real-time analytics to track your course completion, quiz scores, and overall performance.</p>
+                    <a href="/signup/" class="details">
+                        View Analytics <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <div class="feature-card scroll-animate">
+                    <div class="icon">
+                        <i class="fas fa-certificate" aria-hidden="true"></i>
+                    </div>
+                    <h3>Certifications</h3>
+                    <p>Earn course completion certificates to showcase your knowledge and achievements.</p>
+                    <a href="/signup/" class="details">
+                        Learn More <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Testimonials Section -->
+    <section class="testimonials section scroll-animate">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Student Success</span>
+                <h2 class="section-title">What Students Say</h2>
+                <p class="section-subtitle">Hear from dental students who have transformed their learning experience
+                    with DentalPrep.</p>
+            </div>
+
+            <div class="testimonials-grid">
+                <div class="testimonial-card scroll-animate">
+                    <p>"Pulse Prep's KMU-specific MCQs saved me hours of wasted study time!"</p>
+                    <div class="student-info">
+                        <strong>Mahnoor Qasim</strong>
+                        <span>Student, Khyber Medical College</span>
+                    </div>
+                </div>
+                <div class="testimonial-card scroll-animate">
+                    <p>"The hints and explanations are gold!"</p>
+                    <div class="student-info">
+                        <strong>Alyan Malik</strong>
+                        <span>Student, Khyber Medical College</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Plans Section -->
+    <section class="plans section scroll-animate">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Find Your Perfect Plan</h2>
+                <p class="section-subtitle">Choose the program that matches your medical education path and unlock your
+                    full potential.</p>
+            </div>
+
+            <div class="plan-cards">
+                <div class="plan-card scroll-animate">
+                    <div class="plan-header">
+                        <div class="plan-title">MBBS Program</div>
+                        <div class="plan-icon">
+                            <i class="fas fa-user-md" aria-hidden="true"></i>
+                        </div>
+                    </div>
+
+                    <div class="plan-features">
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>MCQ Library</span>
+                        </div>
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>Save Notes</span>
+                        </div>
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>Advanced Analytics Dashboard</span>
+                        </div>
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>Mock Tests & Model Papers</span>
+                        </div>
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>Progress Tracking System</span>
+                        </div>
+                    </div>
+
+                    <button class="subscribe-btn" data-plan="mbbs">
+                        <span>SignUp Now</span>
+                    </button>
+                </div>
+
+                <div class="plan-card scroll-animate">
+                    <div class="plan-header">
+                        <div class="plan-title">BDS Program</div>
+                        <div class="plan-icon">
+                            <i class="fas fa-tooth" aria-hidden="true"></i>
+                        </div>
+                    </div>
+                    <div class="plan-features">
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>MCQ Library</span>
+                        </div>
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>Save Notes</span>
+                        </div>
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>Advanced Analytics Dashboard</span>
+                        </div>
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>Mock Tests & Model Papers</span>
+                        </div>
+                        <div class="plan-feature">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                            <span>Progress Tracking System</span>
+                        </div>
+                    </div>
+
+                    <button class="subscribe-btn" data-plan="bds">
+                        <span>SignUp Now</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Benefits Section -->
+    <section class="benefits section scroll-animate">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Why Students Choose DentalPrep</h2>
+                <p class="section-subtitle">Join Community of successful dental students who trust DentalPrep for their
+                    academic excellence.</p>
+            </div>
+
+            <div class="benefits-grid">
+                <div class="benefit-card scroll-animate">
+                    <div class="benefit-icon">
+                        <i class="fas fa-question-circle" aria-hidden="true"></i>
+                    </div>
+                    <div class="benefit-title">10,000+ Verified MCQs</div>
+                </div>
+
+                <div class="benefit-card scroll-animate">
+                    <div class="benefit-icon">
+                        <i class="fas fa-brain" aria-hidden="true"></i>
+                    </div>
+                    <div class="benefit-title">Smart Learning System</div>
+                </div>
+
+                <div class="benefit-card scroll-animate">
+                    <div class="benefit-icon">
+                        <i class="fas fa-chart-bar" aria-hidden="true"></i>
+                    </div>
+                    <div class="benefit-title">Real-Time Analytics</div>
+                </div>
+
+                <div class="benefit-card scroll-animate">
+                    <div class="benefit-icon">
+                        <i class="fas fa-graduation-cap" aria-hidden="true"></i>
+                    </div>
+                    <div class="benefit-title">Expert-Led Content</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Getting Started Section -->
+    <section class="getting-started section scroll-animate">
+        <div class="container">
+            <div class="getting-started-card">
+                <h2>Ready to Excel in Dental Studies?</h2>
+                <p>Join Community of successful students who trust DentalPrep for their academic success.</p>
+                <button class="getting-started-btn" data-plan="trial">
+                    <span>SignUp</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Compact Modern Footer -->
+    <footer>
+        <div class="footer-main">
+            <div class="footer-container">
+                <!-- Brand Section -->
+                <div class="footer-brand">
+                    <div class="footer-logo"
+                        style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        <i class="fas fa-tooth" style="font-size: 1.8rem; color: var(--arterial-red);"></i>
+                        <div class="brand-name"
+                            style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: white;">
+                            Dental<span style="color: var(--arterial-red);">Prep</span></div>
+                    </div>
+                    <p class="footer-tagline">Empowering Dental Excellence Through Smart Learning</p>
+                    <div class="social-icons">
+                        <a href="https://facebook.com/profile.php?id=61576776451528" target="_blank"
+                            rel="noopener noreferrer" aria-label="Follow us on Facebook">
+                            <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                        </a>
+                        <a href="https://www.youtube.com/@pulseprepofficial" target="_blank" rel="noopener noreferrer"
+                            aria-label="Follow us on YouTube">
+                            <i class="fab fa-youtube" aria-hidden="true"></i>
+                        </a>
+                        <a href="https://instagram.com/pulseprepofficial" target="_blank" rel="noopener noreferrer"
+                            aria-label="Follow us on Instagram">
+                            <i class="fab fa-instagram" aria-hidden="true"></i>
+                        </a>
+                        <a href="https://linkedin.com/in/pulse-prep-778292368" target="_blank" rel="noopener noreferrer"
+                            aria-label="Connect with us on LinkedIn">
+                            <i class="fab fa-linkedin-in" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="footer-section">
+                    <h3>Platform</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/about/">About Us</a></li>
+                        <li><a href="/contact/">Contact</a></li>
+                        <li><a href="/faqs/">FAQs</a></li>
+                        <li><a href="/signup/">Join Now</a></li>
+                    </ul>
+                </div>
+
+                <!-- Community Links -->
+                <div class="footer-section">
+                    <h3>Community</h3>
+                    <ul>
+                        <li><a href="/about/">Proud Collaborators</a></li>
+                        <li><a href="/about/">Founding Team</a></li>
+                        <li><a href="/about/">Academic Contributors</a></li>
+                        <li><a href="/about/">Supporters Recognition</a></li>
+                        <li><a href="/about/">Technical Partners</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <div class="copyright">
+                    &copy; 2025 DentalPrep. All rights reserved.
+                </div>
+                <div class="made-with">
+                    Made with <span class="heart-beat">❤️</span> for Dental Students in Pakistan
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="static/js/script.js"></script>
+    <script src="static/js/api.js"></script>
+    <script src="static/js/landing.js"></script>
+</body>
+
+</html>

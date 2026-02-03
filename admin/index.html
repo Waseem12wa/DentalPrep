@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="dentalprep-api" content="http://localhost:4000/api">
+    <title>DentalPrep Admin</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+
+<body class="bg-pink-50">
+    <div id="root"></div>
+
+    <script>
+        const { useState, useEffect } = React;
+
+        const apiBase = document.querySelector("meta[name='dentalprep-api']")?.content || "http://localhost:4000/api";
+
+        function AdminApp() {
+            const [adminToken, setAdminToken] = useState(localStorage.getItem("dentalprep_admin_token") || "");
+            const [courses, setCourses] = useState([]);
+            const [lessons, setLessons] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [message, setMessage] = useState("");
+            const [loginEmail, setLoginEmail] = useState("");
+            const [loginPassword, setLoginPassword] = useState("");
+
+            const fetchData = async () => {
+                setLoading(true);
+                try {
+                    const [coursesRes, lessonsRes] = await Promise.all([
+                        fetch(`${apiBase}/courses`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                        fetch(`${apiBase}/lessons`, { headers: { Authorization: `Bearer ${adminToken}` } })
+                    ]);
+                    const coursesData = await coursesRes.json();
+                    const lessonsData = await lessonsRes.json();
+                    setCourses(coursesData.courses || []);
+                    setLessons(lessonsData.lessons || []);
+                } catch (err) {
+                    setMessage("Unable to load data.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                if (adminToken) {
+                    fetchData();
+                }
+            }, [adminToken]);
+
+            const handleSubmit = async (url, payload, isFormData = false) => {
+                setLoading(true);
+                setMessage("");
+                try {
+                    const response = await fetch(`${apiBase}${url}`, {
+                        method: "POST",
+                        headers: isFormData
+                            ? { Authorization: `Bearer ${adminToken}` }
+                            : { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
+                        body: isFormData ? payload : JSON.stringify(payload)
+                    });
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.message || "Request failed");
+                    }
+                    setMessage("Saved successfully.");
+                    fetchData();
+                } catch (err) {
+                    setMessage(err.message || "Request failed.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleLogin = async (event) => {
+                event.preventDefault();
+                setMessage("");
+                try {
+                    const response = await fetch(`${apiBase}/admin/login`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.message || "Login failed");
+                    }
+                    localStorage.setItem("dentalprep_admin_token", data.token);
+                    setAdminToken(data.token);
+                    setMessage("Login successful.");
+                } catch (err) {
+                    setMessage(err.message || "Login failed.");
+                }
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem("dentalprep_admin_token");
+                setAdminToken("");
+                setMessage("");
+            };
+
+            if (!adminToken) {
+                return React.createElement("div", { className: "min-h-screen flex items-center justify-center p-6" },
+                    React.createElement("div", { className: "bg-white border border-pink-200 rounded-xl p-6 w-full max-w-md" },
+                        React.createElement("h1", { className: "text-2xl font-bold text-pink-700 mb-4" }, "Admin Login"),
+                        message && React.createElement("div", { className: "mb-3 p-3 rounded bg-pink-50 text-pink-700 border border-pink-200" }, message),
+                        React.createElement("form", { onSubmit: handleLogin, className: "space-y-3" },
+                            React.createElement(Input, { label: "Email", value: loginEmail, onChange: setLoginEmail }),
+                            React.createElement(Input, { label: "Password", value: loginPassword, onChange: setLoginPassword, type: "password" }),
+                            React.createElement(Button, { text: "Login" })
+                        )
+                    )
+                );
+            }
+
+            return (
+                React.createElement("div", { className: "min-h-screen flex flex-col" },
+                    React.createElement("header", { className: "bg-white border-b border-pink-100" },
+                        React.createElement("div", { className: "max-w-6xl mx-auto px-6 py-4 flex items-center justify-between" },
+                            React.createElement("div", { className: "text-xl font-bold text-pink-700" }, "DentalPrep Admin"),
+                            React.createElement("button", {
+                                onClick: handleLogout,
+                                className: "text-pink-600 font-semibold"
+                            }, "Logout")
+                        )
+                    ),
+                    React.createElement("div", { className: "flex-1 p-6" },
+                    React.createElement("div", { className: "max-w-6xl mx-auto" },
+                        React.createElement("header", { className: "mb-6" },
+                            React.createElement("h1", { className: "text-3xl font-bold text-pink-700" }, "DentalPrep Admin"),
+                            React.createElement("p", { className: "text-pink-500" }, "Manage courses, lessons, and quizzes."),
+                            message && React.createElement("div", { className: "mt-4 p-3 rounded bg-white border border-pink-200 text-pink-700" }, message)
+                        ),
+                        React.createElement("div", { className: "grid gap-6 md:grid-cols-2" },
+                            React.createElement(SectionCard, { title: "Add Course" },
+                                React.createElement(CourseForm, { onSubmit: (payload) => handleSubmit("/admin/course", payload) })
+                            ),
+                            React.createElement(SectionCard, { title: "Add Lesson" },
+                                React.createElement(LessonForm, { courses, onSubmit: (payload) => handleSubmit("/admin/lesson", payload) })
+                            ),
+                            React.createElement(SectionCard, { title: "Add Quiz (Manual)" },
+                                React.createElement(QuizForm, { lessons, onSubmit: (payload) => handleSubmit("/admin/quiz", payload) })
+                            ),
+                            React.createElement(SectionCard, { title: "Upload Quiz (TXT/CSV)" },
+                                React.createElement(UploadForm, { onSubmit: (payload) => handleSubmit("/admin/quiz/upload", payload, true) })
+                            )
+                        ),
+                        React.createElement("div", { className: "mt-10 grid gap-4" },
+                            React.createElement("h2", { className: "text-xl font-semibold text-pink-700" }, "Existing Courses"),
+                            loading && React.createElement("p", { className: "text-pink-400" }, "Loading..."),
+                            courses.map(course => React.createElement("div", { key: course.id, className: "bg-white border border-pink-100 p-4 rounded" }, `${course.title} (${course.id})`))
+                        )
+                    )
+                    ),
+                    React.createElement("footer", { className: "bg-white border-t border-pink-100" },
+                        React.createElement("div", { className: "max-w-6xl mx-auto px-6 py-4 text-sm text-pink-500" },
+                            "© 2026 DentalPrep Admin"
+                        )
+                    )
+                )
+            );
+        }
+
+        function SectionCard({ title, children }) {
+            return React.createElement("div", { className: "bg-white border border-pink-100 rounded-xl p-5 shadow-sm" },
+                React.createElement("h2", { className: "text-lg font-semibold text-pink-600 mb-4" }, title),
+                children
+            );
+        }
+
+        function CourseForm({ onSubmit }) {
+            const [title, setTitle] = useState("");
+            return React.createElement("form", {
+                onSubmit: (e) => {
+                    e.preventDefault();
+                    if (!title.trim()) return;
+                    onSubmit({ title });
+                },
+                className: "space-y-3"
+            },
+                React.createElement(Input, { label: "Course Title", value: title, onChange: setTitle }),
+                React.createElement(Button, { text: "Save Course" })
+            );
+        }
+
+        function LessonForm({ courses, onSubmit }) {
+            const [title, setTitle] = useState("");
+            const [courseId, setCourseId] = useState("");
+            const [videoUrl, setVideoUrl] = useState("");
+
+            return React.createElement("form", {
+                onSubmit: (e) => {
+                    e.preventDefault();
+                    if (!title.trim() || !courseId || !videoUrl.trim()) return;
+                    onSubmit({ title, courseId, videoUrl });
+                },
+                className: "space-y-3"
+            },
+                React.createElement(Input, { label: "Lesson Title", value: title, onChange: setTitle }),
+                React.createElement("div", { className: "space-y-1" },
+                    React.createElement("label", { className: "text-sm font-medium text-pink-700" }, "Course"),
+                    React.createElement("select", {
+                        className: "w-full rounded border border-pink-200 px-3 py-2",
+                        value: courseId,
+                        onChange: (e) => setCourseId(e.target.value)
+                    },
+                        React.createElement("option", { value: "" }, "Select a course"),
+                        courses.map(course => React.createElement("option", { key: course.id, value: course.id }, course.title))
+                    )
+                ),
+                React.createElement(Input, { label: "YouTube URL", value: videoUrl, onChange: setVideoUrl }),
+                React.createElement(Button, { text: "Save Lesson" })
+            );
+        }
+
+        function QuizForm({ lessons, onSubmit }) {
+            const [lessonId, setLessonId] = useState("");
+            const [title, setTitle] = useState("");
+            const [questions, setQuestions] = useState([{ question: "", options: ["", "", "", ""], correctAnswer: "" }]);
+
+            const updateQuestion = (index, field, value) => {
+                const next = [...questions];
+                next[index][field] = value;
+                setQuestions(next);
+            };
+
+            const updateOption = (index, optionIndex, value) => {
+                const next = [...questions];
+                next[index].options[optionIndex] = value;
+                setQuestions(next);
+            };
+
+            const addQuestion = () => {
+                setQuestions([...questions, { question: "", options: ["", "", "", ""], correctAnswer: "" }]);
+            };
+
+            return React.createElement("form", {
+                onSubmit: (e) => {
+                    e.preventDefault();
+                    if (!lessonId || !title.trim()) return;
+                    const payload = {
+                        lessonId,
+                        title,
+                        questions: questions.map((q, idx) => ({
+                            id: `q${idx + 1}`,
+                            question: q.question,
+                            options: q.options,
+                            correctAnswer: q.correctAnswer
+                        }))
+                    };
+                    onSubmit(payload);
+                },
+                className: "space-y-3"
+            },
+                React.createElement("div", { className: "space-y-1" },
+                    React.createElement("label", { className: "text-sm font-medium text-pink-700" }, "Lesson"),
+                    React.createElement("select", {
+                        className: "w-full rounded border border-pink-200 px-3 py-2",
+                        value: lessonId,
+                        onChange: (e) => setLessonId(e.target.value)
+                    },
+                        React.createElement("option", { value: "" }, "Select a lesson"),
+                        lessons.map(lesson => React.createElement("option", { key: lesson.id, value: lesson.id }, lesson.title))
+                    )
+                ),
+                React.createElement(Input, { label: "Quiz Title", value: title, onChange: setTitle }),
+                questions.map((q, idx) => React.createElement("div", { key: idx, className: "border border-pink-100 p-3 rounded" },
+                    React.createElement(Input, { label: `Question ${idx + 1}`, value: q.question, onChange: (value) => updateQuestion(idx, "question", value) }),
+                    q.options.map((opt, optIdx) => React.createElement(Input, {
+                        key: optIdx,
+                        label: `Option ${String.fromCharCode(65 + optIdx)}`,
+                        value: opt,
+                        onChange: (value) => updateOption(idx, optIdx, value)
+                    })),
+                    React.createElement(Input, { label: "Correct Answer (text)", value: q.correctAnswer, onChange: (value) => updateQuestion(idx, "correctAnswer", value) })
+                )),
+                React.createElement("button", { type: "button", onClick: addQuestion, className: "text-pink-600 font-semibold" }, "+ Add Question"),
+                React.createElement(Button, { text: "Save Quiz" })
+            );
+        }
+
+        function UploadForm({ onSubmit }) {
+            const [file, setFile] = useState(null);
+
+            return React.createElement("form", {
+                onSubmit: (e) => {
+                    e.preventDefault();
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    onSubmit(formData);
+                },
+                className: "space-y-3"
+            },
+                React.createElement("input", {
+                    type: "file",
+                    accept: ".txt,.csv",
+                    className: "w-full",
+                    onChange: (e) => setFile(e.target.files[0])
+                }),
+                React.createElement(Button, { text: "Upload Quiz" })
+            );
+        }
+
+        function Input({ label, value, onChange, type = "text" }) {
+            return React.createElement("div", { className: "space-y-1" },
+                React.createElement("label", { className: "text-sm font-medium text-pink-700" }, label),
+                React.createElement("input", {
+                    className: "w-full rounded border border-pink-200 px-3 py-2",
+                    type,
+                    value,
+                    onChange: (e) => onChange(e.target.value)
+                })
+            );
+        }
+
+        function Button({ text }) {
+            return React.createElement("button", {
+                type: "submit",
+                className: "w-full bg-pink-600 text-white py-2 rounded hover:bg-pink-700"
+            }, text);
+        }
+
+        ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AdminApp));
+    </script>
+</body>
+
+</html>

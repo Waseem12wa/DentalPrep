@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "_id": "ml7p6s6e6tjdd9gdjvd",
+    "name": "Admin",
+    "email": "admin@dentalprep.com",
+    "password": "$2a$10$hpPgY86SwAqWWG0ewb5sOeb64OTw8.lxr7bBXnE.QSAaiLFNhs8uK",
+    "role": "admin",
+    "createdAt": "2026-02-04T07:20:09.254Z"
+  }
+]

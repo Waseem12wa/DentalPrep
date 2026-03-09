@@ -80,7 +80,67 @@ const User = {
 
 // Course operations
 const Course = {
-    find: () => readData("courses.json"),
+    find: (query = {}) => {
+        const courses = readData("courses.json");
+        let filtered = courses;
+        
+        if (Object.keys(query).length > 0) {
+            filtered = courses.filter(course => {
+                return Object.entries(query).every(([key, value]) => course[key] === value);
+            });
+        }
+
+        // Return an object with array methods and sort
+        return {
+            ...filtered,
+            sort: (sortObj) => {
+                const sortKey = Object.keys(sortObj)[0];
+                const sortOrder = sortObj[sortKey];
+                return filtered.sort((a, b) => {
+                    if (sortOrder === 1) {
+                        return a[sortKey] > b[sortKey] ? 1 : -1;
+                    } else {
+                        return a[sortKey] < b[sortKey] ? 1 : -1;
+                    }
+                });
+            },
+            map: filtered.map.bind(filtered),
+            filter: filtered.filter.bind(filtered),
+            length: filtered.length
+        };
+    },
+
+    findOne: (query = {}) => {
+        const courses = readData("courses.json");
+        return courses.find(course => {
+            return Object.entries(query).every(([key, value]) => course[key] === value);
+        }) || null;
+    },
+
+    findOneAndUpdate: (query, update, options = {}) => {
+        const courses = readData("courses.json");
+        const index = courses.findIndex(course => {
+            return Object.entries(query).every(([key, value]) => course[key] === value);
+        });
+
+        if (index !== -1) {
+            // Update existing
+            courses[index] = { ...courses[index], ...update, updatedAt: new Date().toISOString() };
+            writeData("courses.json", courses);
+            return courses[index];
+        } else if (options.upsert) {
+            // Create new
+            const newCourse = {
+                _id: generateId(),
+                ...update,
+                createdAt: new Date().toISOString()
+            };
+            courses.push(newCourse);
+            writeData("courses.json", courses);
+            return newCourse;
+        }
+        return null;
+    },
 
     create: (courseData) => {
         const courses = readData("courses.json");
@@ -109,11 +169,66 @@ const Course = {
 const Lesson = {
     find: (query = {}) => {
         const lessons = readData("lessons.json");
-        if (Object.keys(query).length === 0) return lessons;
+        let filtered = lessons;
+        
+        if (Object.keys(query).length > 0) {
+            filtered = lessons.filter(lesson => {
+                return Object.entries(query).every(([key, value]) => lesson[key] === value);
+            });
+        }
 
-        return lessons.filter(lesson => {
+        // Return an object with array methods and sort
+        return {
+            ...filtered,
+            sort: (sortObj) => {
+                const sortKey = Object.keys(sortObj)[0];
+                const sortOrder = sortObj[sortKey];
+                return filtered.sort((a, b) => {
+                    if (sortOrder === 1) {
+                        return a[sortKey] > b[sortKey] ? 1 : -1;
+                    } else {
+                        return a[sortKey] < b[sortKey] ? 1 : -1;
+                    }
+                });
+            },
+            then: (callback) => Promise.resolve(filtered).then(callback),
+            catch: (callback) => Promise.resolve(filtered).catch(callback),
+            map: filtered.map.bind(filtered),
+            filter: filtered.filter.bind(filtered),
+            length: filtered.length
+        };
+    },
+
+    findOne: (query = {}) => {
+        const lessons = readData("lessons.json");
+        return lessons.find(lesson => {
+            return Object.entries(query).every(([key, value]) => lesson[key] === value);
+        }) || null;
+    },
+
+    findOneAndUpdate: (query, update, options = {}) => {
+        const lessons = readData("lessons.json");
+        const index = lessons.findIndex(lesson => {
             return Object.entries(query).every(([key, value]) => lesson[key] === value);
         });
+
+        if (index !== -1) {
+            // Update existing
+            lessons[index] = { ...lessons[index], ...update, updatedAt: new Date().toISOString() };
+            writeData("lessons.json", lessons);
+            return lessons[index];
+        } else if (options.upsert) {
+            // Create new
+            const newLesson = {
+                _id: generateId(),
+                ...update,
+                createdAt: new Date().toISOString()
+            };
+            lessons.push(newLesson);
+            writeData("lessons.json", lessons);
+            return newLesson;
+        }
+        return null;
     },
 
     create: (lessonData) => {
@@ -138,11 +253,66 @@ const Lesson = {
 const Quiz = {
     find: (query = {}) => {
         const quizzes = readData("quizzes.json");
-        if (Object.keys(query).length === 0) return quizzes;
+        let filtered = quizzes;
+        
+        if (Object.keys(query).length > 0) {
+            filtered = quizzes.filter(quiz => {
+                return Object.entries(query).every(([key, value]) => quiz[key] === value);
+            });
+        }
 
-        return quizzes.filter(quiz => {
+        // Return an object with array methods and sort
+        return {
+            ...filtered,
+            sort: (sortObj) => {
+                const sortKey = Object.keys(sortObj)[0];
+                const sortOrder = sortObj[sortKey];
+                return filtered.sort((a, b) => {
+                    if (sortOrder === 1) {
+                        return a[sortKey] > b[sortKey] ? 1 : -1;
+                    } else {
+                        return a[sortKey] < b[sortKey] ? 1 : -1;
+                    }
+                });
+            },
+            then: (callback) => Promise.resolve(filtered).then(callback),
+            catch: (callback) => Promise.resolve(filtered).catch(callback),
+            map: filtered.map.bind(filtered),
+            filter: filtered.filter.bind(filtered),
+            length: filtered.length
+        };
+    },
+
+    findOne: (query = {}) => {
+        const quizzes = readData("quizzes.json");
+        return quizzes.find(quiz => {
+            return Object.entries(query).every(([key, value]) => quiz[key] === value);
+        }) || null;
+    },
+
+    findOneAndUpdate: (query, update, options = {}) => {
+        const quizzes = readData("quizzes.json");
+        const index = quizzes.findIndex(quiz => {
             return Object.entries(query).every(([key, value]) => quiz[key] === value);
         });
+
+        if (index !== -1) {
+            // Update existing
+            quizzes[index] = { ...quizzes[index], ...update, updatedAt: new Date().toISOString() };
+            writeData("quizzes.json", quizzes);
+            return quizzes[index];
+        } else if (options.upsert) {
+            // Create new
+            const newQuiz = {
+                _id: generateId(),
+                ...update,
+                createdAt: new Date().toISOString()
+            };
+            quizzes.push(newQuiz);
+            writeData("quizzes.json", quizzes);
+            return newQuiz;
+        }
+        return null;
     },
 
     create: (quizData) => {

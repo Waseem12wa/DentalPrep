@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const formEl = document.getElementById("quiz-form");
   const submitBtn = document.getElementById("submit-quiz");
   const resultEl = document.getElementById("quiz-result");
+  const backLink = document.getElementById("quiz-back-link");
 
   if (!quizId) {
     if (titleEl) titleEl.textContent = "Quiz not found";
@@ -39,6 +40,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (titleEl) titleEl.textContent = quiz.title;
     if (metaEl) metaEl.textContent = `${quiz.questions.length} questions`;
+    if (backLink && quiz.courseId) {
+      backLink.href = `/course-player/?id=${encodeURIComponent(quiz.courseId)}`;
+    }
 
     if (formEl) {
       formEl.innerHTML = "";
@@ -88,11 +92,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           method: "POST",
           body: JSON.stringify({
             courseId: quiz.courseId,
-            videoId: quiz.id,
+            lessonId: quiz.lessonId,
+            quizId: quiz.id,
+            itemType: "quiz",
+            title: quiz.title,
             completed: true,
             score
           })
         });
+        showResult(`You scored ${score}% (${correct}/${quiz.questions.length} correct). Result saved.`);
       } catch (err) {
         showResult(err.message || "Unable to save score.", "error");
       }

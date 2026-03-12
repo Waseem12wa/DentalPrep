@@ -1,1 +1,31 @@
-[]
+[
+  {
+    "_id": "mmnxlxccfzn68ro2",
+    "userId": "mmnwni4ny7z406rcpmo",
+    "itemType": "quiz",
+    "referenceId": "quiz_lesson_new",
+    "courseId": "course_general",
+    "videoId": "quiz_lesson_new",
+    "lessonId": "lesson_new",
+    "quizId": "quiz_lesson_new",
+    "title": "New",
+    "completed": true,
+    "score": 40,
+    "createdAt": "2026-03-12T20:39:53.868Z",
+    "updatedAt": "2026-03-12T20:39:57.571Z"
+  },
+  {
+    "_id": "mmnxmnyfy3tm6r6s",
+    "userId": "mmnwni4ny7z406rcpmo",
+    "itemType": "lesson",
+    "referenceId": "lesson_lesson",
+    "courseId": "course_test",
+    "videoId": "lesson_lesson",
+    "lessonId": "lesson_lesson",
+    "title": "lesson",
+    "completed": true,
+    "score": 0,
+    "createdAt": "2026-03-12T20:40:28.359Z",
+    "updatedAt": "2026-03-12T20:40:28.359Z"
+  }
+]

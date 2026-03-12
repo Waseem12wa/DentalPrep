@@ -3,19 +3,20 @@ const path = require("path");
 
 const dataDir = path.join(__dirname, "../data");
 
-// Helper to read JSON file
 function readData(filename) {
     try {
         const filePath = path.join(dataDir, filename);
-        const data = fs.readFileSync(filePath, "utf8");
-        return JSON.parse(data);
+        if (!fs.existsSync(filePath)) {
+            return [];
+        }
+        const raw = fs.readFileSync(filePath, "utf8");
+        return raw ? JSON.parse(raw) : [];
     } catch (err) {
         console.error(`Error reading ${filename}:`, err);
         return [];
     }
 }
 
-// Helper to write JSON file
 function writeData(filename, data) {
     try {
         const filePath = path.join(dataDir, filename);
@@ -27,350 +28,139 @@ function writeData(filename, data) {
     }
 }
 
-// Helper to generate unique ID
 function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
-// User operations
-const User = {
-    find: (query = {}) => {
-        const users = readData("users.json");
-        if (Object.keys(query).length === 0) return users;
+function matchesQuery(record, query = {}) {
+    return Object.entries(query).every(([key, expected]) => {
+        const actual = record[key];
 
-        return users.filter(user => {
-            return Object.entries(query).every(([key, value]) => user[key] === value);
-        });
-    },
-
-    findOne: (query) => {
-        const users = User.find(query);
-        return users[0] || null;
-    },
-
-    create: (userData) => {
-        const users = readData("users.json");
-        const newUser = {
-            _id: generateId(),
-            ...userData,
-            createdAt: new Date().toISOString()
-        };
-        users.push(newUser);
-        writeData("users.json", users);
-        return newUser;
-    },
-
-    findByIdAndUpdate: (id, updateData) => {
-        const users = readData("users.json");
-        const index = users.findIndex(u => u._id === id);
-        if (index === -1) return null;
-
-        users[index] = { ...users[index], ...updateData };
-        writeData("users.json", users);
-        return users[index];
-    },
-
-    findByIdAndDelete: (id) => {
-        const users = readData("users.json");
-        const filtered = users.filter(u => u._id !== id);
-        writeData("users.json", filtered);
-        return true;
-    }
-};
-
-// Course operations
-const Course = {
-    find: (query = {}) => {
-        const courses = readData("courses.json");
-        let filtered = courses;
-        
-        if (Object.keys(query).length > 0) {
-            filtered = courses.filter(course => {
-                return Object.entries(query).every(([key, value]) => course[key] === value);
-            });
+        if (expected && typeof expected === "object" && !Array.isArray(expected)) {
+            if (Object.prototype.hasOwnProperty.call(expected, "$gt")) {
+                return actual > expected.$gt;
+            }
+            if (Object.prototype.hasOwnProperty.call(expected, "$gte")) {
+                return actual >= expected.$gte;
+            }
+            if (Object.prototype.hasOwnProperty.call(expected, "$lt")) {
+                return actual < expected.$lt;
+            }
+            if (Object.prototype.hasOwnProperty.call(expected, "$lte")) {
+                return actual <= expected.$lte;
+            }
+            if (Object.prototype.hasOwnProperty.call(expected, "$in")) {
+                return expected.$in.includes(actual);
+            }
         }
 
-        // Return an object with array methods and sort
-        return {
-            ...filtered,
-            sort: (sortObj) => {
-                const sortKey = Object.keys(sortObj)[0];
-                const sortOrder = sortObj[sortKey];
-                return filtered.sort((a, b) => {
-                    if (sortOrder === 1) {
-                        return a[sortKey] > b[sortKey] ? 1 : -1;
-                    } else {
-                        return a[sortKey] < b[sortKey] ? 1 : -1;
-                    }
-                });
-            },
-            map: filtered.map.bind(filtered),
-            filter: filtered.filter.bind(filtered),
-            length: filtered.length
-        };
-    },
+        return actual === expected;
+    });
+}
 
-    findOne: (query = {}) => {
-        const courses = readData("courses.json");
-        return courses.find(course => {
-            return Object.entries(query).every(([key, value]) => course[key] === value);
-        }) || null;
-    },
+function createCollection(filename, options = {}) {
+    const idField = options.idField || "_id";
 
-    findOneAndUpdate: (query, update, options = {}) => {
-        const courses = readData("courses.json");
-        const index = courses.findIndex(course => {
-            return Object.entries(query).every(([key, value]) => course[key] === value);
-        });
+    const collection = {
+        readAll() {
+            return readData(filename);
+        },
 
-        if (index !== -1) {
-            // Update existing
-            courses[index] = { ...courses[index], ...update, updatedAt: new Date().toISOString() };
-            writeData("courses.json", courses);
-            return courses[index];
-        } else if (options.upsert) {
-            // Create new
-            const newCourse = {
-                _id: generateId(),
-                ...update,
-                createdAt: new Date().toISOString()
+        find(query = {}) {
+            return this.readAll().filter((record) => matchesQuery(record, query));
+        },
+
+        findOne(query = {}) {
+            return this.find(query)[0] || null;
+        },
+
+        findById(id) {
+            return this.findOne({ [idField]: id });
+        },
+
+        create(payload) {
+            const items = this.readAll();
+            const now = new Date().toISOString();
+            const nextRecord = {
+                _id: payload._id || generateId(),
+                ...payload,
+                createdAt: payload.createdAt || now,
+                updatedAt: payload.updatedAt || now
             };
-            courses.push(newCourse);
-            writeData("courses.json", courses);
-            return newCourse;
-        }
-        return null;
-    },
 
-    create: (courseData) => {
-        const courses = readData("courses.json");
-        const newCourse = {
-            _id: generateId(),
-            courseId: courseData.courseId || generateId(),
-            ...courseData,
-            createdAt: new Date().toISOString()
-        };
-        courses.push(newCourse);
-        writeData("courses.json", courses);
-        return newCourse;
-    },
+            if (!nextRecord[idField]) {
+                nextRecord[idField] = nextRecord._id;
+            }
 
-    countDocuments: (query = {}) => {
-        const courses = readData("courses.json");
-        if (Object.keys(query).length === 0) return courses.length;
+            items.push(nextRecord);
+            writeData(filename, items);
+            return nextRecord;
+        },
 
-        return courses.filter(course => {
-            return Object.entries(query).every(([key, value]) => course[key] === value);
-        }).length;
-    }
-};
+        findOneAndUpdate(query, update, optionsArg = {}) {
+            const items = this.readAll();
+            const index = items.findIndex((record) => matchesQuery(record, query));
+            const now = new Date().toISOString();
 
-// Lesson operations
-const Lesson = {
-    find: (query = {}) => {
-        const lessons = readData("lessons.json");
-        let filtered = lessons;
-        
-        if (Object.keys(query).length > 0) {
-            filtered = lessons.filter(lesson => {
-                return Object.entries(query).every(([key, value]) => lesson[key] === value);
-            });
-        }
+            if (index !== -1) {
+                items[index] = {
+                    ...items[index],
+                    ...update,
+                    updatedAt: now
+                };
+                writeData(filename, items);
+                return items[index];
+            }
 
-        // Return an object with array methods and sort
-        return {
-            ...filtered,
-            sort: (sortObj) => {
-                const sortKey = Object.keys(sortObj)[0];
-                const sortOrder = sortObj[sortKey];
-                return filtered.sort((a, b) => {
-                    if (sortOrder === 1) {
-                        return a[sortKey] > b[sortKey] ? 1 : -1;
-                    } else {
-                        return a[sortKey] < b[sortKey] ? 1 : -1;
-                    }
-                });
-            },
-            then: (callback) => Promise.resolve(filtered).then(callback),
-            catch: (callback) => Promise.resolve(filtered).catch(callback),
-            map: filtered.map.bind(filtered),
-            filter: filtered.filter.bind(filtered),
-            length: filtered.length
-        };
-    },
+            if (!optionsArg.upsert) {
+                return null;
+            }
 
-    findOne: (query = {}) => {
-        const lessons = readData("lessons.json");
-        return lessons.find(lesson => {
-            return Object.entries(query).every(([key, value]) => lesson[key] === value);
-        }) || null;
-    },
-
-    findOneAndUpdate: (query, update, options = {}) => {
-        const lessons = readData("lessons.json");
-        const index = lessons.findIndex(lesson => {
-            return Object.entries(query).every(([key, value]) => lesson[key] === value);
-        });
-
-        if (index !== -1) {
-            // Update existing
-            lessons[index] = { ...lessons[index], ...update, updatedAt: new Date().toISOString() };
-            writeData("lessons.json", lessons);
-            return lessons[index];
-        } else if (options.upsert) {
-            // Create new
-            const newLesson = {
+            const created = {
                 _id: generateId(),
+                ...query,
                 ...update,
-                createdAt: new Date().toISOString()
+                createdAt: now,
+                updatedAt: now
             };
-            lessons.push(newLesson);
-            writeData("lessons.json", lessons);
-            return newLesson;
+
+            if (!created[idField]) {
+                created[idField] = created._id;
+            }
+
+            items.push(created);
+            writeData(filename, items);
+            return created;
+        },
+
+        findByIdAndUpdate(id, update) {
+            return this.findOneAndUpdate({ [idField]: id }, update, { upsert: false });
+        },
+
+        findByIdAndDelete(id) {
+            const items = this.readAll();
+            const filtered = items.filter((record) => record[idField] !== id);
+            writeData(filename, filtered);
+            return items.length !== filtered.length;
+        },
+
+        countDocuments(query = {}) {
+            return this.find(query).length;
         }
-        return null;
-    },
+    };
 
-    create: (lessonData) => {
-        const lessons = readData("lessons.json");
-        const newLesson = {
-            _id: generateId(),
-            id: lessonData.id || generateId(),
-            ...lessonData,
-            createdAt: new Date().toISOString()
-        };
-        lessons.push(newLesson);
-        writeData("lessons.json", lessons);
-        return newLesson;
-    },
+    return collection;
+}
 
-    countDocuments: (query = {}) => {
-        return Lesson.find(query).length;
-    }
-};
-
-// Quiz operations
-const Quiz = {
-    find: (query = {}) => {
-        const quizzes = readData("quizzes.json");
-        let filtered = quizzes;
-        
-        if (Object.keys(query).length > 0) {
-            filtered = quizzes.filter(quiz => {
-                return Object.entries(query).every(([key, value]) => quiz[key] === value);
-            });
-        }
-
-        // Return an object with array methods and sort
-        return {
-            ...filtered,
-            sort: (sortObj) => {
-                const sortKey = Object.keys(sortObj)[0];
-                const sortOrder = sortObj[sortKey];
-                return filtered.sort((a, b) => {
-                    if (sortOrder === 1) {
-                        return a[sortKey] > b[sortKey] ? 1 : -1;
-                    } else {
-                        return a[sortKey] < b[sortKey] ? 1 : -1;
-                    }
-                });
-            },
-            then: (callback) => Promise.resolve(filtered).then(callback),
-            catch: (callback) => Promise.resolve(filtered).catch(callback),
-            map: filtered.map.bind(filtered),
-            filter: filtered.filter.bind(filtered),
-            length: filtered.length
-        };
-    },
-
-    findOne: (query = {}) => {
-        const quizzes = readData("quizzes.json");
-        return quizzes.find(quiz => {
-            return Object.entries(query).every(([key, value]) => quiz[key] === value);
-        }) || null;
-    },
-
-    findOneAndUpdate: (query, update, options = {}) => {
-        const quizzes = readData("quizzes.json");
-        const index = quizzes.findIndex(quiz => {
-            return Object.entries(query).every(([key, value]) => quiz[key] === value);
-        });
-
-        if (index !== -1) {
-            // Update existing
-            quizzes[index] = { ...quizzes[index], ...update, updatedAt: new Date().toISOString() };
-            writeData("quizzes.json", quizzes);
-            return quizzes[index];
-        } else if (options.upsert) {
-            // Create new
-            const newQuiz = {
-                _id: generateId(),
-                ...update,
-                createdAt: new Date().toISOString()
-            };
-            quizzes.push(newQuiz);
-            writeData("quizzes.json", quizzes);
-            return newQuiz;
-        }
-        return null;
-    },
-
-    create: (quizData) => {
-        const quizzes = readData("quizzes.json");
-        const newQuiz = {
-            _id: generateId(),
-            id: quizData.id || generateId(),
-            ...quizData,
-            createdAt: new Date().toISOString()
-        };
-        quizzes.push(newQuiz);
-        writeData("quizzes.json", quizzes);
-        return newQuiz;
-    },
-
-    countDocuments: (query = {}) => {
-        return Quiz.find(query).length;
-    }
-};
-
-// Progress operations
-const Progress = {
-    find: (query = {}) => {
-        const progress = readData("progress.json");
-        if (Object.keys(query).length === 0) return progress;
-
-        return progress.filter(p => {
-            return Object.entries(query).every(([key, value]) => p[key] === value);
-        });
-    },
-
-    create: (progressData) => {
-        const progress = readData("progress.json");
-        const newProgress = {
-            _id: generateId(),
-            ...progressData,
-            createdAt: new Date().toISOString()
-        };
-        progress.push(newProgress);
-        writeData("progress.json", progress);
-        return newProgress;
-    }
-};
-
-// Contact operations
-const Contact = {
-    create: (contactData) => {
-        const contacts = readData("contacts.json");
-        const newContact = {
-            _id: generateId(),
-            ...contactData,
-            createdAt: new Date().toISOString()
-        };
-        contacts.push(newContact);
-        writeData("contacts.json", contacts);
-        return newContact;
-    }
-};
+const User = createCollection("users.json", { idField: "_id" });
+const Course = createCollection("courses.json", { idField: "courseId" });
+const Lesson = createCollection("lessons.json", { idField: "lessonId" });
+const Quiz = createCollection("quizzes.json", { idField: "quizId" });
+const Progress = createCollection("progress.json", { idField: "_id" });
+const Contact = createCollection("contacts.json", { idField: "_id" });
+const Subscription = createCollection("subscriptions.json", { idField: "_id" });
+const Review = createCollection("reviews.json", { idField: "_id" });
+const AiChat = createCollection("ai_chats.json", { idField: "_id" });
 
 module.exports = {
     User,
@@ -378,5 +168,11 @@ module.exports = {
     Lesson,
     Quiz,
     Progress,
-    Contact
+    Contact,
+    Subscription,
+    Review,
+    AiChat,
+    readData,
+    writeData,
+    generateId
 };

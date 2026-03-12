@@ -1,7 +1,8 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { User } = require("../db");
+const crypto = require("crypto");
+const { User, Subscription } = require("../db");
 const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
@@ -14,9 +15,7 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "Name, email, and password are required" });
     }
 
-    const crypto = require("crypto");
-
-    const existing = await User.findOne({ email });
+    const existing = User.findOne({ email });
     if (existing) {
       return res.status(409).json({ message: "Email already in use" });
     }
@@ -24,7 +23,14 @@ router.post("/signup", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(20).toString("hex");
 
-    const user = await User.create({ name, email, passwordHash, verificationToken });
+    const user = User.create({
+      name,
+      email,
+      passwordHash,
+      verificationToken,
+      isVerified: false,
+      role: "student"
+    });
 
     // Mock Email Service
     console.log(`[MOCK EMAIL] Verification Link: http://localhost:5500/verify/?token=${verificationToken}`);
@@ -51,12 +57,14 @@ router.post("/verify-email", async (req, res) => {
     const { token } = req.body;
     if (!token) return res.status(400).json({ message: "Token required" });
 
-    const user = await User.findOne({ verificationToken: token });
+    const user = User.findOne({ verificationToken: token });
     if (!user) return res.status(400).json({ message: "Invalid or expired token" });
 
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    await user.save();
+    User.findByIdAndUpdate(user._id, {
+      isVerified: true,
+      verificationToken: null,
+      updatedAt: new Date().toISOString()
+    });
 
     return res.json({ message: "Email verified successfully" });
   } catch (err) {
@@ -67,13 +75,15 @@ router.post("/verify-email", async (req, res) => {
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    const user = User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const resetToken = crypto.randomBytes(20).toString("hex");
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-    await user.save();
+    User.findByIdAndUpdate(user._id, {
+      resetPasswordToken: resetToken,
+      resetPasswordExpires: Date.now() + 3600000,
+      updatedAt: new Date().toISOString()
+    });
 
     // Mock Email
     console.log(`[MOCK EMAIL] Reset Link: http://localhost:5500/reset-password/?token=${resetToken}`);
@@ -87,17 +97,19 @@ router.post("/forgot-password", async (req, res) => {
 router.post("/reset-password", async (req, res) => {
   try {
     const { token, password } = req.body;
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }
+    const user = User.findOne({ resetPasswordToken: token });
+
+    if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    User.findByIdAndUpdate(user._id, {
+      passwordHash,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+      updatedAt: new Date().toISOString()
     });
-
-    if (!user) return res.status(400).json({ message: "Invalid or expired token" });
-
-    user.passwordHash = await bcrypt.hash(password, 10);
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
 
     return res.json({ message: "Password reset successful" });
   } catch (err) {
@@ -113,18 +125,19 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    const user = await User.findOne({ email });
+    const user = User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const storedHash = user.passwordHash || user.password;
+    const isMatch = storedHash ? await bcrypt.compare(password, storedHash) : false;
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, email: user.email, role: user.role || "student" },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -140,12 +153,28 @@ router.post("/login", async (req, res) => {
 
 router.get("/user/profile", authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("name email");
+    const user = User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    return res.json({ user });
+    const subscription = Subscription.findOne({ userId: req.user.id, status: "active" });
+
+    return res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role || "student"
+      },
+      subscription: subscription
+        ? {
+            plan: subscription.plan,
+            status: subscription.status,
+            startedAt: subscription.startedAt
+          }
+        : null
+    });
   } catch (err) {
     return res.status(500).json({ message: "Server error" });
   }

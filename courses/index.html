@@ -138,6 +138,98 @@
             align-items: center;
             gap: 0.25rem;
         }
+
+        .section-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .empty-state {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .quiz-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .quiz-item {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1.25rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.7rem 1rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .btn-secondary {
+            background: #eff6ff;
+            color: var(--primary-color);
+            border: 1px solid #bfdbfe;
+            padding: 0.7rem 1rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 0.75rem;
+        }
+
+        .tag-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-top: 0.9rem;
+        }
+
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
     </style>
 </head>
 
@@ -161,11 +253,11 @@
                 <a href="#" class="nav-link active">
                     <i class="fas fa-book-open"></i> My Courses
                 </a>
-                <a href="../learning/#analytics" class="nav-link">
-                    <i class="fas fa-chart-bar"></i> Analytics
+                <a href="../materials/" class="nav-link">
+                    <i class="fas fa-folder-open"></i> Materials
                 </a>
-                <a href="../learning/#quizzes" class="nav-link">
-                    <i class="fas fa-file-alt"></i> Quizzes
+                <a href="../assistant/" class="nav-link">
+                    <i class="fas fa-robot"></i> AI Assistant
                 </a>
             </nav>
 
@@ -178,75 +270,215 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h1 style="font-size: 1.8rem; font-weight: 700;">My Courses</h1>
+            <div class="section-header-row">
+                <div>
+                    <h1 style="font-size: 1.8rem; font-weight: 700;">My Courses</h1>
+                    <p style="color: #6b7280; margin-top: 0.35rem;">Browse database-driven courses, quizzes, study materials, audio lessons, and case studies.</p>
+                </div>
                 <div style="position: relative;">
-                    <input type="text" placeholder="Search courses..."
+                    <input id="course-search" type="text" placeholder="Search courses..."
                         style="padding: 0.75rem 1rem 0.75rem 2.5rem; border-radius: 0.5rem; border: 1px solid #e5e7eb; width: 300px;">
                     <i class="fas fa-search" style="position: absolute; left: 1rem; top: 1rem; color: #9ca3af;"></i>
                 </div>
             </div>
 
-            <div class="courses-grid-layout">
-                <!-- Course 1 -->
-                <div class="course-item">
-                    <div class="course-thumb" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
-                        <i class="fas fa-tooth" style="font-size: 4rem; color: white; opacity: 0.8;"></i>
-                        <span class="badge">BDS Year 1</span>
-                    </div>
-                    <div class="course-info">
-                        <h3 style="font-weight: 700; font-size: 1.25rem; margin-bottom: 0.5rem; color: #111827;">Dental
-                            Anatomy</h3>
-                        <p style="color: #6b7280; font-size: 0.9375rem; line-height: 1.5;">Comprehensive guide to tooth
-                            morphology, structures, and function.</p>
-                        <div class="course-meta">
-                            <div class="meta-item"><i class="fas fa-video"></i> 24 Lessons</div>
-                            <div class="meta-item"><i class="fas fa-clock"></i> 8h 15m</div>
-                        </div>
-                    </div>
+            <div id="courses-loader" class="empty-state">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 0.75rem;"></i>
+                <p>Loading courses...</p>
+            </div>
+
+            <div id="courses-empty" class="empty-state" style="display: none;">No courses available yet.</div>
+
+            <div id="courses-grid" class="courses-grid-layout" style="display: none;"></div>
+
+            <div class="section-card">
+                <div class="section-header-row" style="margin-bottom: 0;">
+                    <h2 style="font-size: 1.4rem; font-weight: 700;">Available Quizzes</h2>
+                    <a href="../learning/" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Open Learning Hub</a>
                 </div>
 
-                <!-- Course 2 -->
-                <div class="course-item">
-                    <div class="course-thumb" style="background: linear-gradient(135deg, #dc143c, #ef4444);">
-                        <i class="fas fa-tools" style="font-size: 4rem; color: white; opacity: 0.8;"></i>
-                        <span class="badge">BDS Year 3</span>
-                    </div>
-                    <div class="course-info">
-                        <h3 style="font-weight: 700; font-size: 1.25rem; margin-bottom: 0.5rem; color: #111827;">Oral
-                            Surgery</h3>
-                        <p style="color: #6b7280; font-size: 0.9375rem; line-height: 1.5;">Fundamental techniques,
-                            extractions, and minor surgical procedures.</p>
-                        <div class="course-meta">
-                            <div class="meta-item"><i class="fas fa-video"></i> 18 Lessons</div>
-                            <div class="meta-item"><i class="fas fa-clock"></i> 6h 30m</div>
-                        </div>
-                    </div>
+                <div id="quizzes-loader" class="empty-state" style="margin-top: 1rem; background: #f8fafc;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 0.75rem;"></i>
+                    <p>Loading quizzes...</p>
                 </div>
 
-                <!-- Course 3 -->
-                <div class="course-item">
-                    <div class="course-thumb" style="background: linear-gradient(135deg, #059669, #34d399);">
-                        <i class="fas fa-microscope" style="font-size: 4rem; color: white; opacity: 0.8;"></i>
-                        <span class="badge">BDS Year 2</span>
-                    </div>
-                    <div class="course-info">
-                        <h3 style="font-weight: 700; font-size: 1.25rem; margin-bottom: 0.5rem; color: #111827;">Oral
-                            Pathology</h3>
-                        <p style="color: #6b7280; font-size: 0.9375rem; line-height: 1.5;">Study of oral diseases,
-                            diagnosis, and microscopic features.</p>
-                        <div class="course-meta">
-                            <div class="meta-item"><i class="fas fa-video"></i> 32 Lessons</div>
-                            <div class="meta-item"><i class="fas fa-clock"></i> 12h 45m</div>
-                        </div>
-                    </div>
-                </div>
+                <div id="quizzes-empty" class="empty-state" style="display: none; margin-top: 1rem;">No quizzes available yet.</div>
+
+                <div id="quizzes-grid" class="quiz-grid" style="display: none;"></div>
             </div>
         </main>
     </div>
 
     <script src="../static/js/api.js"></script>
-    <script src="../static/js/dashboard.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const api = window.DentalPrepApi;
+            const logoutLinks = document.querySelectorAll(".logout-link");
+            logoutLinks.forEach((link) => {
+                link.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    if (api) {
+                        api.clearToken();
+                    } else {
+                        localStorage.removeItem("dentalprep_token");
+                    }
+                    window.location.href = "/login/";
+                });
+            });
+
+            if (!api || !api.requireAuth()) {
+                return;
+            }
+
+            const coursesLoader = document.getElementById("courses-loader");
+            const coursesEmpty = document.getElementById("courses-empty");
+            const coursesGrid = document.getElementById("courses-grid");
+            const quizzesLoader = document.getElementById("quizzes-loader");
+            const quizzesEmpty = document.getElementById("quizzes-empty");
+            const quizzesGrid = document.getElementById("quizzes-grid");
+            const searchInput = document.getElementById("course-search");
+
+            const palette = [
+                ["#1e3a8a", "#3b82f6", "fa-tooth", "BDS Year 1"],
+                ["#dc143c", "#ef4444", "fa-tools", "BDS Year 3"],
+                ["#059669", "#34d399", "fa-microscope", "BDS Year 2"],
+                ["#7c3aed", "#a855f7", "fa-book-medical", "Core Module"],
+                ["#0f766e", "#14b8a6", "fa-stethoscope", "Study Track"]
+            ];
+
+            const escapeHtml = (value) => String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+
+            const courseSummary = (course) => {
+                const parts = [
+                    `${course.lessonsCount || 0} lessons`,
+                    `${course.quizCount || 0} quizzes`,
+                    `${course.audioCount || 0} audio files`,
+                    `${course.materialsCount || 0} materials`,
+                    `${course.caseStudiesCount || 0} case studies`
+                ];
+                return parts.join(" • ");
+            };
+
+            try {
+                const [coursesData, quizzesData, lessonsData] = await Promise.all([
+                    api.apiFetch("/courses"),
+                    api.apiFetch("/quizzes"),
+                    api.apiFetch("/lessons")
+                ]);
+
+                const courses = coursesData.courses || [];
+                const quizzes = quizzesData.quizzes || [];
+                const lessons = lessonsData.lessons || [];
+                const lessonLookup = lessons.reduce((acc, lesson) => {
+                    acc[lesson.id] = lesson;
+                    return acc;
+                }, {});
+                const courseLookup = courses.reduce((acc, course) => {
+                    acc[course.id] = course;
+                    return acc;
+                }, {});
+
+                const renderCourses = (items) => {
+                    coursesGrid.innerHTML = "";
+
+                    if (items.length === 0) {
+                        coursesGrid.style.display = "none";
+                        coursesEmpty.style.display = "block";
+                        coursesEmpty.textContent = courses.length === 0
+                            ? "No courses available yet."
+                            : "No courses match your search.";
+                        return;
+                    }
+
+                    coursesEmpty.style.display = "none";
+                    coursesGrid.style.display = "grid";
+
+                    items.forEach((course, index) => {
+                        const [from, to, icon, badge] = palette[index % palette.length];
+                        const card = document.createElement("div");
+                        card.className = "course-item";
+                        card.innerHTML = `
+                            <div class="course-thumb" style="background: linear-gradient(135deg, ${from}, ${to});">
+                                <i class="fas ${icon}" style="font-size: 4rem; color: white; opacity: 0.8;"></i>
+                                <span class="badge">${escapeHtml(course.category || badge)}</span>
+                            </div>
+                            <div class="course-info">
+                                <h3 style="font-weight: 700; font-size: 1.25rem; margin-bottom: 0.5rem; color: #111827;">${escapeHtml(course.title || "Untitled Course")}</h3>
+                                <p style="color: #6b7280; font-size: 0.9375rem; line-height: 1.5;">${escapeHtml(course.description || courseSummary(course))}</p>
+                                <div class="tag-row">
+                                    ${(course.curriculumTags || []).slice(0, 4).map((tag) => `<span class="tag-chip">${escapeHtml(tag)}</span>`).join("")}
+                                </div>
+                                <div class="course-meta">
+                                    <div class="meta-item"><i class="fas fa-video"></i> ${course.lessonsCount || 0} Lessons</div>
+                                    <div class="meta-item"><i class="fas fa-file-alt"></i> ${course.quizCount || 0} Quizzes</div>
+                                </div>
+                                <div class="course-meta" style="margin-top: 0.75rem; padding-top: 0; border-top: none;">
+                                    <div class="meta-item"><i class="fas fa-folder-open"></i> ${course.materialsCount || 0} Materials</div>
+                                    <div class="meta-item"><i class="fas fa-headphones"></i> ${course.audioCount || 0} Audio</div>
+                                    <div class="meta-item"><i class="fas fa-user-doctor"></i> ${course.caseStudiesCount || 0} Cases</div>
+                                </div>
+                                <div class="tag-row">
+                                    <span class="tag-chip">Progress ${course.progress || 0}%</span>
+                                </div>
+                                <a href="/course-player/?id=${course.id}" class="btn-primary">Continue Learning</a>
+                                <a href="/materials/?courseId=${course.id}" class="btn-secondary">Open Materials</a>
+                            </div>
+                        `;
+                        coursesGrid.appendChild(card);
+                    });
+                };
+
+                coursesLoader.style.display = "none";
+                renderCourses(courses);
+
+                if (searchInput) {
+                    searchInput.addEventListener("input", (event) => {
+                        const query = event.target.value.trim().toLowerCase();
+                        const filtered = courses.filter((course) =>
+                            [course.title, course.description, course.category, ...(course.curriculumTags || [])]
+                                .filter(Boolean)
+                                .some((field) => String(field).toLowerCase().includes(query))
+                        );
+                        renderCourses(filtered);
+                    });
+                }
+
+                quizzesLoader.style.display = "none";
+                quizzesGrid.innerHTML = "";
+
+                if (quizzes.length === 0) {
+                    quizzesEmpty.style.display = "block";
+                } else {
+                    quizzesEmpty.style.display = "none";
+                    quizzesGrid.style.display = "grid";
+                    quizzes.forEach((quiz) => {
+                        const lesson = lessonLookup[quiz.lessonId];
+                        const course = courseLookup[quiz.courseId];
+                        const quizCard = document.createElement("div");
+                        quizCard.className = "quiz-item";
+                        quizCard.innerHTML = `
+                            <div style="font-size: 1.1rem; font-weight: 700; color: #111827;">${escapeHtml(quiz.title || "Untitled Quiz")}</div>
+                            <div style="color: #6b7280; margin-top: 0.5rem; line-height: 1.5;">${escapeHtml(course?.title || "Course")} • ${escapeHtml(lesson ? lesson.title : "Lesson")} • ${quiz.questions || 0} questions</div>
+                            <div class="tag-row">
+                                <span class="tag-chip">${quiz.bestScore == null ? "No attempts yet" : `Best score ${quiz.bestScore}%`}</span>
+                            </div>
+                            <a href="/quiz/?id=${quiz.id}" class="btn-primary">${quiz.bestScore == null ? "Start Quiz" : "Retake Quiz"}</a>
+                        `;
+                        quizzesGrid.appendChild(quizCard);
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load student course portal:", err);
+                coursesLoader.innerHTML = '<p>Unable to load courses.</p>';
+                quizzesLoader.innerHTML = '<p>Unable to load quizzes.</p>';
+            }
+        });
+    </script>
 </body>
 
 </html>

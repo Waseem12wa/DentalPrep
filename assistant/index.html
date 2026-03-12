@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant | DentalPrep</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="stylesheet" href="../static/css/DAstyles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --sidebar-width: 280px; }
+        body { background: #eef2ff; font-family: 'Inter', sans-serif; }
+        .dashboard-layout { display: flex; min-height: 100vh; }
+        .sidebar { width: var(--sidebar-width); background: white; border-right: 1px solid #e5e7eb; position: fixed; height: 100vh; padding: 1.5rem; display: flex; flex-direction: column; }
+        .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 2rem; }
+        .logo-area { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 3rem; text-decoration: none; }
+        .nav-link { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-radius: 0.75rem; color: #4b5563; text-decoration: none; transition: all 0.2s; margin-bottom: 0.5rem; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background-color: #eff6ff; color: var(--primary-color); }
+        .workspace { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 1.5rem; }
+        .panel { background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); }
+        .history-list { display: grid; gap: 1rem; margin-top: 1rem; max-height: 70vh; overflow-y: auto; }
+        .history-card { border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1rem; background: #f9fafb; }
+        textarea { width: 100%; min-height: 180px; border-radius: 1rem; border: 1px solid #d1d5db; padding: 1rem; resize: vertical; font: inherit; }
+        select, button { font: inherit; }
+        .btn-primary { background: var(--primary-color); color: white; border: none; padding: 0.85rem 1rem; border-radius: 0.8rem; cursor: pointer; font-weight: 700; }
+        .chip { display: inline-flex; align-items: center; padding: 0.35rem 0.75rem; border-radius: 999px; background: #eff6ff; color: var(--primary-color); font-weight: 600; font-size: 0.85rem; }
+        .helper { color: #6b7280; font-size: 0.95rem; }
+        @media (max-width: 1024px) {
+            .workspace { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <a href="/" class="logo-area">
+                <i class="fas fa-tooth" style="font-size: 2rem; color: var(--arterial-red);"></i>
+                <div style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">Dental<span style="color: var(--arterial-red);">Prep</span></div>
+            </a>
+            <nav>
+                <a href="/dashboard/" class="nav-link"><i class="fas fa-th-large"></i> Dashboard</a>
+                <a href="/courses/" class="nav-link"><i class="fas fa-book-open"></i> My Courses</a>
+                <a href="/materials/" class="nav-link"><i class="fas fa-folder-open"></i> Study Materials</a>
+                <a href="/assistant/" class="nav-link active"><i class="fas fa-robot"></i> AI Assistant</a>
+            </nav>
+            <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                <a href="/" class="nav-link logout-link" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="workspace">
+                <section class="panel">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+                        <div>
+                            <h1 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.4rem;">Dental AI Assistant</h1>
+                            <p class="helper">Ask for explanations based on real course, lesson, quiz, case study, and material data stored in the LMS.</p>
+                        </div>
+                        <span class="chip" id="assistant-context-chip">General Context</span>
+                    </div>
+                    <form id="assistant-form" style="margin-top: 1.25rem; display: grid; gap: 1rem;">
+                        <div style="display: grid; gap: 0.5rem;">
+                            <label for="assistant-course" style="font-weight: 600;">Course</label>
+                            <select id="assistant-course" style="padding: 0.85rem 1rem; border-radius: 0.8rem; border: 1px solid #d1d5db;">
+                                <option value="">All courses</option>
+                            </select>
+                        </div>
+                        <div style="display: grid; gap: 0.5rem;">
+                            <label for="assistant-lesson" style="font-weight: 600;">Lesson</label>
+                            <select id="assistant-lesson" style="padding: 0.85rem 1rem; border-radius: 0.8rem; border: 1px solid #d1d5db;">
+                                <option value="">All lessons</option>
+                            </select>
+                        </div>
+                        <div style="display: grid; gap: 0.5rem;">
+                            <label for="assistant-prompt" style="font-weight: 600;">Question</label>
+                            <textarea id="assistant-prompt" placeholder="Ask about anatomy, pathology, case studies, quiz concepts, or uploaded study materials."></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">Generate Explanation</button>
+                    </form>
+                    <div id="assistant-response" class="panel" style="margin-top: 1rem; background: #f8fafc; display: none;"></div>
+                </section>
+
+                <section class="panel">
+                    <h2 style="font-size: 1.25rem; font-weight: 700;">Recent Assistant History</h2>
+                    <p class="helper" style="margin-top: 0.3rem;">This is stored per student in the LMS backend.</p>
+                    <div id="assistant-history" class="history-list"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="../static/js/api.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const api = window.DentalPrepApi;
+            if (!api || !api.requireAuth()) return;
+
+            document.querySelectorAll(".logout-link").forEach((link) => {
+                link.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    api.clearToken();
+                    window.location.href = "/login/";
+                });
+            });
+
+            const params = new URLSearchParams(window.location.search);
+            const presetCourseId = params.get("courseId") || "";
+            const presetLessonId = params.get("lessonId") || "";
+            const historyEl = document.getElementById("assistant-history");
+            const responseEl = document.getElementById("assistant-response");
+            const formEl = document.getElementById("assistant-form");
+            const courseSelect = document.getElementById("assistant-course");
+            const lessonSelect = document.getElementById("assistant-lesson");
+            const promptEl = document.getElementById("assistant-prompt");
+            const contextChip = document.getElementById("assistant-context-chip");
+
+            let lessons = [];
+
+            function updateContextChip() {
+                const courseText = courseSelect.options[courseSelect.selectedIndex]?.text || "General Context";
+                const lessonText = lessonSelect.value ? lessonSelect.options[lessonSelect.selectedIndex]?.text : "All Lessons";
+                contextChip.textContent = lessonSelect.value ? `${courseText} • ${lessonText}` : courseSelect.value ? courseText : "General Context";
+            }
+
+            function populateLessons(selectedCourseId) {
+                const filteredLessons = selectedCourseId ? lessons.filter((lesson) => String(lesson.courseId) === String(selectedCourseId)) : lessons;
+                lessonSelect.innerHTML = '<option value="">All lessons</option>' + filteredLessons.map((lesson) => `<option value="${lesson.id}">${lesson.title}</option>`).join("");
+                if (presetLessonId && filteredLessons.some((lesson) => String(lesson.id) === String(presetLessonId))) {
+                    lessonSelect.value = presetLessonId;
+                }
+                updateContextChip();
+            }
+
+            function renderHistory(items) {
+                if (!items.length) {
+                    historyEl.innerHTML = '<div class="history-card">No assistant history yet. Ask your first question.</div>';
+                    return;
+                }
+                historyEl.innerHTML = items.map((item) => `
+                    <div class="history-card">
+                        <div style="font-weight: 700; color: #111827; margin-bottom: 0.5rem;">${item.prompt}</div>
+                        <div style="color: #374151; white-space: pre-wrap; line-height: 1.65;">${item.response}</div>
+                        <div style="margin-top: 0.75rem; color: #6b7280; font-size: 0.85rem;">${item.courseTitle || 'General'}${item.lessonTitle ? ` • ${item.lessonTitle}` : ''}</div>
+                    </div>
+                `).join("");
+            }
+
+            async function loadHistory() {
+                const query = new URLSearchParams();
+                if (courseSelect.value) query.set("courseId", courseSelect.value);
+                if (lessonSelect.value) query.set("lessonId", lessonSelect.value);
+                const result = await api.apiFetch(`/assistant/history${query.toString() ? `?${query.toString()}` : ''}`);
+                renderHistory(result.history || []);
+            }
+
+            try {
+                const [courseResult, lessonResult] = await Promise.all([
+                    api.apiFetch("/courses"),
+                    api.apiFetch("/lessons")
+                ]);
+
+                const courses = courseResult.courses || [];
+                lessons = lessonResult.lessons || [];
+
+                courseSelect.innerHTML += courses.map((course) => `<option value="${course.id}">${course.title}</option>`).join("");
+                if (presetCourseId && courses.some((course) => String(course.id) === String(presetCourseId))) {
+                    courseSelect.value = presetCourseId;
+                }
+                populateLessons(courseSelect.value);
+                updateContextChip();
+                await loadHistory();
+            } catch (err) {
+                renderHistory([]);
+            }
+
+            courseSelect.addEventListener("change", async () => {
+                populateLessons(courseSelect.value);
+                await loadHistory();
+            });
+
+            lessonSelect.addEventListener("change", async () => {
+                updateContextChip();
+                await loadHistory();
+            });
+
+            formEl.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                const prompt = promptEl.value.trim();
+                if (!prompt) return;
+
+                const payload = { prompt };
+                if (courseSelect.value) payload.courseId = courseSelect.value;
+                if (lessonSelect.value) payload.lessonId = lessonSelect.value;
+
+                responseEl.style.display = "block";
+                responseEl.textContent = "Generating explanation...";
+
+                try {
+                    const result = await api.apiFetch("/assistant/explain", {
+                        method: "POST",
+                        body: JSON.stringify(payload)
+                    });
+                    responseEl.textContent = result.response || "No explanation returned.";
+                    promptEl.value = "";
+                    await loadHistory();
+                } catch (err) {
+                    responseEl.textContent = err.message || "Unable to generate explanation.";
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

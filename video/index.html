@@ -101,9 +101,103 @@
 
         .meta-row {
             display: flex;
-            gap: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
             color: #6b7280;
             margin-top: 0.5rem;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .stack {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .sub-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            background: #f8fafc;
+        }
+
+        .sub-card h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #111827;
+        }
+
+        .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.45rem 0.75rem;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: var(--primary-color);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .resource-list,
+        .case-list,
+        .history-list {
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .resource-item,
+        .case-item,
+        .history-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.85rem;
+            padding: 1rem;
+            background: white;
+        }
+
+        .assistant-form {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .assistant-form textarea {
+            width: 100%;
+            min-height: 120px;
+            resize: vertical;
+            border: 1px solid #d1d5db;
+            border-radius: 0.85rem;
+            padding: 0.9rem 1rem;
+            font: inherit;
+        }
+
+        .assistant-response {
+            white-space: pre-wrap;
+            line-height: 1.65;
+            color: #374151;
+        }
+
+        .empty-copy {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 980px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -140,15 +234,54 @@
 
         <main class="main-content">
             <div class="section-card">
-                <h1 id="video-title" style="font-size: 1.8rem; font-weight: 700;">Video Lesson</h1>
+                <h1 id="video-title" style="font-size: 1.8rem; font-weight: 700;">Lesson Viewer</h1>
                 <div class="meta-row" id="video-meta"></div>
+                <div class="chip-row" id="lesson-chips"></div>
                 <div class="video-placeholder" id="video-player">
                     <i class="fas fa-play" style="margin-right: 0.75rem;"></i>
-                    Video player placeholder
+                    Lesson media placeholder
                 </div>
-                <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button class="btn-primary" id="mark-complete">Mark Completed</button>
-                    <a href="/learning/" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center;">Back to Learning</a>
+                    <a href="/quiz/" class="btn-primary" id="start-quiz" style="text-decoration: none; display: none; align-items: center;">Take Quiz</a>
+                    <a href="/assistant/" class="btn-primary" id="assistant-link" style="text-decoration: none; display: inline-flex; align-items: center;">Open AI Assistant</a>
+                    <a href="/learning/" class="btn-primary" id="back-link" style="text-decoration: none; display: inline-flex; align-items: center;">Back to Learning</a>
+                </div>
+
+                <div class="content-grid">
+                    <div class="stack">
+                        <div class="sub-card">
+                            <h2>Lesson Summary</h2>
+                            <div id="lesson-summary" class="empty-copy">No summary added yet.</div>
+                        </div>
+                        <div class="sub-card">
+                            <h2>Audio Lessons</h2>
+                            <div id="audio-list" class="resource-list"></div>
+                        </div>
+                        <div class="sub-card">
+                            <h2>Study Materials</h2>
+                            <div id="material-list" class="resource-list"></div>
+                        </div>
+                        <div class="sub-card">
+                            <h2>Clinical Case Studies</h2>
+                            <div id="case-study-list" class="case-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="stack">
+                        <div class="sub-card">
+                            <h2>Ask DentalPrep AI</h2>
+                            <form id="assistant-form" class="assistant-form">
+                                <textarea id="assistant-prompt" placeholder="Ask for an explanation of this lesson, a topic, or a quiz question."></textarea>
+                                <button type="submit" class="btn-primary">Generate Explanation</button>
+                            </form>
+                            <div id="assistant-response" class="assistant-response empty-copy" style="margin-top: 1rem;">Ask a question to get an explanation grounded in your course, lesson, quiz, and case-study data.</div>
+                        </div>
+                        <div class="sub-card">
+                            <h2>Recent AI History</h2>
+                            <div id="assistant-history" class="history-list"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

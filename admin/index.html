@@ -138,6 +138,20 @@
             border: 1px solid #fecaca;
         }
 
+        .metric-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
         /* Matching the Site Header */
         header {
             background: rgba(255, 255, 255, 0.95);
@@ -215,9 +229,33 @@
             <button class="tab-btn" onclick="switchTab('lessons')">Lessons</button>
             <button class="tab-btn" onclick="switchTab('quizzes')">Quizzes</button>
             <button class="tab-btn" onclick="switchTab('upload')">Bulk Upload</button>
+            <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
         </nav>
 
         <div id="general-msg" class="status-msg"></div>
+
+        <div class="dashboard-grid" id="overview-grid" style="margin-bottom: 2rem;">
+            <div class="metric-card"><div class="text-sm text-gray-500">Courses</div><div class="metric-value" id="metric-courses">0</div></div>
+            <div class="metric-card"><div class="text-sm text-gray-500">Lessons</div><div class="metric-value" id="metric-lessons">0</div></div>
+            <div class="metric-card"><div class="text-sm text-gray-500">Quizzes</div><div class="metric-value" id="metric-quizzes">0</div></div>
+            <div class="metric-card"><div class="text-sm text-gray-500">Quiz Attempts</div><div class="metric-value" id="metric-attempts">0</div></div>
+            <div class="metric-card"><div class="text-sm text-gray-500">Reviews</div><div class="metric-value" id="metric-reviews">0</div></div>
+            <div class="metric-card"><div class="text-sm text-gray-500">Students</div><div class="metric-value" id="metric-students">0</div></div>
+            <div class="metric-card"><div class="text-sm text-gray-500">Audio Files</div><div class="metric-value" id="metric-audios">0</div></div>
+            <div class="metric-card"><div class="text-sm text-gray-500">Study Materials</div><div class="metric-value" id="metric-materials">0</div></div>
+            <div class="metric-card"><div class="text-sm text-gray-500">Case Studies</div><div class="metric-value" id="metric-case-studies">0</div></div>
+        </div>
+
+        <div class="dashboard-grid" style="margin-bottom: 2rem;">
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4">Recent Quiz Results</h3>
+                <div id="admin-results-list" class="grid gap-2"></div>
+            </div>
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4">Recent Reviews</h3>
+                <div id="admin-reviews-list" class="grid gap-2"></div>
+            </div>
+        </div>
 
         <!-- Add Course Tab -->
         <div id="tab-courses" class="tab-content">
@@ -227,6 +265,19 @@
                     <div class="form-group">
                         <label class="form-label">Course Title</label>
                         <input type="text" name="title" class="form-input" placeholder="e.g., Dental Anatomy" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-input" rows="3" placeholder="Briefly describe the course, learning outcomes, and scope."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <input type="text" name="category" class="form-input" placeholder="e.g., BDS Year 1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Curriculum Tags</label>
+                        <input type="text" name="curriculumTags" class="form-input" placeholder="KMU, PMDC, Operative Dentistry">
+                        <small style="color: #6b7280;">Separate tags with commas.</small>
                     </div>
                     <button type="submit" class="cta-btn cta-primary">Save Course</button>
                 </form>
@@ -257,12 +308,50 @@
                             required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Video URL (YouTube)</label>
-                        <input type="text" name="videoUrl" class="form-input" placeholder="https://youtube.com/..."
-                            required>
+                        <label class="form-label">Lesson Summary</label>
+                        <textarea name="summary" class="form-input" rows="3" placeholder="Add the core explanation, objectives, or notes students should read before opening the lesson."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">YouTube URL(s)</label>
+                        <textarea name="videoUrl" class="form-input" rows="4" placeholder="https://youtube.com/...
+https://youtube.com/another-video"></textarea>
+                        <small style="color: #6b7280;">Add one YouTube URL per line to create multiple lessons at once.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Or Upload Video File(s)</label>
+                        <input type="file" name="videoFiles" class="form-input" accept="video/*" multiple>
+                        <small style="color: #6b7280;">You can upload one or more video files instead of YouTube links.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Upload Audio Lesson File(s)</label>
+                        <input type="file" name="audioFiles" class="form-input" accept="audio/*" multiple>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Upload Study Materials</label>
+                        <input type="file" name="materialFiles" class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple>
+                        <small style="color: #6b7280;">Students will be able to view or download these files from the lesson and materials page.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Clinical Case Studies</label>
+                        <textarea name="caseStudies" class="form-input" rows="8" placeholder="Title: Acute Pulpitis Scenario
+Scenario: Patient reports spontaneous pain and sensitivity.
+Diagnosis: Symptomatic irreversible pulpitis.
+Discussion: Explain diagnosis, treatment planning, and clinical reasoning.
+Relevance: PMDC restorative module.
+---
+Title: Another Case
+Scenario: ..."></textarea>
+                        <small style="color: #6b7280;">Separate multiple cases with a line containing only ---</small>
                     </div>
                     <button type="submit" class="cta-btn cta-primary">Save Lesson</button>
                 </form>
+            </div>
+
+            <div class="mt-8">
+                <h3 class="text-xl font-bold mb-4">Existing Lessons</h3>
+                <div id="lessons-list" class="grid gap-2">
+                    <div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">Loading lessons...</div>
+                </div>
             </div>
         </div>
 
@@ -292,25 +381,44 @@
                     <button type="submit" class="cta-btn cta-primary">Save Quiz</button>
                 </form>
             </div>
+
+            <div class="mt-8">
+                <h3 class="text-xl font-bold mb-4">Existing Quizzes</h3>
+                <div id="quizzes-list" class="grid gap-2">
+                    <div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">Loading quizzes...</div>
+                </div>
+            </div>
         </div>
 
         <!-- Upload Tab -->
         <div id="tab-upload" class="tab-content hidden">
             <div class="admin-card">
                 <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Bulk Upload Quiz</h3>
-                <p class="mb-4 text-sm text-gray-500">Upload a .txt or .csv file containing quiz questions.</p>
+                <p class="mb-4 text-sm text-gray-500">Upload a .txt or .csv file containing quiz questions in the format:<br>
+                <code style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Q: Question text<br>A: Option A<br>B: Option B<br>C: Option C<br>D: Option D<br>Answer: A</code></p>
                 <form id="upload-form">
                     <div class="form-group">
                         <label class="form-label">Lesson Title</label>
                         <input type="text" name="lessonTitle" class="form-input"
                             placeholder="e.g., Dental Materials Basics" required>
+                        <small style="color: #6b7280;">If lesson doesn't exist, it will be created automatically</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Quiz File</label>
                         <input type="file" name="file" class="form-input" accept=".txt,.csv" required>
                     </div>
-                    <button type="submit" class="cta-btn cta-primary">Upload</button>
+                    <button type="submit" class="cta-btn cta-primary">Upload Quiz</button>
                 </form>
+            </div>
+        </div>
+
+        <div id="tab-analytics" class="tab-content hidden">
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Student Progress Analytics</h3>
+                <p class="text-sm text-gray-500 mb-4">Live progress data pulled from lesson completion and quiz activity.</p>
+                <div id="students-analytics-list" class="grid gap-3">
+                    <div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">Loading student analytics...</div>
+                </div>
             </div>
         </div>
 
@@ -380,8 +488,11 @@
             loginView.classList.add("hidden");
             dashboardView.classList.remove("hidden");
             logoutBtn.classList.remove("hidden");
+            loadOverview();
             loadCourses();
             loadLessons();
+            loadQuizzes();
+            loadStudentAnalytics();
         }
 
         // Login Handler
@@ -418,38 +529,102 @@
         logoutBtn.addEventListener("click", () => {
             localStorage.removeItem("dentalprep_admin_token");
             adminToken = null;
-            window.location.href = '/login/';
+            showLogin();
         });
 
         // --- Data Loading ---
 
+        async function loadOverview() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/overview`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+                const counts = data.counts || {};
+
+                document.getElementById("metric-courses").textContent = counts.courses || 0;
+                document.getElementById("metric-lessons").textContent = counts.lessons || 0;
+                document.getElementById("metric-quizzes").textContent = counts.quizzes || 0;
+                document.getElementById("metric-attempts").textContent = counts.quizAttempts || 0;
+                document.getElementById("metric-reviews").textContent = counts.reviews || 0;
+                document.getElementById("metric-students").textContent = counts.students || 0;
+                document.getElementById("metric-audios").textContent = counts.audios || 0;
+                document.getElementById("metric-materials").textContent = counts.materials || 0;
+                document.getElementById("metric-case-studies").textContent = counts.caseStudies || 0;
+
+                const resultsList = document.getElementById("admin-results-list");
+                const reviewsList = document.getElementById("admin-reviews-list");
+
+                resultsList.innerHTML = (data.recentResults || []).length
+                    ? data.recentResults.map((result) => `
+                        <div class="p-3 bg-white border border-gray-200 rounded shadow-sm">
+                            <div class="font-semibold text-gray-800">${result.userName} • ${result.score}%</div>
+                            <div class="text-sm text-gray-500">${result.quizTitle} • ${result.courseTitle}</div>
+                        </div>
+                    `).join("")
+                    : '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No quiz attempts yet.</div>';
+
+                reviewsList.innerHTML = (data.recentReviews || []).length
+                    ? data.recentReviews.map((review) => `
+                        <div class="p-3 bg-white border border-gray-200 rounded shadow-sm">
+                            <div class="font-semibold text-gray-800">${review.userName} • ${"★".repeat(Number(review.rating || 0))}</div>
+                            <div class="text-sm text-gray-500">${review.courseTitle}</div>
+                            <div class="text-sm text-gray-600" style="margin-top: 0.25rem;">${review.comment}</div>
+                        </div>
+                    `).join("")
+                    : '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No reviews yet.</div>';
+            } catch (err) {
+                console.error("Failed to load overview:", err);
+            }
+        }
+
         async function loadCourses() {
+            const list = document.getElementById("courses-list");
+            const select = document.getElementById("lesson-course-select");
+
             try {
                 const res = await fetch(`${API_BASE}/courses`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
-                const data = await res.json();
 
-                const list = document.getElementById("courses-list");
-                const select = document.getElementById("lesson-course-select");
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
 
                 list.innerHTML = "";
                 select.innerHTML = '<option value="">Select a course</option>';
 
-                if (data.courses) {
-                    data.courses.forEach(c => {
-                        // Populate list
-                        list.innerHTML += `<div class="p-3 bg-white border border-gray-200 rounded shadow-sm flex justify-between items-center">
-                            <span class="font-semibold text-gray-800">${c.title}</span>
-                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${c.id}</span>
-                        </div>`;
-
-                        // Populate select
-                        select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
-                    });
+                if (!Array.isArray(data.courses) || data.courses.length === 0) {
+                    list.innerHTML = '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No courses available yet.</div>';
+                    return;
                 }
+
+                data.courses.forEach((course) => {
+                    const courseDiv = document.createElement("div");
+                    courseDiv.className = "p-3 bg-white border border-gray-200 rounded shadow-sm flex justify-between items-center";
+                    courseDiv.innerHTML = `
+                        <div>
+                            <div class="font-semibold text-gray-800">${course.title}</div>
+                            <div class="text-sm text-gray-500">${course.category || "Uncategorized"}${(course.curriculumTags || []).length ? ` • ${(course.curriculumTags || []).join(", ")}` : ""}</div>
+                            ${course.description ? `<div class="text-sm text-gray-600" style="margin-top: 0.25rem;">${course.description}</div>` : ""}
+                        </div>
+                        <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${course.id}</span>
+                    `;
+                    list.appendChild(courseDiv);
+
+                    const option = document.createElement("option");
+                    option.value = course.id;
+                    option.textContent = course.title;
+                    select.appendChild(option);
+                });
             } catch (err) {
-                console.error("Failed to load courses", err);
+                console.error("Failed to load courses:", err);
+                list.innerHTML = '<div class="p-3 bg-white border border-red-200 rounded shadow-sm text-red-600">Unable to load courses.</div>';
+                select.innerHTML = '<option value="">Unable to load courses</option>';
             }
         }
 
@@ -458,18 +633,110 @@
                 const res = await fetch(`${API_BASE}/lessons`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
-                const data = await res.json();
+                   if (!res.ok) {
+                       console.error("Failed to load lessons:", res.status, res.statusText);
+                       throw new Error(`HTTP ${res.status}`);
+                   }
+               
+                   const data = await res.json();
                 const select = document.getElementById("quiz-lesson-select");
+                const list = document.getElementById("lessons-list");
 
                 select.innerHTML = '<option value="">Select a lesson</option>';
+                list.innerHTML = "";
 
-                if (data.lessons) {
-                    data.lessons.forEach(l => {
-                        select.innerHTML += `<option value="${l.id}">${l.title}</option>`;
-                    });
+                if (data.lessons && Array.isArray(data.lessons)) {
+                   if (data.lessons.length === 0) {
+                       const noOption = document.createElement("option");
+                       noOption.disabled = true;
+                       noOption.textContent = "No lessons available - Create one first";
+                       select.appendChild(noOption);
+                       list.innerHTML = '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No lessons available yet.</div>';
+                   } else {
+                   data.lessons.forEach(l => {
+                           const option = document.createElement("option");
+                           option.value = l.id || l.lessonId;
+                           option.textContent = l.title || "Untitled Lesson";
+                           select.appendChild(option);
+
+                           const lessonCard = document.createElement("div");
+                           lessonCard.className = "p-3 bg-white border border-gray-200 rounded shadow-sm flex justify-between items-center gap-4";
+                           lessonCard.innerHTML = `
+                                <div>
+                                    <div class="font-semibold text-gray-800">${l.title || "Untitled Lesson"}</div>
+                                    <div class="text-sm text-gray-500">${l.videoType === "upload" ? "Uploaded video" : l.videoType === "youtube" ? "YouTube video" : "Text / audio / material lesson"}</div>
+                                    <div class="text-sm text-gray-500">${(l.audioItems || []).length} audio • ${(l.materials || []).length} materials • ${(l.caseStudies || []).length} case studies</div>
+                                    ${l.summary ? `<div class="text-sm text-gray-600" style="margin-top: 0.25rem;">${l.summary}</div>` : ""}
+                                </div>
+                                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${l.id || l.lessonId}</span>
+                           `;
+                           list.appendChild(lessonCard);
+                       });
+                   }
+               } else {
+                   console.warn("Lessons data format unexpected:", data);
+                   const errorOption = document.createElement("option");
+                   errorOption.disabled = true;
+                   errorOption.textContent = "Error loading lessons";
+                   select.appendChild(errorOption);
+               }
+           } catch (err) {
+               console.error("Failed to load lessons:", err);
+               const select = document.getElementById("quiz-lesson-select");
+               select.innerHTML = '<option value="">Error loading lessons</option>';
+               const errOption = document.createElement("option");
+               errOption.disabled = true;
+               errOption.textContent = `Error: ${err.message}`;
+               select.appendChild(errOption);
+            }
+        }
+
+        async function loadQuizzes() {
+            const list = document.getElementById("quizzes-list");
+
+            try {
+                const [quizzesRes, lessonsRes] = await Promise.all([
+                    fetch(`${API_BASE}/quizzes`, {
+                        headers: { Authorization: `Bearer ${adminToken}` }
+                    }),
+                    fetch(`${API_BASE}/lessons`, {
+                        headers: { Authorization: `Bearer ${adminToken}` }
+                    })
+                ]);
+
+                if (!quizzesRes.ok) {
+                    throw new Error(`HTTP ${quizzesRes.status}`);
                 }
+
+                const quizzesData = await quizzesRes.json();
+                const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
+                const lessonLookup = (lessonsData.lessons || []).reduce((acc, lesson) => {
+                    acc[lesson.id] = lesson.title;
+                    return acc;
+                }, {});
+
+                list.innerHTML = "";
+
+                if (!Array.isArray(quizzesData.quizzes) || quizzesData.quizzes.length === 0) {
+                    list.innerHTML = '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No quizzes created yet.</div>';
+                    return;
+                }
+
+                quizzesData.quizzes.forEach((quiz) => {
+                    const quizCard = document.createElement("div");
+                    quizCard.className = "p-3 bg-white border border-gray-200 rounded shadow-sm flex justify-between items-center gap-4";
+                    quizCard.innerHTML = `
+                        <div>
+                            <div class="font-semibold text-gray-800">${quiz.title}</div>
+                            <div class="text-sm text-gray-500">Lesson: ${lessonLookup[quiz.lessonId] || quiz.lessonId} • ${quiz.questions} questions</div>
+                        </div>
+                        <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${quiz.id}</span>
+                    `;
+                    list.appendChild(quizCard);
+                });
             } catch (err) {
-                console.error("Failed to load lessons", err);
+                console.error("Failed to load quizzes:", err);
+                list.innerHTML = '<div class="p-3 bg-white border border-red-200 rounded shadow-sm text-red-600">Unable to load quizzes.</div>';
             }
         }
 
@@ -481,9 +748,13 @@
             e.preventDefault();
             const btn = e.target.querySelector("button");
             const title = e.target.title.value;
+            const description = e.target.description.value;
+            const category = e.target.category.value;
+            const curriculumTags = e.target.curriculumTags.value;
 
-            await handleAdminAction("/admin/course", { title }, btn);
+            await handleAdminAction("/admin/course", { title, description, category, curriculumTags }, btn);
             loadCourses();
+                loadOverview();
             e.target.reset();
         });
 
@@ -491,15 +762,45 @@
         document.getElementById("lesson-form").addEventListener("submit", async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector("button");
-            const payload = {
-                courseId: e.target.courseId.value,
-                title: e.target.title.value,
-                videoUrl: e.target.videoUrl.value
-            };
+                const formData = new FormData();
+                formData.append("courseId", e.target.courseId.value);
+                formData.append("title", e.target.title.value);
+                formData.append("summary", e.target.summary.value || "");
+                formData.append("videoUrl", e.target.videoUrl.value || "");
+                formData.append("caseStudies", e.target.caseStudies.value || "");
 
-            await handleAdminAction("/admin/lesson", payload, btn);
-            loadLessons();
-            e.target.reset();
+                Array.from(e.target.querySelector('input[name="videoFiles"]').files || []).forEach((file) => {
+                    formData.append("videoFiles", file);
+                });
+                Array.from(e.target.querySelector('input[name="audioFiles"]').files || []).forEach((file) => {
+                    formData.append("audioFiles", file);
+                });
+                Array.from(e.target.querySelector('input[name="materialFiles"]').files || []).forEach((file) => {
+                    formData.append("materialFiles", file);
+                });
+
+            setLoading(btn, true);
+            showMessage(generalMsg, "", null);
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/lesson`, {
+                    method: "POST",
+                        headers: { Authorization: `Bearer ${adminToken}` },
+                        body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Action failed");
+
+                showMessage(generalMsg, data.message || "Lesson saved successfully!", "success");
+                loadLessons();
+                loadOverview();
+                loadStudentAnalytics();
+                e.target.reset();
+            } catch (err) {
+                showMessage(generalMsg, err.message, "error");
+            } finally {
+                setLoading(btn, false, "Save Lesson");
+            }
         });
 
         // Add Quiz
@@ -531,13 +832,26 @@
             e.target.reset();
             document.getElementById("questions-container").innerHTML = "";
             addQuestionField();
+            loadQuizzes();
+            loadOverview();
+            loadStudentAnalytics();
         });
 
         // Upload Quiz
         document.getElementById("upload-form").addEventListener("submit", async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector("button");
-            const formData = new FormData(e.target);
+            const lessonTitle = e.target.lessonTitle.value;
+            const fileInput = e.target.querySelector("input[type='file']");
+            
+            if (!fileInput.files.length) {
+                showMessage(generalMsg, "Please select a file", "error");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("lessonTitle", lessonTitle);
+            formData.append("file", fileInput.files[0]);
 
             setLoading(btn, true);
             try {
@@ -551,6 +865,10 @@
 
                 showMessage(generalMsg, "Quiz Uploaded Successfully!", "success");
                 e.target.reset();
+                loadLessons();
+                loadQuizzes();
+                loadOverview();
+                loadStudentAnalytics();
             } catch (err) {
                 showMessage(generalMsg, err.message, "error");
             } finally {
@@ -585,19 +903,48 @@
             }
         }
 
+        async function loadStudentAnalytics() {
+            const container = document.getElementById("students-analytics-list");
+            if (!container) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/student-analytics`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+                const students = data.students || [];
+                container.innerHTML = students.length
+                    ? students.map((student) => `
+                        <div class="p-4 bg-white border border-gray-200 rounded shadow-sm">
+                            <div class="flex justify-between items-start gap-4">
+                                <div>
+                                    <div class="font-semibold text-gray-800">${student.name}</div>
+                                    <div class="text-sm text-gray-500">${student.email || "No email available"}</div>
+                                    <div class="text-sm text-gray-600" style="margin-top: 0.5rem;">Completed lessons: ${student.completedLessons} • Quiz attempts: ${student.quizAttempts} • Avg score: ${student.avgScore}% • Completion: ${student.completionRate}%</div>
+                                    <div class="text-sm text-gray-500" style="margin-top: 0.5rem;">${student.weakAreas.length ? `Weak areas: ${student.weakAreas.map((item) => `${item.quizTitle} (${item.score}%)`).join(", ")}` : "No weak areas detected yet."}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join("")
+                    : '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No student activity yet.</div>';
+            } catch (err) {
+                container.innerHTML = '<div class="p-3 bg-white border border-red-200 rounded shadow-sm text-red-600">Unable to load student analytics.</div>';
+            }
+        }
+
         function switchTab(tabName) {
-            // Hide all
             document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
             document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
 
-            // Show selected
             document.getElementById(`tab-${tabName}`).classList.remove("hidden");
-            // Highlight button (simple match)
             const btns = document.querySelectorAll(".tab-btn");
             if (tabName === 'courses') btns[0].classList.add("active");
             if (tabName === 'lessons') btns[1].classList.add("active");
             if (tabName === 'quizzes') btns[2].classList.add("active");
             if (tabName === 'upload') btns[3].classList.add("active");
+            if (tabName === 'analytics') btns[4].classList.add("active");
         }
 
         window.switchTab = switchTab; // make global for onclick

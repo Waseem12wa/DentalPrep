@@ -1,18 +1,187 @@
 const express = require("express");
-const router = express.Router();
 const jwt = require("jsonwebtoken");
-const authMiddleware = require("../middleware/auth");
-const { Course, Lesson, Quiz } = require("../db");
+const path = require("path");
+const fs = require("fs");
 const multer = require("multer");
-const upload = multer({ storage: multer.memoryStorage() });
+const { Course, Lesson, Quiz, Progress, Review, User, generateId } = require("../db");
 
-const normalizeId = (value) =>
-  value
+const router = express.Router();
+
+const uploadsDir = path.resolve(__dirname, "../../../static/uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const quizUpload = multer({ storage: multer.memoryStorage() });
+const contentUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, uploadsDir),
+    filename: (_req, file, callback) => {
+      const ext = path.extname(file.originalname) || "";
+      const base = normalizeId(path.basename(file.originalname, ext)) || "asset";
+      callback(null, `${Date.now()}_${base}${ext}`);
+    }
+  })
+});
+
+function normalizeId(value) {
+  return String(value || "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+}
 
-const adminAuth = (req, res, next) => {
+function splitValues(value) {
+  return String(value || "")
+    .split(/\r?\n|,/) 
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseTagList(value) {
+  return Array.from(new Set(splitValues(value)));
+}
+
+function isYoutubeUrl(value) {
+  return /(?:youtube\.com|youtu\.be)/i.test(String(value || ""));
+}
+
+function createAssetRecord(file, kind, index = 0) {
+  const ext = path.extname(file.originalname || "");
+  const title = path.basename(file.originalname || `${kind}_${index + 1}`, ext) || `${kind} ${index + 1}`;
+  return {
+    id: `${kind}_${generateId()}`,
+    kind,
+    title,
+    fileName: file.originalname,
+    fileUrl: `/static/uploads/${file.filename}`,
+    mimeType: file.mimetype || "application/octet-stream",
+    size: file.size || 0
+  };
+}
+
+function parseCaseStudies(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return [];
+  }
+
+  if (raw.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((item, index) => ({
+            id: item.id || `case_${generateId()}`,
+            title: String(item.title || `Case Study ${index + 1}`).trim(),
+            scenario: String(item.scenario || "").trim(),
+            diagnosis: String(item.diagnosis || "").trim(),
+            discussion: String(item.discussion || "").trim(),
+            relevance: String(item.relevance || "").trim()
+          }))
+          .filter((item) => item.title || item.scenario || item.discussion || item.diagnosis);
+      }
+    } catch (_err) {
+      // Fall through to block parsing.
+    }
+  }
+
+  return raw
+    .split(/\n\s*---+\s*\n/g)
+    .map((block, index) => {
+      const caseStudy = {
+        id: `case_${generateId()}`,
+        title: `Case Study ${index + 1}`,
+        scenario: "",
+        diagnosis: "",
+        discussion: "",
+        relevance: ""
+      };
+      let currentField = "scenario";
+
+      block.split(/\r?\n/).forEach((line) => {
+        const match = line.match(/^(title|scenario|diagnosis|discussion|relevance)\s*:\s*(.*)$/i);
+        if (match) {
+          currentField = match[1].toLowerCase();
+          caseStudy[currentField] = match[2].trim();
+          return;
+        }
+
+        if (!line.trim()) {
+          return;
+        }
+
+        caseStudy[currentField] = `${caseStudy[currentField]}${caseStudy[currentField] ? "\n" : ""}${line.trim()}`;
+      });
+
+      return caseStudy;
+    })
+    .filter((item) => item.title || item.scenario || item.diagnosis || item.discussion || item.relevance);
+}
+
+function buildStudentAnalytics() {
+  const courses = Course.find({});
+  const lessons = Lesson.find({});
+  const quizzes = Quiz.find({});
+  const progressItems = Progress.find({});
+  const students = User.find({}).filter((user) => user.role !== "admin");
+
+  const coursesById = courses.reduce((acc, course) => {
+    acc[course.courseId] = course;
+    return acc;
+  }, {});
+  const lessonsById = lessons.reduce((acc, lesson) => {
+    acc[lesson.lessonId] = lesson;
+    return acc;
+  }, {});
+  const quizzesById = quizzes.reduce((acc, quiz) => {
+    acc[quiz.quizId] = quiz;
+    return acc;
+  }, {});
+  const totalTrackableItems = lessons.length + quizzes.length;
+
+  return students
+    .map((student) => {
+      const userProgress = progressItems.filter((item) => item.userId === student._id);
+      const completedLessons = userProgress.filter((item) => item.itemType === "lesson" && item.completed).length;
+      const quizAttempts = userProgress.filter((item) => item.itemType === "quiz");
+      const avgScore = quizAttempts.length
+        ? Math.round(quizAttempts.reduce((sum, item) => sum + (Number(item.score) || 0), 0) / quizAttempts.length)
+        : 0;
+      const weakAreas = quizAttempts
+        .filter((item) => Number(item.score) < 70)
+        .sort((left, right) => Number(left.score) - Number(right.score))
+        .slice(0, 3)
+        .map((item) => {
+          const quiz = quizzesById[item.quizId || item.referenceId];
+          const lesson = lessonsById[item.lessonId || quiz?.lessonId];
+          const course = coursesById[item.courseId || lesson?.courseId || quiz?.courseId];
+          return {
+            quizTitle: quiz ? quiz.title : item.title || "Quiz",
+            lessonTitle: lesson ? lesson.title : "Lesson",
+            courseTitle: course ? course.title : item.courseId,
+            score: Number(item.score) || 0
+          };
+        });
+
+      return {
+        userId: student._id,
+        name: student.name || "Student",
+        email: student.email || "",
+        completedLessons,
+        quizAttempts: quizAttempts.length,
+        avgScore,
+        completionRate: totalTrackableItems
+          ? Math.round(((completedLessons + quizAttempts.filter((item) => item.completed).length) / totalTrackableItems) * 100)
+          : 0,
+        weakAreas,
+        updatedAt: userProgress[0]?.updatedAt || student.updatedAt || student.createdAt
+      };
+    })
+    .sort((left, right) => right.completionRate - left.completionRate || right.avgScore - left.avgScore);
+}
+
+function adminAuth(req, res, next) {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
@@ -27,10 +196,10 @@ const adminAuth = (req, res, next) => {
     }
     req.admin = decoded;
     return next();
-  } catch (err) {
+  } catch (_err) {
     return res.status(401).json({ message: "Invalid admin token" });
   }
-};
+}
 
 router.post("/admin/login", (req, res) => {
   const { email, password } = req.body || {};
@@ -41,72 +210,225 @@ router.post("/admin/login", (req, res) => {
     return res.status(401).json({ message: "Invalid admin credentials" });
   }
 
-  const token = jwt.sign(
-    { role: "admin", email },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-
+  const token = jwt.sign({ role: "admin", email }, process.env.JWT_SECRET, { expiresIn: "7d" });
   return res.json({ token });
 });
 
 router.post("/admin/course", adminAuth, async (req, res) => {
   try {
-    const { title, courseId } = req.body || {};
+    const { title, description, category, curriculumTags, courseId } = req.body || {};
     if (!title) {
       return res.status(400).json({ message: "Title is required" });
     }
 
     const id = courseId || `course_${normalizeId(title)}`;
-
-    const course = await Course.findOneAndUpdate(
+    const course = Course.findOneAndUpdate(
       { courseId: id },
-      { title, courseId: id },
+      {
+        courseId: id,
+        title,
+        description: String(description || "").trim(),
+        category: String(category || "").trim(),
+        curriculumTags: parseTagList(curriculumTags)
+      },
       { new: true, upsert: true }
     );
 
     return res.status(201).json({
-      course: { id: course.courseId, title: course.title }
-    });
-  } catch (err) {
-    return res.status(500).json({ message: "Server error" });
-  }
-});
-
-router.post("/admin/lesson", adminAuth, async (req, res) => {
-  try {
-    const { title, courseId, videoUrl, lessonId } = req.body || {};
-    if (!title || !courseId || !videoUrl) {
-      return res.status(400).json({ message: "Title, courseId, and videoUrl are required" });
-    }
-
-    const course = await Course.findOne({ courseId });
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-
-    const id = lessonId || `lesson_${normalizeId(title)}`;
-    const quizId = `quiz_${normalizeId(id)}`;
-
-    const lesson = await Lesson.findOneAndUpdate(
-      { lessonId: id },
-      { lessonId: id, courseId, title, videoUrl, quizId },
-      { new: true, upsert: true }
-    );
-
-    return res.status(201).json({
-      lesson: {
-        id: lesson.lessonId,
-        courseId: lesson.courseId,
-        title: lesson.title,
-        videoUrl: lesson.videoUrl,
-        quizId: lesson.quizId
+      course: {
+        id: course.courseId,
+        title: course.title,
+        description: course.description || "",
+        category: course.category || "",
+        curriculumTags: course.curriculumTags || []
       }
     });
-  } catch (err) {
+  } catch (_err) {
     return res.status(500).json({ message: "Server error" });
   }
 });
+
+router.get("/admin/overview", adminAuth, async (_req, res) => {
+  try {
+    const courses = Course.find({});
+    const lessons = Lesson.find({});
+    const quizzes = Quiz.find({});
+    const progressItems = Progress.find({}).sort((left, right) => new Date(right.updatedAt || right.createdAt || 0) - new Date(left.updatedAt || left.createdAt || 0));
+    const reviews = Review.find({}).sort((left, right) => new Date(right.updatedAt || right.createdAt || 0) - new Date(left.updatedAt || left.createdAt || 0));
+    const quizAttempts = progressItems.filter((item) => item.itemType === "quiz" || item.quizId);
+    const usersById = User.find({}).reduce((acc, user) => {
+      acc[user._id] = user;
+      return acc;
+    }, {});
+    const quizzesById = quizzes.reduce((acc, quiz) => {
+      acc[quiz.quizId] = quiz;
+      return acc;
+    }, {});
+    const coursesById = courses.reduce((acc, course) => {
+      acc[course.courseId] = course;
+      return acc;
+    }, {});
+    const studentAnalytics = buildStudentAnalytics();
+
+    const recentResults = quizAttempts
+      .map((item) => {
+        const user = usersById[item.userId];
+        const quiz = quizzesById[item.quizId || item.referenceId] || null;
+        const course = coursesById[item.courseId] || null;
+        return {
+          id: item._id,
+          userName: user ? user.name : "Student",
+          userEmail: user ? user.email : "",
+          quizTitle: quiz ? quiz.title : item.title || "Quiz",
+          courseTitle: course ? course.title : item.courseId,
+          score: item.score || 0,
+          completed: Boolean(item.completed),
+          updatedAt: item.updatedAt || item.createdAt
+        };
+      })
+      .slice(0, 10);
+
+    const recentReviews = reviews
+      .map((review) => {
+        const user = usersById[review.userId];
+        const course = coursesById[review.courseId];
+        return {
+          id: review._id,
+          userName: user ? user.name : review.userName || "Student",
+          courseTitle: course ? course.title : review.courseId,
+          rating: review.rating,
+          comment: review.comment,
+          createdAt: review.createdAt
+        };
+      })
+      .slice(0, 10);
+
+    const audioCount = lessons.reduce((sum, lesson) => sum + ((lesson.audioItems || []).length || 0), 0);
+    const materialCount = lessons.reduce((sum, lesson) => sum + ((lesson.materials || []).length || 0), 0);
+    const caseStudyCount = lessons.reduce((sum, lesson) => sum + ((lesson.caseStudies || []).length || 0), 0);
+
+    return res.json({
+      counts: {
+        courses: courses.length,
+        lessons: lessons.length,
+        quizzes: quizzes.length,
+        quizAttempts: quizAttempts.length,
+        reviews: reviews.length,
+        students: studentAnalytics.length,
+        audios: audioCount,
+        materials: materialCount,
+        caseStudies: caseStudyCount
+      },
+      recentResults,
+      recentReviews,
+      studentAnalytics: studentAnalytics.slice(0, 5)
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/admin/student-analytics", adminAuth, async (_req, res) => {
+  try {
+    return res.json({ students: buildStudentAnalytics() });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post(
+  "/admin/lesson",
+  adminAuth,
+  contentUpload.fields([
+    { name: "videoFiles", maxCount: 20 },
+    { name: "audioFiles", maxCount: 20 },
+    { name: "materialFiles", maxCount: 20 }
+  ]),
+  async (req, res) => {
+    try {
+      const { title, courseId, videoUrl, lessonId, summary, caseStudies } = req.body || {};
+      if (!title || !courseId) {
+        return res.status(400).json({ message: "Title and courseId are required" });
+      }
+
+      const course = Course.findOne({ courseId });
+      if (!course) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      const videoUrls = splitValues(videoUrl);
+      const uploadedVideos = (req.files?.videoFiles || []).map((file, index) => createAssetRecord(file, "video", index));
+      const uploadedAudios = (req.files?.audioFiles || []).map((file, index) => createAssetRecord(file, "audio", index));
+      const uploadedMaterials = (req.files?.materialFiles || []).map((file, index) => createAssetRecord(file, "material", index));
+      const parsedCaseStudies = parseCaseStudies(caseStudies);
+      const summaryText = String(summary || "").trim();
+
+      const sources = [
+        ...videoUrls.map((url) => ({ videoUrl: url, videoType: isYoutubeUrl(url) ? "youtube" : "upload" })),
+        ...uploadedVideos.map((asset) => ({ videoUrl: asset.fileUrl, videoType: "upload", videoAsset: asset }))
+      ];
+
+      const hasContent = sources.length || uploadedAudios.length || uploadedMaterials.length || parsedCaseStudies.length || summaryText;
+      if (!hasContent) {
+        return res.status(400).json({ message: "Add at least one video, audio file, material, case study, or summary" });
+      }
+
+      if (!sources.length) {
+        sources.push({ videoUrl: "", videoType: null });
+      }
+
+      const lessons = [];
+      for (let index = 0; index < sources.length; index += 1) {
+        const currentSource = sources[index];
+        const currentLessonId = sources.length === 1
+          ? (lessonId || `lesson_${normalizeId(title)}`)
+          : `lesson_${normalizeId(title)}_${index + 1}`;
+        const existingLesson = Lesson.findOne({ lessonId: currentLessonId });
+        const currentTitle = sources.length === 1 ? title : `${title} ${index + 1}`;
+        const audioItems = uploadedAudios.length ? uploadedAudios : Array.isArray(existingLesson?.audioItems) ? existingLesson.audioItems : [];
+        const materials = uploadedMaterials.length ? uploadedMaterials : Array.isArray(existingLesson?.materials) ? existingLesson.materials : [];
+        const caseStudyItems = parsedCaseStudies.length ? parsedCaseStudies : Array.isArray(existingLesson?.caseStudies) ? existingLesson.caseStudies : [];
+        const videoValue = currentSource.videoUrl || existingLesson?.videoUrl || "";
+
+        const lesson = Lesson.findOneAndUpdate(
+          { lessonId: currentLessonId },
+          {
+            lessonId: currentLessonId,
+            courseId,
+            title: currentTitle,
+            summary: summaryText || existingLesson?.summary || "",
+            videoUrl: videoValue,
+            videoType: videoValue ? (currentSource.videoType || existingLesson?.videoType || (isYoutubeUrl(videoValue) ? "youtube" : "upload")) : null,
+            audioItems,
+            materials,
+            caseStudies: caseStudyItems,
+            quizId: existingLesson?.quizId || `quiz_${normalizeId(currentLessonId)}`
+          },
+          { new: true, upsert: true }
+        );
+
+        lessons.push({
+          id: lesson.lessonId,
+          courseId: lesson.courseId,
+          title: lesson.title,
+          videoUrl: lesson.videoUrl,
+          videoType: lesson.videoType || null,
+          audioCount: (lesson.audioItems || []).length,
+          materialCount: (lesson.materials || []).length,
+          caseStudyCount: (lesson.caseStudies || []).length,
+          quizId: lesson.quizId
+        });
+      }
+
+      return res.status(201).json({
+        lessons,
+        message: lessons.length === 1 ? "Lesson saved successfully" : `${lessons.length} lessons created successfully`
+      });
+    } catch (err) {
+      return res.status(500).json({ message: `Server error: ${err.message}` });
+    }
+  }
+);
 
 router.post("/admin/quiz", adminAuth, async (req, res) => {
   try {
@@ -115,14 +437,13 @@ router.post("/admin/quiz", adminAuth, async (req, res) => {
       return res.status(400).json({ message: "lessonId, title, and questions are required" });
     }
 
-    const lesson = await Lesson.findOne({ lessonId });
+    const lesson = Lesson.findOne({ lessonId });
     if (!lesson) {
       return res.status(404).json({ message: "Lesson not found" });
     }
 
     const quizId = lesson.quizId || `quiz_${normalizeId(lessonId)}`;
-
-    const quiz = await Quiz.findOneAndUpdate(
+    const quiz = Quiz.findOneAndUpdate(
       { quizId },
       { quizId, courseId: lesson.courseId, lessonId, title, questions },
       { new: true, upsert: true }
@@ -137,12 +458,12 @@ router.post("/admin/quiz", adminAuth, async (req, res) => {
         questions: quiz.questions
       }
     });
-  } catch (err) {
+  } catch (_err) {
     return res.status(500).json({ message: "Server error" });
   }
 });
 
-const parseQuizText = (text) => {
+function parseQuizText(text) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   let lessonTitle = "";
   const questions = [];
@@ -179,7 +500,6 @@ const parseQuizText = (text) => {
       if (current && current.options[optionIndex]) {
         current.correctAnswer = current.options[optionIndex];
       }
-      return;
     }
   });
 
@@ -188,18 +508,59 @@ const parseQuizText = (text) => {
   }
 
   return { lessonTitle, questions };
-};
+}
 
-router.post("/admin/quiz/upload", adminAuth, upload.single("file"), async (req, res) => {
+function parseQuizCsv(text) {
+  const rows = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  let lessonTitle = "";
+  const questions = [];
+
+  rows.forEach((row, index) => {
+    const columns = row.split(",").map((value) => value.trim());
+
+    if (columns[0] && columns[0].toLowerCase() === "lesson") {
+      lessonTitle = columns[1] || lessonTitle;
+      return;
+    }
+    if (index === 0 && /question/i.test(columns[0] || "")) {
+      return;
+    }
+    if (columns.length >= 6) {
+      const [question, optionA, optionB, optionC, optionD, answer] = columns;
+      const options = [optionA, optionB, optionC, optionD].filter(Boolean);
+      const answerMap = { A: 0, B: 1, C: 2, D: 3 };
+      const normalizedAnswer = String(answer || "").trim().toUpperCase();
+      const correctAnswer = Object.prototype.hasOwnProperty.call(answerMap, normalizedAnswer)
+        ? options[answerMap[normalizedAnswer]] || ""
+        : answer;
+
+      if (question && options.length >= 2) {
+        questions.push({
+          id: `q${questions.length + 1}`,
+          question,
+          options,
+          correctAnswer
+        });
+      }
+    }
+  });
+
+  return { lessonTitle, questions };
+}
+
+router.post("/admin/quiz/upload", adminAuth, quizUpload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "File is required" });
     }
 
     const text = req.file.buffer.toString("utf-8");
-    let { lessonTitle, questions } = parseQuizText(text);
+    let parsed = parseQuizText(text);
+    if (!parsed.questions.length) {
+      parsed = parseQuizCsv(text);
+    }
 
-    // Override with manual title if provided
+    let { lessonTitle, questions } = parsed;
     if (req.body.lessonTitle) {
       lessonTitle = req.body.lessonTitle;
     }
@@ -211,16 +572,40 @@ router.post("/admin/quiz/upload", adminAuth, upload.single("file"), async (req, 
       return res.status(400).json({ message: "No questions found" });
     }
 
-    const lesson = await Lesson.findOne({ title: lessonTitle });
+    let lesson = Lesson.findOne({ title: lessonTitle });
     if (!lesson) {
-      return res.status(404).json({ message: "Lesson not found" });
+      const courseId = "course_general";
+      if (!Course.findOne({ courseId })) {
+        Course.findOneAndUpdate(
+          { courseId },
+          { courseId, title: "General Course", description: "General lesson and quiz bank", category: "General", curriculumTags: ["General"] },
+          { new: true, upsert: true }
+        );
+      }
+
+      const newLessonId = `lesson_${normalizeId(lessonTitle)}`;
+      lesson = Lesson.findOneAndUpdate(
+        { lessonId: newLessonId },
+        {
+          lessonId: newLessonId,
+          courseId,
+          title: lessonTitle,
+          summary: "Quiz-only lesson created from bulk upload.",
+          videoUrl: "",
+          videoType: null,
+          audioItems: [],
+          materials: [],
+          caseStudies: [],
+          quizId: `quiz_${normalizeId(newLessonId)}`
+        },
+        { new: true, upsert: true }
+      );
     }
 
     const quizId = lesson.quizId || `quiz_${normalizeId(lesson.lessonId)}`;
-
-    const quiz = await Quiz.findOneAndUpdate(
+    const quiz = Quiz.findOneAndUpdate(
       { quizId },
-      { quizId, courseId: lesson.courseId, lessonId: lesson.lessonId, title: lesson.title, questions },
+      { quizId, courseId: lesson.courseId, lessonId: lesson.lessonId, title: lessonTitle, questions },
       { new: true, upsert: true }
     );
 
@@ -234,7 +619,7 @@ router.post("/admin/quiz/upload", adminAuth, upload.single("file"), async (req, 
       }
     });
   } catch (err) {
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: `Server error: ${err.message}` });
   }
 });
 
@@ -245,7 +630,7 @@ router.get("/quiz", async (req, res) => {
       return res.status(400).json({ message: "lessonId is required" });
     }
 
-    const quiz = await Quiz.findOne({ lessonId });
+    const quiz = Quiz.findOne({ lessonId });
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }
@@ -259,7 +644,7 @@ router.get("/quiz", async (req, res) => {
         questions: quiz.questions
       }
     });
-  } catch (err) {
+  } catch (_err) {
     return res.status(500).json({ message: "Server error" });
   }
 });

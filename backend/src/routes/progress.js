@@ -6,7 +6,16 @@ const router = express.Router();
 
 router.get("/progress", authMiddleware, async (req, res) => {
   try {
-    const items = await Progress.find({ userId: req.user.id }).sort({ updatedAt: -1 });
+    const filter = { userId: req.user.id };
+    if (req.query.courseId) {
+      filter.courseId = req.query.courseId;
+    }
+
+    const items = Progress.find(filter).sort((left, right) => {
+      const leftTime = new Date(left.updatedAt || left.createdAt || 0).getTime();
+      const rightTime = new Date(right.updatedAt || right.createdAt || 0).getTime();
+      return rightTime - leftTime;
+    });
     return res.json({ items });
   } catch (err) {
     return res.status(500).json({ message: "Server error" });
@@ -15,15 +24,28 @@ router.get("/progress", authMiddleware, async (req, res) => {
 
 router.post("/progress", authMiddleware, async (req, res) => {
   try {
-    const { courseId, videoId, completed, score } = req.body || {};
+    const { courseId, videoId, lessonId, quizId, itemType, completed, score, title } = req.body || {};
+    const normalizedType = itemType || (quizId ? "quiz" : "lesson");
+    const referenceId = quizId || lessonId || videoId;
 
-    if (!courseId || !videoId) {
-      return res.status(400).json({ message: "courseId and videoId are required" });
+    if (!courseId || !referenceId) {
+      return res.status(400).json({ message: "courseId and a lesson or quiz reference are required" });
     }
 
-    const item = await Progress.findOneAndUpdate(
-      { userId: req.user.id, courseId, videoId },
-      { completed: !!completed, score: typeof score === "number" ? score : 0 },
+    const item = Progress.findOneAndUpdate(
+      { userId: req.user.id, itemType: normalizedType, referenceId },
+      {
+        userId: req.user.id,
+        courseId,
+        videoId: videoId || referenceId,
+        lessonId: lessonId || (normalizedType === "lesson" ? referenceId : undefined),
+        quizId: quizId || (normalizedType === "quiz" ? referenceId : undefined),
+        itemType: normalizedType,
+        referenceId,
+        title: title || null,
+        completed: Boolean(completed),
+        score: typeof score === "number" ? score : Number(score) || 0
+      },
       { new: true, upsert: true }
     );
 

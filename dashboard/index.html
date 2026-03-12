@@ -159,6 +159,78 @@
             margin-bottom: 2rem;
             display: none;
         }
+
+        .banner-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1.25rem;
+        }
+
+        .quick-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.16);
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+        }
+
+        .analytics-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .analytics-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .analytics-list {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .analytics-item {
+            border: 1px solid var(--gray-200);
+            border-radius: 1rem;
+            padding: 1rem;
+            background: #fff;
+        }
+
+        .course-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0.8rem 0;
+        }
+
+        .course-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.7rem;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        @media (max-width: 960px) {
+            .analytics-layout {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 
@@ -213,6 +285,10 @@
         <div class="welcome-banner">
             <h1 class="text-3xl font-bold mb-2">Welcome Back, <span id="user-name">Student</span>! 👋</h1>
             <p class="opacity-90">Pick up where you left off. Your journey to dental excellence continues.</p>
+            <div class="banner-actions">
+                <a href="/materials/" class="quick-link"><i class="fas fa-folder-open"></i> Study Materials</a>
+                <a href="/assistant/" class="quick-link"><i class="fas fa-robot"></i> AI Assistant</a>
+            </div>
         </div>
 
         <!-- Stats Grid -->
@@ -237,11 +313,20 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon" style="background: #fff7ed; color: #f97316;">
-                    <i class="fas fa-clock"></i>
+                    <i class="fas fa-file-circle-check"></i>
                 </div>
                 <div>
-                    <div class="text-sm text-gray-500 font-medium">Study Hours</div>
-                    <div class="text-2xl font-bold">12.5</div>
+                    <div class="text-sm text-gray-500 font-medium">Avg Quiz Score</div>
+                    <div class="text-2xl font-bold" id="stat-score">0%</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #f5f3ff; color: #8b5cf6;">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 font-medium">Completion Rate</div>
+                    <div class="text-2xl font-bold" id="stat-rate">0%</div>
                 </div>
             </div>
         </div>
@@ -267,6 +352,24 @@
             <h3 class="text-xl font-bold text-gray-700">No courses yet</h3>
             <p class="text-gray-500 mb-6">Start your learning journey by exploring our catalog.</p>
             <a href="/courses/" class="cta-btn cta-primary">Explore Courses</a>
+        </div>
+
+        <div class="analytics-layout">
+            <section class="analytics-card">
+                <div class="section-header" style="margin-bottom: 0;">
+                    <h2 class="text-2xl font-bold text-gray-800">Weak Areas</h2>
+                    <a href="/assistant/" class="cta-btn cta-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Ask AI</a>
+                </div>
+                <div id="weak-areas" class="analytics-list"></div>
+            </section>
+
+            <section class="analytics-card">
+                <div class="section-header" style="margin-bottom: 0;">
+                    <h2 class="text-2xl font-bold text-gray-800">Recent Activity</h2>
+                    <a href="/materials/" class="cta-btn cta-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Open Materials</a>
+                </div>
+                <div id="recent-activity" class="analytics-list"></div>
+            </section>
         </div>
 
     </div>
@@ -307,11 +410,10 @@
     <script src="../static/js/landing.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const API_BASE = "http://localhost:4000/api";
-            const token = localStorage.getItem('token'); // Assuming 'token' is stored on login
+            const api = window.DentalPrepApi;
+            const token = localStorage.getItem('dentalprep_token');
 
-            if (!token) {
-                // Not logged in? Redirect to login
+            if (!api || !token) {
                 window.location.href = '/login/';
                 return;
             }
@@ -321,56 +423,87 @@
             const coursesContainer = document.getElementById('courses-container');
             const loader = document.getElementById('courses-loader');
             const noCoursesMsg = document.getElementById('no-courses-msg');
-            const alertBox = document.getElementById('alert-box');
-
             const statCourses = document.getElementById('stat-courses');
+            const statCompleted = document.getElementById('stat-completed');
+            const statScore = document.getElementById('stat-score');
+            const statRate = document.getElementById('stat-rate');
+            const weakAreasEl = document.getElementById('weak-areas');
+            const recentActivityEl = document.getElementById('recent-activity');
 
-            // Mock Logout for now (or use api.js if available)
+            const escapeHtml = (value) => String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+
             document.getElementById('logout-btn').addEventListener('click', () => {
-                localStorage.removeItem('token');
+                localStorage.removeItem('dentalprep_token');
                 window.location.href = '/login/';
             });
 
             try {
-                // Fetch User Profile (if endpoint exists, else mock name from token or generic)
-                // Assuming we can get some user details or just use default
-                // For now, let's try to fetch user courses to validate token
+                const [profileData, coursesData, analyticsData] = await Promise.all([
+                    api.getProfile(),
+                    api.apiFetch('/courses'),
+                    api.apiFetch('/analytics')
+                ]);
 
-                const res = await fetch(`${API_BASE}/user/courses`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (res.status === 401 || res.status === 403) {
-                    throw new Error("Session expired");
+                if (profileData.user && profileData.user.name) {
+                    userNameEl.innerText = profileData.user.name;
+                    userAvatarEl.innerText = profileData.user.name.charAt(0).toUpperCase();
                 }
 
-                const data = await res.json();
+                const courses = coursesData.courses || [];
+                const weakAreas = analyticsData.weakAreas || [];
+                const recentActivity = analyticsData.recentActivity || [];
 
-                // Update Name if available
-                if (data.user && data.user.name) {
-                    userNameEl.innerText = data.user.name;
-                    userAvatarEl.innerText = data.user.name.charAt(0).toUpperCase();
-                }
-
-                // Render Courses
                 loader.classList.add('hidden');
-
-                const courses = data.courses || []; // Adjust based on actual API response structure
                 statCourses.innerText = courses.length;
+                statCompleted.innerText = analyticsData.completedLessons || 0;
+                statScore.innerText = `${analyticsData.avgScore || 0}%`;
+                statRate.innerText = `${analyticsData.completionRate || 0}%`;
+
+                weakAreasEl.innerHTML = weakAreas.length
+                    ? weakAreas.map((item) => `
+                        <div class="analytics-item">
+                            <div class="text-sm text-gray-500">${escapeHtml(item.courseTitle)}</div>
+                            <div class="text-lg font-bold text-gray-800" style="margin-top: 0.25rem;">${escapeHtml(item.quizTitle)}</div>
+                            <div class="text-sm text-gray-600" style="margin-top: 0.35rem;">${escapeHtml(item.lessonTitle)}</div>
+                            <div style="margin-top: 0.75rem; font-weight: 700; color: #dc2626;">Score: ${item.score || 0}%</div>
+                        </div>
+                    `).join('')
+                    : '<div class="analytics-item" style="color: #6b7280;">No weak areas detected. Keep going.</div>';
+
+                recentActivityEl.innerHTML = recentActivity.length
+                    ? recentActivity.map((item) => `
+                        <div class="analytics-item">
+                            <div class="text-sm text-gray-500">${escapeHtml(item.courseTitle || 'Course')}</div>
+                            <div class="text-lg font-bold text-gray-800" style="margin-top: 0.25rem;">${escapeHtml(item.title)}</div>
+                            <div class="text-sm text-gray-600" style="margin-top: 0.35rem;">${item.itemType === 'quiz' ? `Quiz attempt${item.score != null ? ` • ${item.score}%` : ''}` : 'Lesson progress'}</div>
+                        </div>
+                    `).join('')
+                    : '<div class="analytics-item" style="color: #6b7280;">No recent activity yet.</div>';
 
                 if (courses.length === 0) {
                     noCoursesMsg.classList.remove('hidden');
                 } else {
                     coursesContainer.classList.remove('hidden');
-                    coursesContainer.innerHTML = courses.map(course => `
+                    coursesContainer.innerHTML = courses.map((course) => `
                         <div class="course-card">
                             <div class="course-thumb">
                                 <i class="fas fa-tooth" style="font-size: 3rem; color: var(--gray-300);"></i>
                             </div>
                             <div class="course-content">
-                                <h3 class="text-xl font-bold mb-2 text-gray-800">${course.title || 'Untitled Course'}</h3>
-                                <p class="text-sm text-gray-500 mb-4">${course.lessonsCount || 0} Lessons • ${course.quizCount || 0} Quizzes</p>
-                                
+                                <h3 class="text-xl font-bold mb-2 text-gray-800">${escapeHtml(course.title || 'Untitled Course')}</h3>
+                                <p class="text-sm text-gray-500 mb-2">${escapeHtml(course.description || 'Course content is connected to live lessons, quizzes, materials, and case studies.')}</p>
+                                <div class="course-chips">
+                                    ${course.category ? `<span class="course-chip">${escapeHtml(course.category)}</span>` : ''}
+                                    <span class="course-chip">${course.lessonsCount || 0} Lessons</span>
+                                    <span class="course-chip">${course.quizCount || 0} Quizzes</span>
+                                    <span class="course-chip">${course.materialsCount || 0} Materials</span>
+                                    <span class="course-chip">${course.caseStudiesCount || 0} Cases</span>
+                                </div>
                                 <div class="progress-container">
                                     <div class="flex justify-between text-xs font-semibold mb-1 text-gray-600">
                                         <span>Progress</span>
@@ -380,8 +513,13 @@
                                         <div class="progress-fill" style="width: ${course.progress || 0}%"></div>
                                     </div>
                                 </div>
-                                
-                                <a href="/course-player/?id=${course.id}" class="cta-btn cta-primary w-full text-center justify-center mt-2">Continue Learning</a>
+                                <div class="course-chips">
+                                    ${(course.curriculumTags || []).slice(0, 3).map((tag) => `<span class="course-chip">${escapeHtml(tag)}</span>`).join('')}
+                                </div>
+                                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
+                                    <a href="/course-player/?id=${course.id}" class="cta-btn cta-primary" style="flex: 1; text-align: center; justify-content: center;">Continue Learning</a>
+                                    <a href="/materials/?courseId=${course.id}" class="cta-btn cta-secondary" style="flex: 1; text-align: center; justify-content: center;">Materials</a>
+                                </div>
                             </div>
                         </div>
                     `).join('');
@@ -389,21 +527,21 @@
 
             } catch (err) {
                 console.error(err);
-                if (err.message === "Session expired") {
-                    localStorage.removeItem('token');
+                if (err.message === 'Session expired') {
+                    localStorage.removeItem('dentalprep_token');
                     window.location.href = '/login/?msg=session_expired';
                 } else {
                     loader.classList.add('hidden');
-                    // Fallback / Demo State if API fails (for development preview)
-                    coursesContainer.classList.remove('hidden');
-                    // Keeping it empty or showing demo data could be an option, but better to show error or empty
                     noCoursesMsg.classList.remove('hidden');
-                    noCoursesMsg.querySelector('h3').innerText = "Unable to load courses";
-                    noCoursesMsg.querySelector('p').innerText = "Please try again later. (" + err.message + ")";
+                    const h3 = noCoursesMsg.querySelector('h3');
+                    const p = noCoursesMsg.querySelector('p');
+                    if (h3) h3.innerText = 'Unable to load courses';
+                    if (p) p.innerText = 'Please try again later. (' + err.message + ')';
                 }
+                weakAreasEl.innerHTML = '<div class="analytics-item" style="color: #6b7280;">Analytics are unavailable right now.</div>';
+                recentActivityEl.innerHTML = '<div class="analytics-item" style="color: #6b7280;">Recent activity is unavailable right now.</div>';
             }
 
-            // Mobile Menu Logic
             const menuBtn = document.getElementById('mobile-menu-btn');
             const navMenu = document.getElementById('nav-menu');
             const overlay = document.getElementById('overlay');

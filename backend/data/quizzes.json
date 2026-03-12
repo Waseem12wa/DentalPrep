@@ -1,1 +1,68 @@
-[]
+[
+  {
+    "_id": "mmnwko9s4tqkd0478x",
+    "quizId": "quiz_lesson_new",
+    "courseId": "course_general",
+    "lessonId": "lesson_new",
+    "title": "New",
+    "questions": [
+      {
+        "id": "q1",
+        "question": "What is the capital city of France?",
+        "options": [
+          "Paris",
+          "London",
+          "Berlin",
+          "Madrid"
+        ],
+        "correctAnswer": "Paris"
+      },
+      {
+        "id": "q2",
+        "question": "Which planet is known as the Red Planet?",
+        "options": [
+          "Earth",
+          "Mars",
+          "Jupiter",
+          "Venus"
+        ],
+        "correctAnswer": "Mars"
+      },
+      {
+        "id": "q3",
+        "question": "What does HTML stand for?",
+        "options": [
+          "HyperText Markup Language",
+          "HighText Machine Language",
+          "Hyper Transfer Markup Language",
+          "Home Tool Markup Language"
+        ],
+        "correctAnswer": "HyperText Markup Language"
+      },
+      {
+        "id": "q4",
+        "question": "What is 5 + 3?",
+        "options": [
+          "6",
+          "7",
+          "8",
+          "9"
+        ],
+        "correctAnswer": "8"
+      },
+      {
+        "id": "q5",
+        "question": "Who wrote the play \"Romeo and Juliet\"?",
+        "options": [
+          "Charles Dickens",
+          "Mark Twain",
+          "William Shakespeare",
+          "Jane Austen"
+        ],
+        "correctAnswer": "William Shakespeare"
+      }
+    ],
+    "createdAt": "2026-03-12T20:10:55.840Z",
+    "updatedAt": "2026-03-12T20:41:24.866Z"
+  }
+]

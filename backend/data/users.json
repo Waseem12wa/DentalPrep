@@ -6,5 +6,13 @@
     "password": "$2a$10$hpPgY86SwAqWWG0ewb5sOeb64OTw8.lxr7bBXnE.QSAaiLFNhs8uK",
     "role": "admin",
     "createdAt": "2026-02-04T07:20:09.254Z"
+  },
+  {
+    "_id": "mmnwni4ny7z406rcpmo",
+    "name": "Waseem Zahid",
+    "email": "waseemzahid489@gmail.com",
+    "passwordHash": "$2a$10$OXccl83eJ0MoM6B/8buBC.0zcOUurk0qLEATwJ4HayjfkTBYjgjGy",
+    "verificationToken": "73f090c3c79b06d307f5ec7f9708b773783b98e8",
+    "createdAt": "2026-03-12T20:13:07.848Z"
   }
 ]

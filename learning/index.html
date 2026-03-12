@@ -269,6 +269,26 @@
             <a href="/courses/" class="cta-btn cta-primary">Explore Courses</a>
         </div>
 
+        <div class="section-header" style="margin-top: 3rem;">
+            <h2 class="text-2xl font-bold text-gray-800">Available Quizzes</h2>
+            <a href="/quiz/" class="cta-btn cta-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Open Quiz Page</a>
+        </div>
+
+        <div id="quizzes-loader" class="text-center py-10">
+            <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
+            <p class="mt-2 text-gray-500">Loading quizzes...</p>
+        </div>
+
+        <div id="quizzes-container" class="course-grid hidden">
+            <!-- Quizzes injected here -->
+        </div>
+
+        <div id="no-quizzes-msg" class="hidden text-center py-10 bg-white rounded-xl border border-gray-200">
+            <div class="mb-4 text-gray-300 text-5xl"><i class="fas fa-file-alt"></i></div>
+            <h3 class="text-xl font-bold text-gray-700">No quizzes yet</h3>
+            <p class="text-gray-500 mb-6">New quizzes will appear here as soon as they are added by admin.</p>
+        </div>
+
     </div>
 
     <!-- Enhanced Footer -->
@@ -309,43 +329,58 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const { getApiBase } = window.DentalPrepApi || {};
             const API_BASE = getApiBase ? getApiBase() : "http://localhost:4000/api";
-            const token = localStorage.getItem('dentalprep_token'); // Using consistent token key
-
-            if (!token) {
-                // Not logged in? Redirect to login
-                window.location.href = '/login/';
-                return;
-            }
+            const token = localStorage.getItem('dentalprep_token');
 
             const userNameEl = document.getElementById('user-name');
             const userAvatarEl = document.getElementById('user-avatar');
             const coursesContainer = document.getElementById('courses-container');
             const loader = document.getElementById('courses-loader');
             const noCoursesMsg = document.getElementById('no-courses-msg');
+            const quizzesContainer = document.getElementById('quizzes-container');
+            const quizzesLoader = document.getElementById('quizzes-loader');
+            const noQuizzesMsg = document.getElementById('no-quizzes-msg');
             const alertBox = document.getElementById('alert-box');
-
             const statCourses = document.getElementById('stat-courses');
 
-            // Mock Logout for now (or use api.js if available)
+            // Logout handler
             document.getElementById('logout-btn').addEventListener('click', () => {
                 localStorage.removeItem('dentalprep_token');
                 window.location.href = '/login/';
             });
 
+            if (!token) {
+                window.location.href = '/login/';
+                return;
+            }
+
             try {
-                // Fetch User Profile (if endpoint exists, else mock name from token or generic)
-                // Assuming we can get some user details or just use default
-                // For now, let's try to fetch user courses to validate token
+                const [coursesRes, quizzesRes, lessonsRes] = await Promise.all([
+                    fetch(`${API_BASE}/courses`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch(`${API_BASE}/quizzes`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch(`${API_BASE}/lessons`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
 
-                const res = await fetch(`${API_BASE}/courses`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (res.status === 401 || res.status === 403) {
+                if (coursesRes.status === 401 || coursesRes.status === 403) {
                     throw new Error("Session expired");
                 }
 
-                const data = await res.json();
+                if (!coursesRes.ok) {
+                    throw new Error("Failed to load courses");
+                }
+
+                const data = await coursesRes.json();
+                const quizzesData = quizzesRes.ok ? await quizzesRes.json() : { quizzes: [] };
+                const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
+                const lessonLookup = (lessonsData.lessons || []).reduce((acc, lesson) => {
+                    acc[lesson.id] = lesson;
+                    return acc;
+                }, {});
 
                 // Update Name if available
                 if (data.user && data.user.name) {
@@ -356,7 +391,7 @@
                 // Render Courses
                 loader.classList.add('hidden');
 
-                const courses = data.courses || []; // Adjust based on actual API response structure
+                const courses = data.courses || [];
                 statCourses.innerText = courses.length;
 
                 if (courses.length === 0) {
@@ -388,6 +423,31 @@
                     `).join('');
                 }
 
+                quizzesLoader.classList.add('hidden');
+                const quizzes = quizzesData.quizzes || [];
+
+                if (quizzes.length === 0) {
+                    noQuizzesMsg.classList.remove('hidden');
+                } else {
+                    quizzesContainer.classList.remove('hidden');
+                    quizzesContainer.innerHTML = quizzes.map(quiz => {
+                        const lesson = lessonLookup[quiz.lessonId];
+                        const lessonTitle = lesson ? lesson.title : 'Lesson';
+                        return `
+                            <div class="course-card">
+                                <div class="course-thumb">
+                                    <i class="fas fa-file-alt" style="font-size: 3rem; color: var(--gray-300);"></i>
+                                </div>
+                                <div class="course-content">
+                                    <h3 class="text-xl font-bold mb-2 text-gray-800">${quiz.title || 'Untitled Quiz'}</h3>
+                                    <p class="text-sm text-gray-500 mb-4">${lessonTitle} • ${quiz.questions || 0} Questions</p>
+                                    <a href="/quiz/?id=${quiz.id}" class="cta-btn cta-primary w-full text-center justify-center mt-2">Start Quiz</a>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
             } catch (err) {
                 console.error(err);
                 if (err.message === "Session expired") {
@@ -395,16 +455,12 @@
                     window.location.href = '/login/?msg=session_expired';
                 } else {
                     loader.classList.add('hidden');
-                    // Fallback / Demo State if API fails (for development preview)
-                    coursesContainer.classList.remove('hidden');
-                    // Keeping it empty or showing demo data could be an option, but better to show error or empty
-                    noCoursesMsg.classList.remove('hidden');
-                    noCoursesMsg.querySelector('h3').innerText = "Unable to load courses";
-                    noCoursesMsg.querySelector('p').innerText = "Please try again later. (" + err.message + ")";
+                    quizzesLoader.classList.add('hidden');
+                    alertBox.style.display = 'block';
+                    alertBox.textContent = "Error loading courses. Please refresh the page.";
                 }
             }
 
-            // Mobile Menu Logic
             const menuBtn = document.getElementById('mobile-menu-btn');
             const navMenu = document.getElementById('nav-menu');
             const overlay = document.getElementById('overlay');

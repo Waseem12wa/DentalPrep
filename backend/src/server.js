@@ -74,7 +74,10 @@ async function startServer() {
       "lessons.json": [],
       "quizzes.json": [],
       "progress.json": [],
-      "contacts.json": []
+      "contacts.json": [],
+      "subscriptions.json": [],
+      "reviews.json": [],
+      "ai_chats.json": []
     };
 
     Object.entries(initFiles).forEach(([filename, defaultData]) => {

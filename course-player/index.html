@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Course Player | DentalPrep</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="stylesheet" href="../static/css/DAstyles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 280px;
+        }
+
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            position: fixed;
+            height: 100vh;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 3rem;
+            text-decoration: none;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            color: #4b5563;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: #eff6ff;
+            color: var(--primary-color);
+        }
+
+        .section-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .lessons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .lesson-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .lesson-card:hover {
+            box-shadow: 0 4px 12px -1px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .lesson-header {
+            padding: 1rem;
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .lesson-header i {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .lesson-body {
+            padding: 1rem;
+        }
+
+        .lesson-meta {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin: 0.25rem 0 1rem;
+        }
+
+        .lesson-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .btn-secondary {
+            background: #eff6ff;
+            color: var(--primary-color);
+            border: 1px solid #bfdbfe;
+            padding: 0.7rem 1.2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #dbeafe;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .status-pill.complete {
+            background: #ecfdf3;
+            color: #166534;
+        }
+
+        .status-pill.pending {
+            background: #fff7ed;
+            color: #9a3412;
+        }
+
+        .review-layout {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 1.5rem;
+        }
+
+        .info-banner {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            color: #1d4ed8;
+            margin-bottom: 1rem;
+        }
+
+        .success-banner {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid #bbf7d0;
+            background: #ecfdf3;
+            color: #166534;
+            margin-bottom: 1rem;
+        }
+
+        .review-form {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .review-form select,
+        .review-form textarea {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            padding: 0.85rem 1rem;
+            font: inherit;
+        }
+
+        .review-form textarea {
+            min-height: 140px;
+            resize: vertical;
+        }
+
+        .reviews-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .review-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            background: #fff;
+        }
+
+        .course-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        .summary-chip {
+            background: #f3f4f6;
+            color: #374151;
+            border-radius: 999px;
+            padding: 0.5rem 0.85rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .resource-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .lesson-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin: 0.85rem 0 0;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-msg {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+            border: 1px solid #fecaca;
+        }
+
+        @media (max-width: 960px) {
+            .review-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <a href="/" class="logo-area">
+                <i class="fas fa-tooth" style="font-size: 2rem; color: var(--arterial-red);"></i>
+                <div
+                    style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                    Dental<span style="color: var(--arterial-red);">Prep</span>
+                </div>
+            </a>
+
+            <nav>
+                <a href="/dashboard/" class="nav-link">
+                    <i class="fas fa-th-large"></i> Dashboard
+                </a>
+                <a href="/courses/" class="nav-link">
+                    <i class="fas fa-book-open"></i> My Courses
+                </a>
+                <a href="/materials/" class="nav-link">
+                    <i class="fas fa-folder-open"></i> Materials
+                </a>
+                <a href="/assistant/" class="nav-link active">
+                    <i class="fas fa-robot"></i> AI Assistant
+                </a>
+            </nav>
+
+            <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                <a href="/" class="nav-link logout-link" style="color: #ef4444;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="section-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;">
+                    <div>
+                        <h1 id="course-title" style="font-size: 1.8rem; font-weight: 700;">Loading...</h1>
+                        <p id="course-description" style="color: #6b7280; margin-top: 0.5rem;"></p>
+                        <div class="course-summary" id="course-summary"></div>
+                    </div>
+                    <div class="resource-row">
+                        <a id="course-materials-link" href="/materials/" class="btn-secondary">
+                            <i class="fas fa-folder-open"></i>
+                            Materials
+                        </a>
+                        <a id="course-assistant-link" href="/assistant/" class="btn-primary">
+                            <i class="fas fa-robot"></i>
+                            Ask AI
+                        </a>
+                    </div>
+                </div>
+
+                <div id="error-container"></div>
+
+                <div id="loading-container" class="loading">
+                    <div class="spinner"></div>
+                    <p style="color: #6b7280; margin-top: 1rem;">Loading lessons...</p>
+                </div>
+
+                <div id="lessons-container" class="lessons-grid hidden" style="display: none;"></div>
+            </div>
+
+            <div class="section-card" style="margin-top: 1.5rem;">
+                <div class="review-layout">
+                    <div>
+                        <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem;">Course Review</h2>
+                        <div id="review-status" class="info-banner">Complete every lesson to unlock reviews for this course.</div>
+                        <form id="review-form" class="review-form">
+                            <select id="review-rating" required>
+                                <option value="">Select rating</option>
+                                <option value="5">5 - Excellent</option>
+                                <option value="4">4 - Very good</option>
+                                <option value="3">3 - Good</option>
+                                <option value="2">2 - Needs improvement</option>
+                                <option value="1">1 - Poor</option>
+                            </select>
+                            <textarea id="review-comment" placeholder="Share what worked well, what needs improvement, and how the lessons helped." required></textarea>
+                            <button type="submit" class="btn-primary" id="review-submit">Submit Review</button>
+                        </form>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem;">Student Reviews</h2>
+                        <div id="reviews-container" class="reviews-list"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/dashboard.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const api = window.DentalPrepApi;
+            if (!api) return;
+
+            if (!api.requireAuth()) {
+                return;
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const courseId = params.get("id");
+
+            const courseTitleEl = document.getElementById("course-title");
+            const courseDescEl = document.getElementById("course-description");
+            const lessonsContainer = document.getElementById("lessons-container");
+            const loadingContainer = document.getElementById("loading-container");
+            const errorContainer = document.getElementById("error-container");
+            const courseSummary = document.getElementById("course-summary");
+            const reviewStatus = document.getElementById("review-status");
+            const reviewForm = document.getElementById("review-form");
+            const reviewRating = document.getElementById("review-rating");
+            const reviewComment = document.getElementById("review-comment");
+            const reviewsContainer = document.getElementById("reviews-container");
+            const reviewSubmit = document.getElementById("review-submit");
+            const courseMaterialsLink = document.getElementById("course-materials-link");
+            const courseAssistantLink = document.getElementById("course-assistant-link");
+            const logoutLinks = document.querySelectorAll(".logout-link");
+
+            const escapeHtml = (value) => String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+
+            let canReview = false;
+
+            logoutLinks.forEach((link) => {
+                link.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    api.clearToken();
+                    window.location.href = "/login/";
+                });
+            });
+
+            if (!courseId) {
+                loadingContainer.style.display = "none";
+                errorContainer.innerHTML = '<div class="error-msg">Course not found. Please select a course from My Courses.</div>';
+                return;
+            }
+
+            courseMaterialsLink.href = `/materials/?courseId=${encodeURIComponent(courseId)}`;
+            courseAssistantLink.href = `/assistant/?courseId=${encodeURIComponent(courseId)}`;
+
+            const renderReviews = (reviews) => {
+                if (!reviews.length) {
+                    reviewsContainer.innerHTML = '<div class="review-card" style="color: #6b7280;">No reviews yet for this course.</div>';
+                    return;
+                }
+
+                reviewsContainer.innerHTML = reviews.map((review) => `
+                    <div class="review-card">
+                        <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: center;">
+                            <strong>${escapeHtml(review.userName || "Student")}</strong>
+                            <span style="color: #d97706; font-weight: 700;">${"★".repeat(Number(review.rating || 0))}</span>
+                        </div>
+                        <div style="margin-top: 0.75rem; color: #4b5563; line-height: 1.6;">${escapeHtml(review.comment)}</div>
+                    </div>
+                `).join("");
+            };
+
+            const setReviewState = ({ completedLessons, totalLessons, reviewCount }) => {
+                canReview = totalLessons > 0 && completedLessons >= totalLessons;
+                reviewRating.disabled = !canReview;
+                reviewComment.disabled = !canReview;
+                reviewSubmit.disabled = !canReview;
+                reviewSubmit.style.opacity = canReview ? "1" : "0.6";
+                reviewStatus.className = canReview ? "success-banner" : "info-banner";
+                reviewStatus.textContent = canReview
+                    ? `All ${totalLessons} lessons completed. You can submit or update your review now.`
+                    : `Complete all lessons to unlock reviews. ${completedLessons}/${totalLessons} lessons completed, ${reviewCount} review(s) posted so far.`;
+            };
+
+            try {
+                const [courseData, quizzesData, progressData, reviewsData] = await Promise.all([
+                    api.apiFetch(`/courses/${encodeURIComponent(courseId)}`),
+                    api.apiFetch(`/quizzes?courseId=${encodeURIComponent(courseId)}`),
+                    api.apiFetch(`/progress?courseId=${encodeURIComponent(courseId)}`),
+                    api.apiFetch(`/reviews?courseId=${encodeURIComponent(courseId)}`)
+                ]);
+
+                const course = courseData.course;
+                const lessons = course?.lessons || [];
+                const quizzes = quizzesData.quizzes || [];
+                const progressItems = progressData.items || [];
+                const reviews = reviewsData.reviews || [];
+                const completedLessonIds = new Set(
+                    progressItems
+                        .filter((item) => item.itemType === "lesson" && item.completed)
+                        .map((item) => item.referenceId || item.lessonId || item.videoId)
+                );
+                const quizProgressById = progressItems
+                    .filter((item) => item.itemType === "quiz")
+                    .reduce((acc, item) => {
+                        const id = item.referenceId || item.quizId;
+                        if (id) {
+                            acc[id] = item;
+                        }
+                        return acc;
+                    }, {});
+                const quizByLessonId = quizzes.reduce((acc, quiz) => {
+                    acc[quiz.lessonId] = quiz;
+                    return acc;
+                }, {});
+
+                loadingContainer.style.display = "none";
+
+                if (!course) {
+                    errorContainer.innerHTML = '<div class="error-msg">Course not found.</div>';
+                    return;
+                }
+
+                courseTitleEl.textContent = course.title || "Untitled Course";
+                courseDescEl.textContent = course.description || `${lessons.length} lessons available`;
+                courseSummary.innerHTML = `
+                    ${course.category ? `<div class="summary-chip">${escapeHtml(course.category)}</div>` : ""}
+                    <div class="summary-chip">${completedLessonIds.size}/${lessons.length} lessons completed</div>
+                    <div class="summary-chip">${quizzes.length} quizzes available</div>
+                    <div class="summary-chip">${course.materialsCount || 0} study materials</div>
+                    <div class="summary-chip">${course.caseStudiesCount || 0} case studies</div>
+                    ${((course.curriculumTags || []).slice(0, 4)).map((tag) => `<div class="summary-chip">${escapeHtml(tag)}</div>`).join("")}
+                `;
+                renderReviews(reviews);
+                setReviewState({
+                    completedLessons: completedLessonIds.size,
+                    totalLessons: lessons.length,
+                    reviewCount: reviews.length
+                });
+
+                if (lessons.length === 0) {
+                    lessonsContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #6b7280;">No lessons available yet.</div>';
+                } else {
+                    lessonsContainer.innerHTML = lessons.map((lesson) => {
+                        const lessonComplete = completedLessonIds.has(lesson.id);
+                        const quiz = quizByLessonId[lesson.id];
+                        const quizProgress = quiz ? quizProgressById[quiz.id] : null;
+                        const mediaLabel = lesson.hasVideo
+                            ? (lesson.videoType === "upload" ? "Uploaded lesson video" : "YouTube lesson")
+                            : (lesson.audioItems?.length ? "Audio and materials lesson" : "Materials-only lesson");
+
+                        return `
+                        <div class="lesson-card">
+                            <div class="lesson-header">
+                                <i class="fas ${lesson.hasVideo ? (lesson.videoType === 'upload' ? 'fa-file-video' : 'fa-video') : (lesson.audioItems?.length ? 'fa-headphones' : 'fa-folder-open')}"></i>
+                                <div style="flex: 1; overflow: hidden;">
+                                    <h3 style="font-weight: 600; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(lesson.title || 'Untitled Lesson')}</h3>
+                                </div>
+                                <span class="status-pill ${lessonComplete ? 'complete' : 'pending'}">
+                                    <i class="fas ${lessonComplete ? 'fa-check-circle' : 'fa-hourglass-half'}"></i>
+                                    ${lessonComplete ? 'Completed' : 'Pending'}
+                                </span>
+                            </div>
+                            <div class="lesson-body">
+                                <p class="lesson-meta">${escapeHtml(mediaLabel)}${quiz ? ` • Quiz ready${quizProgress ? ` • Best score ${quizProgress.score || 0}%` : ''}` : ''}</p>
+                                <p style="color: #4b5563; line-height: 1.6; margin-bottom: 0.85rem;">${escapeHtml(lesson.summary || 'This lesson includes linked teaching assets and progress tracking.')}</p>
+                                <div class="lesson-tags">
+                                    <span class="summary-chip">${lesson.audioItems?.length || 0} audio</span>
+                                    <span class="summary-chip">${lesson.materials?.length || 0} materials</span>
+                                    <span class="summary-chip">${lesson.caseStudies?.length || 0} cases</span>
+                                    ${(lesson.curriculumTags || []).slice(0, 2).map((tag) => `<span class="summary-chip">${escapeHtml(tag)}</span>`).join('')}
+                                </div>
+                                <div class="lesson-actions" style="margin-top: 1rem;">
+                                    <a href="/video/?id=${encodeURIComponent(lesson.id)}" class="btn-primary" style="flex: 1; text-align: center; justify-content: center; min-width: 180px;">
+                                        <i class="fas fa-play"></i>
+                                        Open Lesson
+                                    </a>
+                                    <a href="/materials/?courseId=${encodeURIComponent(courseId)}&lessonId=${encodeURIComponent(lesson.id)}" class="btn-secondary" style="flex: 1; text-align: center; justify-content: center; min-width: 180px;">
+                                        <i class="fas fa-folder-open"></i>
+                                        Materials
+                                    </a>
+                                    ${quiz ? `
+                                    <a href="/quiz/?id=${encodeURIComponent(quiz.id)}" class="btn-secondary" style="flex: 1; text-align: center; justify-content: center; min-width: 180px;">
+                                        <i class="fas fa-clipboard-question"></i>
+                                        ${quizProgress ? 'Retake Quiz' : 'Start Quiz'}
+                                    </a>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    }).join('');
+                }
+
+                lessonsContainer.style.display = "grid";
+
+                reviewForm.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+
+                    if (!canReview) {
+                        return;
+                    }
+
+                    try {
+                        reviewSubmit.disabled = true;
+                        await api.apiFetch("/reviews", {
+                            method: "POST",
+                            body: JSON.stringify({
+                                courseId,
+                                rating: Number(reviewRating.value),
+                                comment: reviewComment.value.trim()
+                            })
+                        });
+
+                        const refreshed = await api.apiFetch(`/reviews?courseId=${encodeURIComponent(courseId)}`);
+                        renderReviews(refreshed.reviews || []);
+                        reviewStatus.className = "success-banner";
+                        reviewStatus.textContent = "Review saved successfully.";
+                    } catch (err) {
+                        reviewStatus.className = "info-banner";
+                        reviewStatus.textContent = err.message || "Unable to save review.";
+                    } finally {
+                        reviewSubmit.disabled = !canReview;
+                    }
+                });
+
+            } catch (err) {
+                loadingContainer.style.display = "none";
+                errorContainer.innerHTML = `<div class="error-msg">Error loading course: ${err.message}</div>`;
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+
+</html>

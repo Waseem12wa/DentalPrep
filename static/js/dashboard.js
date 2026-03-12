@@ -2,10 +2,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const api = window.DentalPrepApi;
   if (!api) return;
 
-  if (!api.requireAuth()) {
-    return;
-  }
-
   const logoutLinks = document.querySelectorAll(".logout-link");
   logoutLinks.forEach((link) => {
     link.addEventListener("click", (event) => {
@@ -14,6 +10,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.location.href = "/login/";
     });
   });
+
+  if (!api.requireAuth()) {
+    return;
+  }
 
   try {
     const data = await api.getProfile();
@@ -35,7 +35,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       initialsBadge.textContent = initials || "U";
     }
   } catch (err) {
-    api.clearToken();
-    window.location.href = "/login/";
+    // Silently fail - don't redirect on profile fetch error
+    // User badge will show default "U"
+    console.debug("Profile fetch failed (non-critical):", err.message);
   }
 });

@@ -27,15 +27,22 @@
         .btn-primary { background: var(--primary-color); color: white; border: none; padding: 0.85rem 1rem; border-radius: 0.8rem; cursor: pointer; font-weight: 700; }
         .chip { display: inline-flex; align-items: center; padding: 0.35rem 0.75rem; border-radius: 999px; background: #eff6ff; color: var(--primary-color); font-weight: 600; font-size: 0.85rem; }
         .helper { color: #6b7280; font-size: 0.95rem; }
-        @media (max-width: 1024px) {
-            .workspace { grid-template-columns: 1fr; }
-        }
+        .sidebar-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0.5rem; color: var(--primary-color); position: fixed; top: 1rem; left: 1rem; z-index: 1001; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999; }
+        @media (max-width: 1024px) { .workspace { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { :root { --sidebar-width: 0; } .sidebar-toggle { display: block; } .sidebar { position: fixed; left: -280px; transition: left 0.3s ease; z-index: 1000; height: 100vh; overflow-y: auto; } .sidebar.active { left: 0; } .sidebar-overlay.active { display: block; } .main-content { margin-left: 0; padding: 1rem; } .workspace { gap: 1rem; } .panel { padding: 1rem; } textarea { min-height: 140px; } .history-list { max-height: 50vh; } }
+        @media (max-width: 480px) { .logo-area { margin-bottom: 2rem; } .nav-link { padding: 0.75rem; font-size: 0.9rem; } .main-content { padding: 0.75rem; } .panel { padding: 0.75rem; } textarea { min-height: 100px; padding: 0.75rem; } .btn-primary { padding: 0.6rem 0.8rem; font-size: 0.85rem; } select { padding: 0.6rem; font-size: 0.9rem; } }
     </style>
 </head>
 
 <body>
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
     <div class="dashboard-layout">
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <a href="/" class="logo-area">
                 <i class="fas fa-tooth" style="font-size: 2rem; color: var(--arterial-red);"></i>
                 <div style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">Dental<span style="color: var(--arterial-red);">Prep</span></div>
@@ -209,6 +216,28 @@
                 } catch (err) {
                     responseEl.textContent = err.message || "Unable to generate explanation.";
                 }
+            });
+
+            // Mobile sidebar toggle
+            const sidebarToggle = document.getElementById("sidebar-toggle");
+            const sidebarOverlay = document.getElementById("sidebar-overlay");
+            const sidebar = document.getElementById("sidebar");
+            const navLinks = document.querySelectorAll(".nav-link");
+
+            const closeSidebar = () => {
+                sidebar.classList.remove("active");
+                sidebarOverlay.classList.remove("active");
+            };
+
+            sidebarToggle?.addEventListener("click", () => {
+                sidebar.classList.toggle("active");
+                sidebarOverlay.classList.toggle("active");
+            });
+
+            sidebarOverlay?.addEventListener("click", closeSidebar);
+
+            navLinks.forEach(link => {
+                link.addEventListener("click", closeSidebar);
             });
         });
     </script>

@@ -230,14 +230,141 @@
             font-size: 0.8rem;
             font-weight: 700;
         }
+
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            color: var(--primary-color);
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1001;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        @media (max-width: 768px) {
+            :root {
+                --sidebar-width: 0;
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                transition: left 0.3s ease;
+                z-index: 1000;
+                height: 100vh;
+                overflow-y: auto;
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .section-header-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            #course-search {
+                width: 100% !important;
+            }
+
+            .courses-grid-layout {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .quiz-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .course-thumb {
+                height: 140px;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                font-size: 0.9rem;
+                padding: 0.6rem 0.8rem;
+            }
+
+            .tag-row {
+                gap: 0.35rem;
+            }
+
+            .tag-chip {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.55rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-header-row {
+                margin-bottom: 0.75rem;
+            }
+
+            .course-info {
+                padding: 1rem;
+            }
+
+            .section-card {
+                padding: 1rem;
+                margin-top: 1.5rem;
+            }
+
+            .logo-area {
+                margin-bottom: 2rem;
+            }
+
+            .nav-link {
+                padding: 0.8rem;
+                font-size: 0.95rem;
+            }
+
+            #course-search {
+                padding: 0.6rem 0.8rem 0.6rem 2rem !important;
+            }
+        }
     </style>
 </head>
 
 <body>
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <div class="dashboard-layout">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <a href="/" class="logo-area">
                 <i class="fas fa-tooth" style="font-size: 2rem; color: var(--arterial-red);"></i>
                 <div
@@ -477,6 +604,28 @@
                 coursesLoader.innerHTML = '<p>Unable to load courses.</p>';
                 quizzesLoader.innerHTML = '<p>Unable to load quizzes.</p>';
             }
+
+            // Mobile sidebar toggle
+            const sidebarToggle = document.getElementById("sidebar-toggle");
+            const sidebarOverlay = document.getElementById("sidebar-overlay");
+            const sidebar = document.getElementById("sidebar");
+            const navLinks = document.querySelectorAll(".nav-link");
+
+            const closeSidebar = () => {
+                sidebar.classList.remove("active");
+                sidebarOverlay.classList.remove("active");
+            };
+
+            sidebarToggle?.addEventListener("click", () => {
+                sidebar.classList.toggle("active");
+                sidebarOverlay.classList.toggle("active");
+            });
+
+            sidebarOverlay?.addEventListener("click", closeSidebar);
+
+            navLinks.forEach(link => {
+                link.addEventListener("click", closeSidebar);
+            });
         });
     </script>
 </body>

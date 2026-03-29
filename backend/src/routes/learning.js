@@ -52,7 +52,7 @@ function ensureAcademyProfile() {
         introVideoUrl: "https://www.youtube.com/@pulseprepofficial",
         notes: [{ title: "Academy Intro Notes", url: "#" }],
         pdfResources: [{ title: "Academy Resource PDF", url: "#" }],
-        contactEmail: "zwaseem298@gmail.com",
+        contactEmail: "admin@dentalprep.com",
         contactNumbers: ["+92 335 9591271"],
         socialLinks: {
           facebook: "https://facebook.com/profile.php?id=61576776451528",

@@ -21,6 +21,114 @@
         return Array.isArray(items) ? items : [];
     }
 
+    function safeDecode(value) {
+        try {
+            return decodeURIComponent(value);
+        } catch (_err) {
+            return value;
+        }
+    }
+
+    function parseYouTubeUrl(url) {
+        var value = String(url || '').trim();
+        if (!value) {
+            return { videoId: '', playlistId: '' };
+        }
+
+        var decoded = safeDecode(value);
+        var videoId = '';
+        var playlistId = '';
+
+        try {
+            var parsed = new URL(decoded);
+            var host = String(parsed.hostname || '').toLowerCase();
+            var path = parsed.pathname || '';
+
+            playlistId = parsed.searchParams.get('list') || '';
+
+            if (host.indexOf('youtu.be') !== -1) {
+                videoId = path.replace(/^\//, '').split('/')[0] || '';
+            } else {
+                videoId = parsed.searchParams.get('v') || '';
+                if (!videoId) {
+                    var embedMatch = path.match(/\/embed\/([a-zA-Z0-9_-]{6,})/);
+                    videoId = embedMatch ? embedMatch[1] : '';
+                }
+            }
+        } catch (_err) {
+            var listMatch = decoded.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+            var watchMatch = decoded.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
+            var shortMatch = decoded.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/);
+            var embedMatch = decoded.match(/\/embed\/([a-zA-Z0-9_-]{6,})/);
+            playlistId = listMatch ? listMatch[1] : '';
+            videoId = watchMatch ? watchMatch[1] : (shortMatch ? shortMatch[1] : (embedMatch ? embedMatch[1] : ''));
+        }
+
+        return {
+            videoId: videoId,
+            playlistId: playlistId
+        };
+    }
+
+    function isLikelyVideoFile(url) {
+        return /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(String(url || '')) || String(url || '').indexOf('/static/uploads/') === 0;
+    }
+
+    function renderVideoItems(items, emptyText) {
+        var links = normalizeLinks(items);
+        if (!links.length) {
+            return '<p class="muted-note">' + escapeHtml(emptyText) + '</p>';
+        }
+
+        return '<div class="video-embed-grid">' + links.map(function (item, index) {
+            var title = item && item.title ? item.title : ('Video ' + (index + 1));
+            var url = item && item.url ? item.url : '#';
+            var parsedYoutube = parseYouTubeUrl(url);
+            var playlistId = parsedYoutube.playlistId;
+            var videoId = parsedYoutube.videoId;
+
+            if (playlistId) {
+                return [
+                    '<div class="video-embed-card">',
+                    '<h5>' + escapeHtml(title) + ' (Playlist)</h5>',
+                    '<div class="video-frame-wrap">',
+                    '<iframe src="https://www.youtube.com/embed/videoseries?list=' + escapeHtml(playlistId) + '&rel=0" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
+                    '</div>',
+                    '</div>'
+                ].join('');
+            }
+
+            if (videoId) {
+                return [
+                    '<div class="video-embed-card">',
+                    '<h5>' + escapeHtml(title) + '</h5>',
+                    '<div class="video-frame-wrap">',
+                    '<iframe src="https://www.youtube.com/embed/' + escapeHtml(videoId) + '" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
+                    '</div>',
+                    '</div>'
+                ].join('');
+            }
+
+            if (isLikelyVideoFile(url)) {
+                return [
+                    '<div class="video-embed-card">',
+                    '<h5>' + escapeHtml(title) + '</h5>',
+                    '<div class="video-frame-wrap">',
+                    '<video controls preload="metadata" src="' + escapeHtml(url) + '"></video>',
+                    '</div>',
+                    '</div>'
+                ].join('');
+            }
+
+            return [
+                '<div class="video-embed-card">',
+                '<h5>' + escapeHtml(title) + '</h5>',
+                '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">Open resource</a>',
+                '</div>'
+            ].join('');
+        }).join('') + '</div>';
+    }
+
     function renderLinkList(items, emptyText) {
         var links = normalizeLinks(items);
         if (!links.length) {
@@ -113,7 +221,7 @@
                     '<div class="resource-list">',
                     '<div class="resource-item">',
                     '<h4>YouTube Lecture Links</h4>',
-                    renderLinkList(block.videoItems, 'No lecture links uploaded yet.'),
+                    renderVideoItems(block.videoItems, 'No lecture links uploaded yet.'),
                     '</div>',
                     '<div class="resource-item">',
                     '<h4>Preparation Notes</h4>',
@@ -147,7 +255,7 @@
             document.getElementById('overview-premium').innerHTML = renderLinkList(overview.premiumNotes, 'No premium notes added yet.');
             document.getElementById('overview-slides').innerHTML = renderLinkList(overview.importantSlides, 'No important slides added yet.');
             document.getElementById('overview-short').innerHTML = renderLinkList(overview.shortNotes, 'No short notes added yet.');
-            document.getElementById('overview-videos').innerHTML = renderLinkList(overview.videos, 'No overview videos added yet.');
+            document.getElementById('overview-videos').innerHTML = renderVideoItems(overview.videos, 'No overview videos added yet.');
         } catch (_err) {
             // Keep static fallback labels if fetch fails.
         }
@@ -171,6 +279,10 @@
                 about.introVideoUrl ? [{ title: 'Watch Academy Intro Video', url: about.introVideoUrl }] : [],
                 'No introductory video link added yet.'
             );
+            document.getElementById('about-intro-video').innerHTML = renderVideoItems(
+                about.introVideoUrl ? [{ title: 'Academy Intro Video', url: about.introVideoUrl }] : [],
+                'No introductory video link added yet.'
+            );
             document.getElementById('about-notes').innerHTML = renderLinkList(about.notes, 'No notes added yet.');
             document.getElementById('about-pdfs').innerHTML = renderLinkList(about.pdfResources, 'No PDF resources added yet.');
 
@@ -185,17 +297,7 @@
             // Keep fallback values if API fetch fails.
         }
 
-        var uploadInput = document.getElementById('profile-upload');
-        var avatarPreview = document.getElementById('avatar-preview');
-        if (uploadInput && avatarPreview) {
-            uploadInput.addEventListener('change', function (event) {
-                var file = event.target.files && event.target.files[0];
-                if (!file) {
-                    return;
-                }
-                avatarPreview.src = URL.createObjectURL(file);
-            });
-        }
+        // Profile image is admin-managed only.
     }
 
     document.addEventListener('DOMContentLoaded', async function () {

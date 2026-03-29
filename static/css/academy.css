@@ -221,6 +221,35 @@
     padding: 1rem;
 }
 
+/* Scope overrides to avoid collision with global .about-card in style.css */
+.about-grid .about-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-height: 220px;
+    gap: 0.75rem;
+}
+
+.about-grid .about-card h3 {
+    margin: 0;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.05rem;
+    color: #1f2f4f;
+}
+
+.about-grid .about-card .video-list,
+.about-grid .about-card #about-notes,
+.about-grid .about-card #about-contacts,
+.about-grid .about-card #about-pdfs,
+.about-grid .about-card #about-intro-video {
+    width: 100%;
+}
+
+#profile-upload {
+    width: 100%;
+}
+
 .video-list {
     margin-top: 0.5rem;
     display: grid;
@@ -237,6 +266,44 @@
     font-size: 0.9rem;
 }
 
+.video-embed-grid {
+    display: grid;
+    gap: 0.8rem;
+    margin-top: 0.4rem;
+}
+
+.video-embed-card {
+    border: 1px solid #d8e6ff;
+    border-radius: 0.8rem;
+    background: #f9fbff;
+    padding: 0.65rem;
+}
+
+.video-embed-card h5 {
+    margin: 0 0 0.45rem;
+    font-size: 0.85rem;
+    color: #203b6f;
+    font-family: 'Outfit', sans-serif;
+}
+
+.video-frame-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    background: #0f172a;
+}
+
+.video-frame-wrap iframe,
+.video-frame-wrap video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
 .about-avatar {
     width: 100px;
     height: 100px;
@@ -244,7 +311,7 @@
     object-fit: cover;
     border: 3px solid #dbe8ff;
     display: block;
-    margin-bottom: 0.75rem;
+    margin: 0 auto 0.75rem;
 }
 
 .muted-note {
@@ -316,5 +383,22 @@
 
     .subject-theme-anatomy .anatomy-layout {
         grid-template-columns: 1fr;
+    }
+
+    .about-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .about-grid .about-card {
+        min-height: auto;
+        padding: 0.9rem;
+    }
+
+    .video-embed-card {
+        padding: 0.55rem;
+    }
+
+    .about-grid .about-card[style*="grid-column"] {
+        grid-column: auto !important;
     }
 }

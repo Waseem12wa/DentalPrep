@@ -492,56 +492,74 @@ router.post(
   }
 );
 
-router.post("/admin/academy/profile", adminAuth, async (req, res) => {
-  try {
-    const profile = ensureAcademyProfile();
-    const body = req.body || {};
+router.post(
+  "/admin/academy/profile",
+  adminAuth,
+  contentUpload.fields([
+    { name: "overviewBooksFiles", maxCount: 50 },
+    { name: "overviewPremiumFiles", maxCount: 50 },
+    { name: "overviewSlidesFiles", maxCount: 50 },
+    { name: "overviewShortFiles", maxCount: 50 }
+  ]),
+  async (req, res) => {
+    try {
+      const profile = ensureAcademyProfile();
+      const body = req.body || {};
 
-    const aboutAcademyText = String(body.aboutAcademyText || profile.aboutAcademyText || "").trim();
-    const contactNumbers = splitValues(body.contactNumbers);
-    const books = String(body.overviewBooks || "").trim() ? parseLineLinks(body.overviewBooks) : sanitizeLinks(profile.generalOverview?.books || []);
-    const premiumNotes = String(body.overviewPremiumNotes || "").trim() ? parseLineLinks(body.overviewPremiumNotes) : sanitizeLinks(profile.generalOverview?.premiumNotes || []);
-    const importantSlides = String(body.overviewImportantSlides || "").trim() ? parseLineLinks(body.overviewImportantSlides) : sanitizeLinks(profile.generalOverview?.importantSlides || []);
-    const shortNotes = String(body.overviewShortNotes || "").trim() ? parseLineLinks(body.overviewShortNotes) : sanitizeLinks(profile.generalOverview?.shortNotes || []);
-    const videos = String(body.overviewVideos || "").trim() ? parseLineLinks(body.overviewVideos) : sanitizeLinks(profile.generalOverview?.videos || []);
-    const aboutNotes = String(body.aboutNotes || "").trim() ? parseLineLinks(body.aboutNotes) : sanitizeLinks(profile.aboutUs?.notes || []);
-    const aboutPdfResources = String(body.aboutPdfResources || "").trim() ? parseLineLinks(body.aboutPdfResources) : sanitizeLinks(profile.aboutUs?.pdfResources || []);
+      const aboutAcademyText = String(body.aboutAcademyText || profile.aboutAcademyText || "").trim();
+      const contactNumbers = splitValues(body.contactNumbers);
 
-    const updated = AcademyProfile.findOneAndUpdate(
-      { id: "academy_profile" },
-      {
-        id: "academy_profile",
-        aboutAcademyText,
-        generalOverview: {
-          books,
-          premiumNotes,
-          importantSlides,
-          shortNotes,
-          videos
-        },
-        aboutUs: {
-          profileImageUrl: String(body.profileImageUrl || profile.aboutUs?.profileImageUrl || "/static/images/favicon.png").trim(),
-          introVideoUrl: String(body.introVideoUrl || profile.aboutUs?.introVideoUrl || "").trim(),
-          notes: aboutNotes,
-          pdfResources: aboutPdfResources,
-          contactEmail: String(body.contactEmail || profile.aboutUs?.contactEmail || "").trim(),
-          contactNumbers: contactNumbers.length ? contactNumbers : (Array.isArray(profile.aboutUs?.contactNumbers) ? profile.aboutUs.contactNumbers : []),
-          socialLinks: {
-            facebook: String(body.facebookUrl || profile.aboutUs?.socialLinks?.facebook || "").trim(),
-            youtube: String(body.youtubeUrl || profile.aboutUs?.socialLinks?.youtube || "").trim(),
-            instagram: String(body.instagramUrl || profile.aboutUs?.socialLinks?.instagram || "").trim(),
-            linkedin: String(body.linkedinUrl || profile.aboutUs?.socialLinks?.linkedin || "").trim()
+      // Handle file uploads for overview sections
+      const overviewBooksFiles = (req.files?.overviewBooksFiles || []).map((file, index) => createAssetRecord(file, "book", index));
+      const overviewPremiumFiles = (req.files?.overviewPremiumFiles || []).map((file, index) => createAssetRecord(file, "premium_notes", index));
+      const overviewSlidesFiles = (req.files?.overviewSlidesFiles || []).map((file, index) => createAssetRecord(file, "slides", index));
+      const overviewShortFiles = (req.files?.overviewShortFiles || []).map((file, index) => createAssetRecord(file, "short_notes", index));
+
+      // Use uploaded files if provided, otherwise keep existing
+      const books = overviewBooksFiles.length ? overviewBooksFiles : sanitizeLinks(profile.generalOverview?.books || []);
+      const premiumNotes = overviewPremiumFiles.length ? overviewPremiumFiles : sanitizeLinks(profile.generalOverview?.premiumNotes || []);
+      const importantSlides = overviewSlidesFiles.length ? overviewSlidesFiles : sanitizeLinks(profile.generalOverview?.importantSlides || []);
+      const shortNotes = overviewShortFiles.length ? overviewShortFiles : sanitizeLinks(profile.generalOverview?.shortNotes || []);
+      const videos = String(body.overviewVideos || "").trim() ? parseLineLinks(body.overviewVideos) : sanitizeLinks(profile.generalOverview?.videos || []);
+      const aboutNotes = String(body.aboutNotes || "").trim() ? parseLineLinks(body.aboutNotes) : sanitizeLinks(profile.aboutUs?.notes || []);
+      const aboutPdfResources = String(body.aboutPdfResources || "").trim() ? parseLineLinks(body.aboutPdfResources) : sanitizeLinks(profile.aboutUs?.pdfResources || []);
+
+      const updated = AcademyProfile.findOneAndUpdate(
+        { id: "academy_profile" },
+        {
+          id: "academy_profile",
+          aboutAcademyText,
+          generalOverview: {
+            books,
+            premiumNotes,
+            importantSlides,
+            shortNotes,
+            videos
+          },
+          aboutUs: {
+            profileImageUrl: String(body.profileImageUrl || profile.aboutUs?.profileImageUrl || "/static/images/favicon.png").trim(),
+            introVideoUrl: String(body.introVideoUrl || profile.aboutUs?.introVideoUrl || "").trim(),
+            notes: aboutNotes,
+            pdfResources: aboutPdfResources,
+            contactEmail: String(body.contactEmail || profile.aboutUs?.contactEmail || "").trim(),
+            contactNumbers: contactNumbers.length ? contactNumbers : (Array.isArray(profile.aboutUs?.contactNumbers) ? profile.aboutUs.contactNumbers : []),
+            socialLinks: {
+              facebook: String(body.facebookUrl || profile.aboutUs?.socialLinks?.facebook || "").trim(),
+              youtube: String(body.youtubeUrl || profile.aboutUs?.socialLinks?.youtube || "").trim(),
+              instagram: String(body.instagramUrl || profile.aboutUs?.socialLinks?.instagram || "").trim(),
+              linkedin: String(body.linkedinUrl || profile.aboutUs?.socialLinks?.linkedin || "").trim()
+            }
           }
-        }
-      },
-      { new: true, upsert: true }
-    );
+        },
+        { new: true, upsert: true }
+      );
 
-    return res.status(201).json({ profile: updated });
-  } catch (_err) {
-    return res.status(500).json({ message: "Server error" });
+      return res.status(201).json({ profile: updated });
+    } catch (_err) {
+      return res.status(500).json({ message: "Server error" });
+    }
   }
-});
+);
 
 router.post(
   "/admin/lesson",

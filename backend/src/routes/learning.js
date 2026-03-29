@@ -16,14 +16,13 @@ const SUBJECT_CONFIG = {
   anatomy: { title: "Anatomy", intro: "Understand structural concepts through a block-based progression." },
   physiology: { title: "Physiology", intro: "Build functional understanding with focused block practice." },
   biochemistry: { title: "Biochemistry", intro: "Master pathways, metabolism, and applied biochemical logic." },
-  "oral-biology": { title: "Oral Biology", intro: "Study oral tissues, development, and biological relevance." },
-  pharmacology: { title: "Pharmacology (Prime and Minus)", intro: "Learn medicine groups with clinical perspective and quick recall." }
+  "oral-biology": { title: "Oral Biology", intro: "Study oral tissues, development, and biological relevance." }
 };
 
 const DEFAULT_BLOCKS = {
   "block-a": { blockKey: "block-a", blockTitle: "Block A", topics: ["Foundation", "Blood"] },
   "block-b": { blockKey: "block-b", blockTitle: "Block B", topics: ["Craniofacial"] },
-  "block-c": { blockKey: "block-c", blockTitle: "Block C", topics: ["Cervical", "UGS + GIT", "Cardiopulmonary"] }
+  "block-c": { blockKey: "block-c", blockTitle: "Block C", topics: ["Cervicofacial", "UGS + GIT", "Cardiopulmonary"] }
 };
 
 function ensureAcademyProfile() {

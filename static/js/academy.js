@@ -82,7 +82,7 @@
 
         return '<div class="video-embed-grid">' + links.map(function (item, index) {
             var title = item && item.title ? item.title : ('Video ' + (index + 1));
-            var url = item && item.url ? item.url : '#';
+            var url = item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#';
             var parsedYoutube = parseYouTubeUrl(url);
             var playlistId = parsedYoutube.playlistId;
             var videoId = parsedYoutube.videoId;
@@ -137,7 +137,7 @@
 
         return '<div class="video-list">' + links.map(function (item, index) {
             var title = item && item.title ? item.title : ('Resource ' + (index + 1));
-            var url = item && item.url ? item.url : '#';
+            var url = item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#';
             return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(title) + '</a>';
         }).join('') + '</div>';
     }

@@ -363,15 +363,6 @@
     color: #14624e;
 }
 
-.subject-theme-pharmacology .subject-hero {
-    background: linear-gradient(135deg, #703216, #b4531c);
-}
-
-.subject-theme-pharmacology .resource-item {
-    border-style: dashed;
-    background: #fffaf6;
-}
-
 @media (max-width: 767px) {
     .academy-shell {
         padding-top: 5.8rem;

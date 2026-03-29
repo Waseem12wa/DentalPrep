@@ -138,20 +138,6 @@
             border: 1px solid #fecaca;
         }
 
-        .metric-card {
-            background: white;
-            border: 1px solid var(--gray-200);
-            border-radius: var(--border-radius-lg);
-            padding: 1.25rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .metric-value {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--primary-color);
-        }
-
         /* Matching the Site Header */
         header {
             background: rgba(255, 255, 255, 0.95);
@@ -234,29 +220,6 @@
         </nav>
 
         <div id="general-msg" class="status-msg"></div>
-
-        <div class="dashboard-grid" id="overview-grid" style="margin-bottom: 2rem;">
-            <div class="metric-card"><div class="text-sm text-gray-500">Courses</div><div class="metric-value" id="metric-courses">0</div></div>
-            <div class="metric-card"><div class="text-sm text-gray-500">Lessons</div><div class="metric-value" id="metric-lessons">0</div></div>
-            <div class="metric-card"><div class="text-sm text-gray-500">Quizzes</div><div class="metric-value" id="metric-quizzes">0</div></div>
-            <div class="metric-card"><div class="text-sm text-gray-500">Quiz Attempts</div><div class="metric-value" id="metric-attempts">0</div></div>
-            <div class="metric-card"><div class="text-sm text-gray-500">Reviews</div><div class="metric-value" id="metric-reviews">0</div></div>
-            <div class="metric-card"><div class="text-sm text-gray-500">Students</div><div class="metric-value" id="metric-students">0</div></div>
-            <div class="metric-card"><div class="text-sm text-gray-500">Audio Files</div><div class="metric-value" id="metric-audios">0</div></div>
-            <div class="metric-card"><div class="text-sm text-gray-500">Study Materials</div><div class="metric-value" id="metric-materials">0</div></div>
-            <div class="metric-card"><div class="text-sm text-gray-500">Case Studies</div><div class="metric-value" id="metric-case-studies">0</div></div>
-        </div>
-
-        <div class="dashboard-grid" style="margin-bottom: 2rem;">
-            <div class="admin-card">
-                <h3 class="text-xl font-bold mb-4">Recent Quiz Results</h3>
-                <div id="admin-results-list" class="grid gap-2"></div>
-            </div>
-            <div class="admin-card">
-                <h3 class="text-xl font-bold mb-4">Recent Reviews</h3>
-                <div id="admin-reviews-list" class="grid gap-2"></div>
-            </div>
-        </div>
 
         <!-- Add Course Tab -->
         <div id="tab-courses" class="tab-content">
@@ -435,7 +398,6 @@ Scenario: ..."></textarea>
                                 <option value="physiology">Physiology</option>
                                 <option value="biochemistry">Biochemistry</option>
                                 <option value="oral-biology">Oral Biology</option>
-                                <option value="pharmacology">Pharmacology</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -486,20 +448,24 @@ Scenario: ..."></textarea>
                             <textarea id="academy-about-text" name="aboutAcademyText" class="form-input" rows="3" placeholder="Homepage intro"></textarea>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">General Overview Books (Title|URL per line)</label>
-                            <textarea id="overview-books-input" name="overviewBooks" class="form-input" rows="3"></textarea>
+                            <label class="form-label">General Overview Books (PDF/PPT files)</label>
+                            <input type="file" id="overview-books-files" name="overviewBooksFiles" class="form-input" multiple accept=".pdf,.ppt,.pptx,.doc,.docx">
+                            <div id="overview-books-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Premium Notes (Title|URL per line)</label>
-                            <textarea id="overview-premium-input" name="overviewPremiumNotes" class="form-input" rows="3"></textarea>
+                            <label class="form-label">Premium Notes (PDF/PPT files)</label>
+                            <input type="file" id="overview-premium-files" name="overviewPremiumFiles" class="form-input" multiple accept=".pdf,.ppt,.pptx,.doc,.docx">
+                            <div id="overview-premium-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Important Slides (Title|URL per line)</label>
-                            <textarea id="overview-slides-input" name="overviewImportantSlides" class="form-input" rows="3"></textarea>
+                            <label class="form-label">Important Slides (PDF/PPT files)</label>
+                            <input type="file" id="overview-slides-files" name="overviewSlidesFiles" class="form-input" multiple accept=".pdf,.ppt,.pptx">
+                            <div id="overview-slides-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Short Notes (Title|URL per line)</label>
-                            <textarea id="overview-short-input" name="overviewShortNotes" class="form-input" rows="3"></textarea>
+                            <label class="form-label">Short Notes (PDF files)</label>
+                            <input type="file" id="overview-short-files" name="overviewShortFiles" class="form-input" multiple accept=".pdf,.doc,.docx">
+                            <div id="overview-short-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Overview Videos/Playlists (Title|URL per line)</label>
@@ -618,7 +584,6 @@ Scenario: ..."></textarea>
             loginView.classList.add("hidden");
             dashboardView.classList.remove("hidden");
             logoutBtn.classList.remove("hidden");
-            loadOverview();
             loadCourses();
             loadLessons();
             loadQuizzes();
@@ -665,51 +630,7 @@ Scenario: ..."></textarea>
 
         // --- Data Loading ---
 
-        async function loadOverview() {
-            try {
-                const res = await fetch(`${API_BASE}/admin/overview`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-                const data = await res.json();
-                const counts = data.counts || {};
-
-                document.getElementById("metric-courses").textContent = counts.courses || 0;
-                document.getElementById("metric-lessons").textContent = counts.lessons || 0;
-                document.getElementById("metric-quizzes").textContent = counts.quizzes || 0;
-                document.getElementById("metric-attempts").textContent = counts.quizAttempts || 0;
-                document.getElementById("metric-reviews").textContent = counts.reviews || 0;
-                document.getElementById("metric-students").textContent = counts.students || 0;
-                document.getElementById("metric-audios").textContent = counts.audios || 0;
-                document.getElementById("metric-materials").textContent = counts.materials || 0;
-                document.getElementById("metric-case-studies").textContent = counts.caseStudies || 0;
-
-                const resultsList = document.getElementById("admin-results-list");
-                const reviewsList = document.getElementById("admin-reviews-list");
-
-                resultsList.innerHTML = (data.recentResults || []).length
-                    ? data.recentResults.map((result) => `
-                        <div class="p-3 bg-white border border-gray-200 rounded shadow-sm">
-                            <div class="font-semibold text-gray-800">${result.userName} • ${result.score}%</div>
-                            <div class="text-sm text-gray-500">${result.quizTitle} • ${result.courseTitle}</div>
-                        </div>
-                    `).join("")
-                    : '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No quiz attempts yet.</div>';
-
-                reviewsList.innerHTML = (data.recentReviews || []).length
-                    ? data.recentReviews.map((review) => `
-                        <div class="p-3 bg-white border border-gray-200 rounded shadow-sm">
-                            <div class="font-semibold text-gray-800">${review.userName} • ${"★".repeat(Number(review.rating || 0))}</div>
-                            <div class="text-sm text-gray-500">${review.courseTitle}</div>
-                            <div class="text-sm text-gray-600" style="margin-top: 0.25rem;">${review.comment}</div>
-                        </div>
-                    `).join("")
-                    : '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No reviews yet.</div>';
-            } catch (err) {
-                console.error("Failed to load overview:", err);
-            }
-        }
 
         async function loadCourses() {
             const list = document.getElementById("courses-list");
@@ -885,7 +806,6 @@ Scenario: ..."></textarea>
 
             await handleAdminAction("/admin/course", { title, description, category, curriculumTags }, btn);
             loadCourses();
-                loadOverview();
             e.target.reset();
         });
 
@@ -924,7 +844,6 @@ Scenario: ..."></textarea>
 
                 showMessage(generalMsg, data.message || "Lesson saved successfully!", "success");
                 loadLessons();
-                loadOverview();
                 loadStudentAnalytics();
                 e.target.reset();
             } catch (err) {
@@ -964,7 +883,6 @@ Scenario: ..."></textarea>
             document.getElementById("questions-container").innerHTML = "";
             addQuestionField();
             loadQuizzes();
-            loadOverview();
             loadStudentAnalytics();
         });
 
@@ -998,7 +916,6 @@ Scenario: ..."></textarea>
                 e.target.reset();
                 loadLessons();
                 loadQuizzes();
-                loadOverview();
                 loadStudentAnalytics();
             } catch (err) {
                 showMessage(generalMsg, err.message, "error");
@@ -1087,14 +1004,38 @@ Scenario: ..."></textarea>
                 const aboutText = document.getElementById("academy-about-text");
                 if (aboutText) aboutText.value = profile.aboutAcademyText || "";
 
-                const booksInput = document.getElementById("overview-books-input");
-                if (booksInput) booksInput.value = linksToText(overview.books);
-                const premiumInput = document.getElementById("overview-premium-input");
-                if (premiumInput) premiumInput.value = linksToText(overview.premiumNotes);
-                const slidesInput = document.getElementById("overview-slides-input");
-                if (slidesInput) slidesInput.value = linksToText(overview.importantSlides);
-                const shortInput = document.getElementById("overview-short-input");
-                if (shortInput) shortInput.value = linksToText(overview.shortNotes);
+                const booksInput = document.getElementById("overview-books-files");
+                if (booksInput && !booksInput.files.length) {
+                    const booksList = document.getElementById("overview-books-list");
+                    if (booksList && overview.books && overview.books.length) {
+                        const fileList = overview.books.map((f, i) => `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div>`).join("");
+                        booksList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current files:<br>${fileList}</div>`;
+                    }
+                }
+                const premiumInput = document.getElementById("overview-premium-files");
+                if (premiumInput && !premiumInput.files.length) {
+                    const premiumList = document.getElementById("overview-premium-list");
+                    if (premiumList && overview.premiumNotes && overview.premiumNotes.length) {
+                        const fileList = overview.premiumNotes.map((f, i) => `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div>`).join("");
+                        premiumList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current files:<br>${fileList}</div>`;
+                    }
+                }
+                const slidesInput = document.getElementById("overview-slides-files");
+                if (slidesInput && !slidesInput.files.length) {
+                    const slidesList = document.getElementById("overview-slides-list");
+                    if (slidesList && overview.importantSlides && overview.importantSlides.length) {
+                        const fileList = overview.importantSlides.map((f, i) => `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div>`).join("");
+                        slidesList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current files:<br>${fileList}</div>`;
+                    }
+                }
+                const shortInput = document.getElementById("overview-short-files");
+                if (shortInput && !shortInput.files.length) {
+                    const shortList = document.getElementById("overview-short-list");
+                    if (shortList && overview.shortNotes && overview.shortNotes.length) {
+                        const fileList = overview.shortNotes.map((f, i) => `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div>`).join("");
+                        shortList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current files:<br>${fileList}</div>`;
+                    }
+                }
                 const videosInput = document.getElementById("overview-videos-input");
                 if (videosInput) videosInput.value = linksToText(overview.videos);
 
@@ -1180,20 +1121,42 @@ Scenario: ..."></textarea>
             }
         });
 
+        // File input listeners for General Overview
+        function setupFileInputListener(inputId, displayId) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener("change", (e) => {
+                    const display = document.getElementById(displayId);
+                    const files = Array.from(e.target.files);
+                    if (files.length === 0) {
+                        display.innerHTML = "";
+                        return;
+                    }
+                    const fileList = files.map((f, i) => `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> ${f.name} (${(f.size / 1024).toFixed(1)} KB)</div>`).join("");
+                    display.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">${fileList}</div>`;
+                });
+            }
+        }
+
+        setupFileInputListener("overview-books-files", "overview-books-list");
+        setupFileInputListener("overview-premium-files", "overview-premium-list");
+        setupFileInputListener("overview-slides-files", "overview-slides-list");
+        setupFileInputListener("overview-short-files", "overview-short-list");
+
         document.getElementById("academy-profile-form").addEventListener("submit", async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector("button");
-            const payload = Object.fromEntries(new FormData(e.target).entries());
-
+            
+            const formData = new FormData(e.target);
+            
             setLoading(btn, true);
             try {
                 const res = await fetch(`${API_BASE}/admin/academy/profile`, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
                         Authorization: `Bearer ${adminToken}`
                     },
-                    body: JSON.stringify(payload)
+                    body: formData
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || "Failed to save academy profile");

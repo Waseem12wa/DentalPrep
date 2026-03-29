@@ -230,6 +230,7 @@
             <button class="tab-btn" onclick="switchTab('quizzes')">Quizzes</button>
             <button class="tab-btn" onclick="switchTab('upload')">Bulk Upload</button>
             <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
+            <button class="tab-btn" onclick="switchTab('academy')">Academy Content</button>
         </nav>
 
         <div id="general-msg" class="status-msg"></div>
@@ -422,6 +423,134 @@ Scenario: ..."></textarea>
             </div>
         </div>
 
+        <div id="tab-academy" class="tab-content hidden">
+            <div class="dashboard-grid" style="margin-top: 0;">
+                <div class="admin-card">
+                    <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Subject Block Content</h3>
+                    <form id="academy-block-form">
+                        <div class="form-group">
+                            <label class="form-label">Subject</label>
+                            <select id="academy-subject-select" name="subjectKey" class="form-select" required>
+                                <option value="anatomy">Anatomy</option>
+                                <option value="physiology">Physiology</option>
+                                <option value="biochemistry">Biochemistry</option>
+                                <option value="oral-biology">Oral Biology</option>
+                                <option value="pharmacology">Pharmacology</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Block</label>
+                            <select id="academy-block-select" name="blockKey" class="form-select" required>
+                                <option value="block-a">Block A</option>
+                                <option value="block-b">Block B</option>
+                                <option value="block-c">Block C</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Topics</label>
+                            <input type="text" id="academy-topics" name="topics" class="form-input" placeholder="Foundation, Blood">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Video Links (Title|URL per line)</label>
+                            <textarea id="academy-video-links" name="videoLinks" class="form-input" rows="4" placeholder="Foundation Lecture|https://youtube.com/...&#10;Blood Lecture|https://youtube.com/..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Or Upload Video File(s)</label>
+                            <input type="file" name="videoFiles" class="form-input" accept="video/*" multiple>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Preparation Notes Text</label>
+                            <textarea id="academy-note-text" name="noteText" class="form-input" rows="3" placeholder="Enter note summary for this block."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Upload Notes File(s)</label>
+                            <input type="file" name="noteFiles" class="form-input" multiple>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Clinical Content Text</label>
+                            <textarea id="academy-clinical-text" name="clinicalText" class="form-input" rows="3" placeholder="Enter clinical focus for this block."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Upload Clinical File(s)</label>
+                            <input type="file" name="clinicalFiles" class="form-input" multiple>
+                        </div>
+                        <button type="submit" class="cta-btn cta-primary">Save Block Content</button>
+                    </form>
+                </div>
+
+                <div class="admin-card">
+                    <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">General Overview + About Us Data</h3>
+                    <form id="academy-profile-form">
+                        <div class="form-group">
+                            <label class="form-label">About Academy Intro Text</label>
+                            <textarea id="academy-about-text" name="aboutAcademyText" class="form-input" rows="3" placeholder="Homepage intro"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">General Overview Books (Title|URL per line)</label>
+                            <textarea id="overview-books-input" name="overviewBooks" class="form-input" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Premium Notes (Title|URL per line)</label>
+                            <textarea id="overview-premium-input" name="overviewPremiumNotes" class="form-input" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Important Slides (Title|URL per line)</label>
+                            <textarea id="overview-slides-input" name="overviewImportantSlides" class="form-input" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Short Notes (Title|URL per line)</label>
+                            <textarea id="overview-short-input" name="overviewShortNotes" class="form-input" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Overview Videos (Title|URL per line)</label>
+                            <textarea id="overview-videos-input" name="overviewVideos" class="form-input" rows="4"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">About Intro Video URL</label>
+                            <input type="url" id="about-video-input" name="introVideoUrl" class="form-input" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">About Notes (Title|URL per line)</label>
+                            <textarea id="about-notes-input" name="aboutNotes" class="form-input" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">PDF Resources (Title|URL per line)</label>
+                            <textarea id="about-pdfs-input" name="aboutPdfResources" class="form-input" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Profile Image URL</label>
+                            <input type="text" id="profile-image-input" name="profileImageUrl" class="form-input" placeholder="/static/images/...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contact Email</label>
+                            <input type="email" id="contact-email-input" name="contactEmail" class="form-input" placeholder="contact@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contact Numbers (comma or line separated)</label>
+                            <textarea id="contact-numbers-input" name="contactNumbers" class="form-input" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Facebook URL</label>
+                            <input type="url" id="facebook-input" name="facebookUrl" class="form-input" placeholder="https://facebook.com/...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">YouTube URL</label>
+                            <input type="url" id="youtube-input" name="youtubeUrl" class="form-input" placeholder="https://youtube.com/...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Instagram URL</label>
+                            <input type="url" id="instagram-input" name="instagramUrl" class="form-input" placeholder="https://instagram.com/...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">LinkedIn URL</label>
+                            <input type="url" id="linkedin-input" name="linkedinUrl" class="form-input" placeholder="https://linkedin.com/...">
+                        </div>
+                        <button type="submit" class="cta-btn cta-primary">Save Academy Profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Enhanced Footer -->
@@ -457,6 +586,7 @@ Scenario: ..."></textarea>
         const { getApiBase } = window.DentalPrepApi || {};
         const API_BASE = getApiBase ? getApiBase() : "http://localhost:4000/api";
         let adminToken = localStorage.getItem("dentalprep_admin_token");
+        let academyBlocks = [];
 
         // UI References
         const loginView = document.getElementById("login-view");
@@ -493,6 +623,7 @@ Scenario: ..."></textarea>
             loadLessons();
             loadQuizzes();
             loadStudentAnalytics();
+            loadAcademyContent();
         }
 
         // Login Handler
@@ -934,6 +1065,147 @@ Scenario: ..."></textarea>
             }
         }
 
+        function linksToText(items) {
+            return (Array.isArray(items) ? items : [])
+                .map((item) => `${item.title || "Resource"}|${item.url || "#"}`)
+                .join("\n");
+        }
+
+        async function loadAcademyContent() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/academy/content`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+                academyBlocks = Array.isArray(data.blocks) ? data.blocks : [];
+                const profile = data.profile || {};
+                const overview = profile.generalOverview || {};
+                const about = profile.aboutUs || {};
+
+                const aboutText = document.getElementById("academy-about-text");
+                if (aboutText) aboutText.value = profile.aboutAcademyText || "";
+
+                const booksInput = document.getElementById("overview-books-input");
+                if (booksInput) booksInput.value = linksToText(overview.books);
+                const premiumInput = document.getElementById("overview-premium-input");
+                if (premiumInput) premiumInput.value = linksToText(overview.premiumNotes);
+                const slidesInput = document.getElementById("overview-slides-input");
+                if (slidesInput) slidesInput.value = linksToText(overview.importantSlides);
+                const shortInput = document.getElementById("overview-short-input");
+                if (shortInput) shortInput.value = linksToText(overview.shortNotes);
+                const videosInput = document.getElementById("overview-videos-input");
+                if (videosInput) videosInput.value = linksToText(overview.videos);
+
+                const aboutVideoInput = document.getElementById("about-video-input");
+                if (aboutVideoInput) aboutVideoInput.value = about.introVideoUrl || "";
+                const aboutNotesInput = document.getElementById("about-notes-input");
+                if (aboutNotesInput) aboutNotesInput.value = linksToText(about.notes);
+                const aboutPdfsInput = document.getElementById("about-pdfs-input");
+                if (aboutPdfsInput) aboutPdfsInput.value = linksToText(about.pdfResources);
+                const profileImageInput = document.getElementById("profile-image-input");
+                if (profileImageInput) profileImageInput.value = about.profileImageUrl || "";
+                const contactEmailInput = document.getElementById("contact-email-input");
+                if (contactEmailInput) contactEmailInput.value = about.contactEmail || "";
+                const contactNumbersInput = document.getElementById("contact-numbers-input");
+                if (contactNumbersInput) contactNumbersInput.value = (about.contactNumbers || []).join(", ");
+                const facebookInput = document.getElementById("facebook-input");
+                if (facebookInput) facebookInput.value = (about.socialLinks || {}).facebook || "";
+                const youtubeInput = document.getElementById("youtube-input");
+                if (youtubeInput) youtubeInput.value = (about.socialLinks || {}).youtube || "";
+                const instagramInput = document.getElementById("instagram-input");
+                if (instagramInput) instagramInput.value = (about.socialLinks || {}).instagram || "";
+                const linkedinInput = document.getElementById("linkedin-input");
+                if (linkedinInput) linkedinInput.value = (about.socialLinks || {}).linkedin || "";
+
+                loadSelectedBlockContent();
+            } catch (err) {
+                console.error("Failed to load academy content:", err);
+            }
+        }
+
+        function loadSelectedBlockContent() {
+            const subjectSelect = document.getElementById("academy-subject-select");
+            const blockSelect = document.getElementById("academy-block-select");
+            if (!subjectSelect || !blockSelect) {
+                return;
+            }
+
+            const selected = academyBlocks.find((item) => item.subjectKey === subjectSelect.value && item.blockKey === blockSelect.value);
+
+            const topicsInput = document.getElementById("academy-topics");
+            if (topicsInput) topicsInput.value = selected && Array.isArray(selected.topics) ? selected.topics.join(", ") : "";
+
+            const videoInput = document.getElementById("academy-video-links");
+            if (videoInput) videoInput.value = linksToText(selected ? selected.videoItems : []);
+
+            const noteText = document.getElementById("academy-note-text");
+            if (noteText) noteText.value = selected ? (selected.noteText || "") : "";
+
+            const clinicalText = document.getElementById("academy-clinical-text");
+            if (clinicalText) clinicalText.value = selected ? (selected.clinicalText || "") : "";
+        }
+
+        document.getElementById("academy-subject-select").addEventListener("change", loadSelectedBlockContent);
+        document.getElementById("academy-block-select").addEventListener("change", loadSelectedBlockContent);
+
+        document.getElementById("academy-block-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button");
+            const formData = new FormData(e.target);
+
+            const subjectKey = e.target.subjectKey.value;
+            const blockKey = e.target.blockKey.value;
+            const blockTitle = blockKey === "block-a" ? "Block A" : blockKey === "block-b" ? "Block B" : "Block C";
+            formData.set("subjectKey", subjectKey);
+            formData.set("blockKey", blockKey);
+            formData.set("blockTitle", blockTitle);
+
+            setLoading(btn, true);
+            try {
+                const res = await fetch(`${API_BASE}/admin/academy/block`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${adminToken}` },
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Failed to save block content");
+                showMessage(generalMsg, "Block content saved successfully.", "success");
+                await loadAcademyContent();
+            } catch (err) {
+                showMessage(generalMsg, err.message, "error");
+            } finally {
+                setLoading(btn, false, "Save Block Content");
+            }
+        });
+
+        document.getElementById("academy-profile-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector("button");
+            const payload = Object.fromEntries(new FormData(e.target).entries());
+
+            setLoading(btn, true);
+            try {
+                const res = await fetch(`${API_BASE}/admin/academy/profile`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Failed to save academy profile");
+                showMessage(generalMsg, "Academy profile saved successfully.", "success");
+                await loadAcademyContent();
+            } catch (err) {
+                showMessage(generalMsg, err.message, "error");
+            } finally {
+                setLoading(btn, false, "Save Academy Profile");
+            }
+        });
+
         function switchTab(tabName) {
             document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
             document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
@@ -945,6 +1217,7 @@ Scenario: ..."></textarea>
             if (tabName === 'quizzes') btns[2].classList.add("active");
             if (tabName === 'upload') btns[3].classList.add("active");
             if (tabName === 'analytics') btns[4].classList.add("active");
+            if (tabName === 'academy') btns[5].classList.add("active");
         }
 
         window.switchTab = switchTab; // make global for onclick

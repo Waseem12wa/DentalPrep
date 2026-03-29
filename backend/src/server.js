@@ -77,7 +77,54 @@ async function startServer() {
       "contacts.json": [],
       "subscriptions.json": [],
       "reviews.json": [],
-      "ai_chats.json": []
+      "ai_chats.json": [],
+      "subject_content.json": [],
+      "academy_profile.json": [
+        {
+          "id": "academy_profile",
+          "aboutAcademyText": "Dental Prep is your structured BDS preparation platform where each subject is organized into simple blocks, helping students move from fundamentals to clinical confidence.",
+          "generalOverview": {
+            "books": [
+              { "title": "BDS Core Reading List", "url": "#" }
+            ],
+            "premiumNotes": [
+              { "title": "Premium Notes Pack", "url": "#" }
+            ],
+            "importantSlides": [
+              { "title": "Important Slides Collection", "url": "#" }
+            ],
+            "shortNotes": [
+              { "title": "Short Notes for Final Revision", "url": "#" }
+            ],
+            "videos": [
+              { "title": "General Overview Video 1", "url": "https://www.youtube.com/@pulseprepofficial" },
+              { "title": "General Overview Video 2", "url": "https://www.youtube.com/@pulseprepofficial" },
+              { "title": "General Overview Video 3", "url": "https://www.youtube.com/@pulseprepofficial" },
+              { "title": "General Overview Video 4", "url": "https://www.youtube.com/@pulseprepofficial" },
+              { "title": "General Overview Video 5", "url": "https://www.youtube.com/@pulseprepofficial" },
+              { "title": "General Overview Video 6", "url": "https://www.youtube.com/@pulseprepofficial" }
+            ]
+          },
+          "aboutUs": {
+            "profileImageUrl": "/static/images/favicon.png",
+            "introVideoUrl": "https://www.youtube.com/@pulseprepofficial",
+            "notes": [
+              { "title": "Academy Intro Notes", "url": "#" }
+            ],
+            "pdfResources": [
+              { "title": "Academy Resource PDF", "url": "#" }
+            ],
+            "contactEmail": "zwaseem298@gmail.com",
+            "contactNumbers": ["+92 335 9591271"],
+            "socialLinks": {
+              "facebook": "https://facebook.com/profile.php?id=61576776451528",
+              "youtube": "https://www.youtube.com/@pulseprepofficial",
+              "instagram": "https://instagram.com/pulseprepofficial",
+              "linkedin": "https://linkedin.com/in/pulse-prep-778292368"
+            }
+          }
+        }
+      ]
     };
 
     Object.entries(initFiles).forEach(([filename, defaultData]) => {

@@ -161,6 +161,8 @@ const Contact = createCollection("contacts.json", { idField: "_id" });
 const Subscription = createCollection("subscriptions.json", { idField: "_id" });
 const Review = createCollection("reviews.json", { idField: "_id" });
 const AiChat = createCollection("ai_chats.json", { idField: "_id" });
+const SubjectContent = createCollection("subject_content.json", { idField: "id" });
+const AcademyProfile = createCollection("academy_profile.json", { idField: "id" });
 
 module.exports = {
     User,
@@ -172,6 +174,8 @@ module.exports = {
     Subscription,
     Review,
     AiChat,
+    SubjectContent,
+    AcademyProfile,
     readData,
     writeData,
     generateId

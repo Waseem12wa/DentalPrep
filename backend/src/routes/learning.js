@@ -1,5 +1,5 @@
 const express = require("express");
-const { Course, Lesson, Quiz, Progress, Review, User, AiChat, generateId } = require("../db");
+const { Course, Lesson, Quiz, Progress, Review, User, AiChat, SubjectContent, AcademyProfile, generateId } = require("../db");
 const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
@@ -10,6 +10,105 @@ const isYoutubeUrl = (value) => /(?:youtube\.com|youtu\.be)/i.test(String(value 
 
 function normalizeArray(value) {
   return Array.isArray(value) ? value : [];
+}
+
+const SUBJECT_CONFIG = {
+  anatomy: { title: "Anatomy", intro: "Understand structural concepts through a block-based progression." },
+  physiology: { title: "Physiology", intro: "Build functional understanding with focused block practice." },
+  biochemistry: { title: "Biochemistry", intro: "Master pathways, metabolism, and applied biochemical logic." },
+  "oral-biology": { title: "Oral Biology", intro: "Study oral tissues, development, and biological relevance." },
+  pharmacology: { title: "Pharmacology (Prime and Minus)", intro: "Learn medicine groups with clinical perspective and quick recall." }
+};
+
+const DEFAULT_BLOCKS = {
+  "block-a": { blockKey: "block-a", blockTitle: "Block A", topics: ["Foundation", "Blood"] },
+  "block-b": { blockKey: "block-b", blockTitle: "Block B", topics: ["Craniofacial"] },
+  "block-c": { blockKey: "block-c", blockTitle: "Block C", topics: ["Cervical", "UGS + GIT", "Cardiopulmonary"] }
+};
+
+function ensureAcademyProfile() {
+  const existing = AcademyProfile.findOne({ id: "academy_profile" });
+  if (existing) {
+    return existing;
+  }
+
+  return AcademyProfile.findOneAndUpdate(
+    { id: "academy_profile" },
+    {
+      id: "academy_profile",
+      aboutAcademyText: "Dental Prep is your structured BDS preparation platform where each subject is organized into simple blocks, helping students move from fundamentals to clinical confidence.",
+      generalOverview: {
+        books: [{ title: "BDS Core Reading List", url: "#" }],
+        premiumNotes: [{ title: "Premium Notes Pack", url: "#" }],
+        importantSlides: [{ title: "Important Slides Collection", url: "#" }],
+        shortNotes: [{ title: "Short Notes for Final Revision", url: "#" }],
+        videos: Array.from({ length: 6 }).map((_, index) => ({
+          title: `General Overview Video ${index + 1}`,
+          url: "https://www.youtube.com/@pulseprepofficial"
+        }))
+      },
+      aboutUs: {
+        profileImageUrl: "/static/images/favicon.png",
+        introVideoUrl: "https://www.youtube.com/@pulseprepofficial",
+        notes: [{ title: "Academy Intro Notes", url: "#" }],
+        pdfResources: [{ title: "Academy Resource PDF", url: "#" }],
+        contactEmail: "zwaseem298@gmail.com",
+        contactNumbers: ["+92 335 9591271"],
+        socialLinks: {
+          facebook: "https://facebook.com/profile.php?id=61576776451528",
+          youtube: "https://www.youtube.com/@pulseprepofficial",
+          instagram: "https://instagram.com/pulseprepofficial",
+          linkedin: "https://linkedin.com/in/pulse-prep-778292368"
+        }
+      }
+    },
+    { new: true, upsert: true }
+  );
+}
+
+function normalizeLinkItems(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+      const title = String(item.title || "").trim();
+      const url = String(item.url || "").trim();
+      if (!title && !url) {
+        return null;
+      }
+      return {
+        title: title || url || "Resource",
+        url: url || "#"
+      };
+    })
+    .filter(Boolean);
+}
+
+function getSubjectBlocks(subjectKey) {
+  const storedRows = SubjectContent.find({ subjectKey });
+  const rowLookup = storedRows.reduce((acc, row) => {
+    acc[row.blockKey] = row;
+    return acc;
+  }, {});
+
+  return Object.values(DEFAULT_BLOCKS).map((defaultBlock) => {
+    const saved = rowLookup[defaultBlock.blockKey] || {};
+    return {
+      blockKey: defaultBlock.blockKey,
+      blockTitle: defaultBlock.blockTitle,
+      topics: normalizeArray(saved.topics).length ? normalizeArray(saved.topics) : defaultBlock.topics,
+      videoItems: normalizeLinkItems(saved.videoItems),
+      noteText: String(saved.noteText || "").trim(),
+      noteResources: normalizeArray(saved.noteResources),
+      clinicalText: String(saved.clinicalText || "").trim(),
+      clinicalResources: normalizeArray(saved.clinicalResources)
+    };
+  });
 }
 
 function buildLessonResponse(lesson, course) {
@@ -239,6 +338,56 @@ router.get("/courses", authMiddleware, async (req, res) => {
     res.json({ courses: data });
   } catch (_err) {
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/academy/content", authMiddleware, (req, res) => {
+  try {
+    const profile = ensureAcademyProfile();
+    return res.json({
+      profile: {
+        id: profile.id,
+        aboutAcademyText: String(profile.aboutAcademyText || "").trim(),
+        generalOverview: {
+          books: normalizeLinkItems(profile.generalOverview?.books),
+          premiumNotes: normalizeLinkItems(profile.generalOverview?.premiumNotes),
+          importantSlides: normalizeLinkItems(profile.generalOverview?.importantSlides),
+          shortNotes: normalizeLinkItems(profile.generalOverview?.shortNotes),
+          videos: normalizeLinkItems(profile.generalOverview?.videos)
+        },
+        aboutUs: {
+          profileImageUrl: String(profile.aboutUs?.profileImageUrl || "").trim() || "/static/images/favicon.png",
+          introVideoUrl: String(profile.aboutUs?.introVideoUrl || "").trim(),
+          notes: normalizeLinkItems(profile.aboutUs?.notes),
+          pdfResources: normalizeLinkItems(profile.aboutUs?.pdfResources),
+          contactEmail: String(profile.aboutUs?.contactEmail || "").trim(),
+          contactNumbers: normalizeArray(profile.aboutUs?.contactNumbers).map((item) => String(item || "").trim()).filter(Boolean),
+          socialLinks: profile.aboutUs?.socialLinks || {}
+        }
+      }
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/subjects/:subjectKey/content", authMiddleware, (req, res) => {
+  try {
+    const subjectKey = String(req.params.subjectKey || "").trim();
+    if (!Object.prototype.hasOwnProperty.call(SUBJECT_CONFIG, subjectKey)) {
+      return res.status(404).json({ message: "Subject not found" });
+    }
+
+    return res.json({
+      subject: {
+        key: subjectKey,
+        title: SUBJECT_CONFIG[subjectKey].title,
+        intro: SUBJECT_CONFIG[subjectKey].intro,
+        blocks: getSubjectBlocks(subjectKey)
+      }
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
   }
 });
 

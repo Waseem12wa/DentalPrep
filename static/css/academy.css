@@ -1,0 +1,320 @@
+:root {
+    --academy-ink: #13203b;
+    --academy-blue: #1e3a8a;
+    --academy-sky: #60a5fa;
+    --academy-mint: #dbeafe;
+    --academy-surface: #f8fbff;
+    --academy-card: #ffffff;
+    --academy-border: #d5e2f5;
+}
+
+.academy-page {
+    background: radial-gradient(circle at 10% 20%, #eef6ff 0%, #f8fbff 35%, #f5f8fd 100%);
+    min-height: 100vh;
+    color: var(--academy-ink);
+}
+
+.academy-shell {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 6.5rem 1rem 3rem;
+}
+
+.academy-hero {
+    background: linear-gradient(130deg, #0f2a64 0%, #1e3a8a 60%, #2a53b8 100%);
+    color: #fff;
+    padding: 2rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 20px 35px rgba(17, 34, 73, 0.2);
+}
+
+.academy-hero h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(2rem, 3vw, 3rem);
+    letter-spacing: 0.01em;
+    margin-bottom: 0.75rem;
+}
+
+.academy-hero p {
+    opacity: 0.95;
+    max-width: 760px;
+}
+
+.academy-grid {
+    margin-top: 1.75rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.academy-box {
+    display: block;
+    text-decoration: none;
+    color: var(--academy-ink);
+    background: var(--academy-card);
+    border: 1px solid var(--academy-border);
+    border-radius: 0.95rem;
+    padding: 1rem;
+    min-height: 120px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.academy-box:hover {
+    transform: translateY(-3px);
+    border-color: #8eb2ea;
+    box-shadow: 0 12px 24px rgba(37, 67, 132, 0.12);
+}
+
+.academy-box h3 {
+    margin: 0 0 0.4rem;
+    font-size: 1.05rem;
+    font-family: 'Outfit', sans-serif;
+}
+
+.academy-box p {
+    margin: 0;
+    color: #4f6288;
+    font-size: 0.9rem;
+}
+
+.academy-flow {
+    margin-top: 2rem;
+    background: var(--academy-card);
+    border: 1px dashed #adc7ef;
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.academy-flow h2,
+.section-title-lite {
+    margin: 0 0 0.65rem;
+    font-size: 1.15rem;
+    font-family: 'Outfit', sans-serif;
+}
+
+.flow-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.flow-pill {
+    background: #e8f0ff;
+    border: 1px solid #bfd3f7;
+    border-radius: 999px;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.86rem;
+    color: #1f3e80;
+    font-weight: 600;
+}
+
+.subject-header {
+    margin-bottom: 1rem;
+}
+
+.subject-hero {
+    border-radius: 1.2rem;
+    padding: 1.3rem 1.4rem;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+.subject-layout {
+    display: grid;
+    gap: 1rem;
+}
+
+.subject-side-note {
+    border: 1px solid var(--academy-border);
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1rem;
+    color: #385177;
+}
+
+.subject-side-note h3 {
+    margin: 0 0 0.4rem;
+    font-family: 'Outfit', sans-serif;
+    color: #12376b;
+}
+
+.subject-header h1 {
+    margin: 0;
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(1.7rem, 2.8vw, 2.4rem);
+}
+
+.subject-subtitle {
+    color: #4f6288;
+    margin-top: 0.4rem;
+}
+
+.block-grid {
+    margin-top: 1.3rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.block-card {
+    background: var(--academy-card);
+    border: 1px solid var(--academy-border);
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.block-label {
+    display: inline-block;
+    background: #e7efff;
+    color: #1f3f81;
+    font-weight: 700;
+    font-size: 0.8rem;
+    border-radius: 999px;
+    padding: 0.25rem 0.65rem;
+    margin-bottom: 0.65rem;
+}
+
+.block-topic-list {
+    margin: 0 0 0.8rem;
+    padding-left: 1rem;
+    color: #243b68;
+}
+
+.resource-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.resource-item {
+    border: 1px solid #d8e6ff;
+    border-radius: 0.7rem;
+    background: #fbfdff;
+    padding: 0.65rem;
+}
+
+.resource-item h4 {
+    margin: 0 0 0.25rem;
+    font-size: 0.9rem;
+}
+
+.resource-item p,
+.resource-item a {
+    margin: 0;
+    font-size: 0.84rem;
+    color: #4f6288;
+    text-decoration: none;
+}
+
+.overview-grid,
+.about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.overview-card,
+.about-card {
+    border-radius: 1rem;
+    border: 1px solid var(--academy-border);
+    background: var(--academy-card);
+    padding: 1rem;
+}
+
+.video-list {
+    margin-top: 0.5rem;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.video-list a {
+    display: block;
+    border-radius: 0.65rem;
+    border: 1px solid #d8e6ff;
+    padding: 0.5rem 0.6rem;
+    text-decoration: none;
+    color: #1f3f81;
+    font-size: 0.9rem;
+}
+
+.about-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #dbe8ff;
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.muted-note {
+    color: #5e7198;
+    font-size: 0.84rem;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 0.8rem;
+    text-decoration: none;
+    color: #2e4f94;
+    font-weight: 600;
+}
+
+.subject-theme-anatomy .subject-hero {
+    background: linear-gradient(135deg, #1f3b75, #3159a8);
+}
+
+.subject-theme-anatomy .anatomy-layout {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(420px, 2.2fr);
+    align-items: start;
+}
+
+.subject-theme-physiology .subject-hero {
+    background: linear-gradient(135deg, #0d6f8a, #16a3bf);
+}
+
+.subject-theme-physiology .block-card {
+    border-left: 5px solid #15a2bf;
+    background: linear-gradient(180deg, #ffffff, #f2fbfe);
+}
+
+.subject-theme-biochemistry .subject-hero {
+    background: linear-gradient(135deg, #56317f, #7b4fb0);
+}
+
+.subject-theme-biochemistry .block-card {
+    background: linear-gradient(180deg, #ffffff, #f8f3ff);
+    border-color: #decff2;
+}
+
+.subject-theme-oral-biology .subject-hero {
+    background: linear-gradient(135deg, #12624f, #1e9b79);
+}
+
+.subject-theme-oral-biology .block-label {
+    background: #d9f5ec;
+    color: #14624e;
+}
+
+.subject-theme-pharmacology .subject-hero {
+    background: linear-gradient(135deg, #703216, #b4531c);
+}
+
+.subject-theme-pharmacology .resource-item {
+    border-style: dashed;
+    background: #fffaf6;
+}
+
+@media (max-width: 767px) {
+    .academy-shell {
+        padding-top: 5.8rem;
+    }
+
+    .academy-hero {
+        padding: 1.25rem;
+    }
+
+    .subject-theme-anatomy .anatomy-layout {
+        grid-template-columns: 1fr;
+    }
+}

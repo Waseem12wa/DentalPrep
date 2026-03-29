@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
-const { Course, Lesson, Quiz, Progress, Review, User, generateId } = require("../db");
+const { Course, Lesson, Quiz, Progress, Review, User, SubjectContent, AcademyProfile, generateId } = require("../db");
 
 const router = express.Router();
 
@@ -117,6 +117,90 @@ function parseCaseStudies(value) {
       return caseStudy;
     })
     .filter((item) => item.title || item.scenario || item.diagnosis || item.discussion || item.relevance);
+}
+
+function parseLineLinks(value) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      const parts = line.split("|").map((part) => part.trim());
+      if (parts.length >= 2) {
+        return {
+          title: parts[0] || `Resource ${index + 1}`,
+          url: parts.slice(1).join("|") || "#"
+        };
+      }
+
+      return {
+        title: `Resource ${index + 1}`,
+        url: parts[0] || "#"
+      };
+    });
+}
+
+function sanitizeLinks(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+      const title = String(item.title || "").trim();
+      const url = String(item.url || "").trim();
+      if (!title && !url) {
+        return null;
+      }
+      return {
+        title: title || url || "Resource",
+        url: url || "#"
+      };
+    })
+    .filter(Boolean);
+}
+
+function ensureAcademyProfile() {
+  const existing = AcademyProfile.findOne({ id: "academy_profile" });
+  if (existing) {
+    return existing;
+  }
+
+  return AcademyProfile.findOneAndUpdate(
+    { id: "academy_profile" },
+    {
+      id: "academy_profile",
+      aboutAcademyText: "Dental Prep is your structured BDS preparation platform where each subject is organized into simple blocks, helping students move from fundamentals to clinical confidence.",
+      generalOverview: {
+        books: [{ title: "BDS Core Reading List", url: "#" }],
+        premiumNotes: [{ title: "Premium Notes Pack", url: "#" }],
+        importantSlides: [{ title: "Important Slides Collection", url: "#" }],
+        shortNotes: [{ title: "Short Notes for Final Revision", url: "#" }],
+        videos: Array.from({ length: 6 }).map((_, index) => ({
+          title: `General Overview Video ${index + 1}`,
+          url: "https://www.youtube.com/@pulseprepofficial"
+        }))
+      },
+      aboutUs: {
+        profileImageUrl: "/static/images/favicon.png",
+        introVideoUrl: "https://www.youtube.com/@pulseprepofficial",
+        notes: [{ title: "Academy Intro Notes", url: "#" }],
+        pdfResources: [{ title: "Academy Resource PDF", url: "#" }],
+        contactEmail: "zwaseem298@gmail.com",
+        contactNumbers: ["+92 335 9591271"],
+        socialLinks: {
+          facebook: "https://facebook.com/profile.php?id=61576776451528",
+          youtube: "https://www.youtube.com/@pulseprepofficial",
+          instagram: "https://instagram.com/pulseprepofficial",
+          linkedin: "https://linkedin.com/in/pulse-prep-778292368"
+        }
+      }
+    },
+    { new: true, upsert: true }
+  );
 }
 
 function buildStudentAnalytics() {
@@ -331,6 +415,129 @@ router.get("/admin/overview", adminAuth, async (_req, res) => {
 router.get("/admin/student-analytics", adminAuth, async (_req, res) => {
   try {
     return res.json({ students: buildStudentAnalytics() });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/admin/academy/content", adminAuth, async (_req, res) => {
+  try {
+    const profile = ensureAcademyProfile();
+    const blocks = SubjectContent.find({});
+
+    return res.json({
+      profile,
+      blocks
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post(
+  "/admin/academy/block",
+  adminAuth,
+  contentUpload.fields([
+    { name: "videoFiles", maxCount: 20 },
+    { name: "noteFiles", maxCount: 20 },
+    { name: "clinicalFiles", maxCount: 20 }
+  ]),
+  async (req, res) => {
+    try {
+      const subjectKey = String(req.body?.subjectKey || "").trim().toLowerCase();
+      const blockKey = String(req.body?.blockKey || "").trim().toLowerCase();
+
+      if (!subjectKey || !blockKey) {
+        return res.status(400).json({ message: "subjectKey and blockKey are required" });
+      }
+
+      const id = `${subjectKey}_${blockKey}`;
+      const topics = splitValues(req.body?.topics);
+      const noteText = String(req.body?.noteText || "").trim();
+      const clinicalText = String(req.body?.clinicalText || "").trim();
+      const videoItems = parseLineLinks(req.body?.videoLinks);
+
+      const uploadedVideos = (req.files?.videoFiles || []).map((file, index) => ({
+        title: path.basename(file.originalname || `Video ${index + 1}`, path.extname(file.originalname || "")),
+        url: `/static/uploads/${file.filename}`,
+        mimeType: file.mimetype || "application/octet-stream",
+        size: file.size || 0
+      }));
+
+      const noteResources = (req.files?.noteFiles || []).map((file, index) => createAssetRecord(file, "note", index));
+      const clinicalResources = (req.files?.clinicalFiles || []).map((file, index) => createAssetRecord(file, "clinical", index));
+
+      const existing = SubjectContent.findOne({ id });
+      const next = SubjectContent.findOneAndUpdate(
+        { id },
+        {
+          id,
+          subjectKey,
+          blockKey,
+          blockTitle: String(req.body?.blockTitle || existing?.blockTitle || blockKey).trim(),
+          topics: topics.length ? topics : (Array.isArray(existing?.topics) ? existing.topics : []),
+          videoItems: sanitizeLinks([...(videoItems.length ? videoItems : sanitizeLinks(existing?.videoItems || [])), ...uploadedVideos]),
+          noteText: noteText || existing?.noteText || "",
+          clinicalText: clinicalText || existing?.clinicalText || "",
+          noteResources: noteResources.length ? noteResources : (Array.isArray(existing?.noteResources) ? existing.noteResources : []),
+          clinicalResources: clinicalResources.length ? clinicalResources : (Array.isArray(existing?.clinicalResources) ? existing.clinicalResources : [])
+        },
+        { new: true, upsert: true }
+      );
+
+      return res.status(201).json({ block: next });
+    } catch (err) {
+      return res.status(500).json({ message: `Server error: ${err.message}` });
+    }
+  }
+);
+
+router.post("/admin/academy/profile", adminAuth, async (req, res) => {
+  try {
+    const profile = ensureAcademyProfile();
+    const body = req.body || {};
+
+    const aboutAcademyText = String(body.aboutAcademyText || profile.aboutAcademyText || "").trim();
+    const contactNumbers = splitValues(body.contactNumbers);
+    const books = String(body.overviewBooks || "").trim() ? parseLineLinks(body.overviewBooks) : sanitizeLinks(profile.generalOverview?.books || []);
+    const premiumNotes = String(body.overviewPremiumNotes || "").trim() ? parseLineLinks(body.overviewPremiumNotes) : sanitizeLinks(profile.generalOverview?.premiumNotes || []);
+    const importantSlides = String(body.overviewImportantSlides || "").trim() ? parseLineLinks(body.overviewImportantSlides) : sanitizeLinks(profile.generalOverview?.importantSlides || []);
+    const shortNotes = String(body.overviewShortNotes || "").trim() ? parseLineLinks(body.overviewShortNotes) : sanitizeLinks(profile.generalOverview?.shortNotes || []);
+    const videos = String(body.overviewVideos || "").trim() ? parseLineLinks(body.overviewVideos) : sanitizeLinks(profile.generalOverview?.videos || []);
+    const aboutNotes = String(body.aboutNotes || "").trim() ? parseLineLinks(body.aboutNotes) : sanitizeLinks(profile.aboutUs?.notes || []);
+    const aboutPdfResources = String(body.aboutPdfResources || "").trim() ? parseLineLinks(body.aboutPdfResources) : sanitizeLinks(profile.aboutUs?.pdfResources || []);
+
+    const updated = AcademyProfile.findOneAndUpdate(
+      { id: "academy_profile" },
+      {
+        id: "academy_profile",
+        aboutAcademyText,
+        generalOverview: {
+          books,
+          premiumNotes,
+          importantSlides,
+          shortNotes,
+          videos
+        },
+        aboutUs: {
+          profileImageUrl: String(body.profileImageUrl || profile.aboutUs?.profileImageUrl || "/static/images/favicon.png").trim(),
+          introVideoUrl: String(body.introVideoUrl || profile.aboutUs?.introVideoUrl || "").trim(),
+          notes: aboutNotes,
+          pdfResources: aboutPdfResources,
+          contactEmail: String(body.contactEmail || profile.aboutUs?.contactEmail || "").trim(),
+          contactNumbers: contactNumbers.length ? contactNumbers : (Array.isArray(profile.aboutUs?.contactNumbers) ? profile.aboutUs.contactNumbers : []),
+          socialLinks: {
+            facebook: String(body.facebookUrl || profile.aboutUs?.socialLinks?.facebook || "").trim(),
+            youtube: String(body.youtubeUrl || profile.aboutUs?.socialLinks?.youtube || "").trim(),
+            instagram: String(body.instagramUrl || profile.aboutUs?.socialLinks?.instagram || "").trim(),
+            linkedin: String(body.linkedinUrl || profile.aboutUs?.socialLinks?.linkedin || "").trim()
+          }
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    return res.status(201).json({ profile: updated });
   } catch (_err) {
     return res.status(500).json({ message: "Server error" });
   }

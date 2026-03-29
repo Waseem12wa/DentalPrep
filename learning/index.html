@@ -4,169 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Student Dashboard | DentalPrep</title>
-    <link rel="stylesheet" href="../static/css/DAstyles.css">
-    <link rel="stylesheet" href="../static/css/style.css">
+    <title>Dental Prep Homepage | DentalPrep</title>
     <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="../static/css/academy.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Dashboard Specific Overrides */
-        body {
-            background-color: var(--gray-50);
-            padding-top: 5rem;
-            /* Space for fixed header */
-        }
-
-        .dashboard-container {
-            max-width: 1280px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-            min-height: calc(100vh - 5rem - 300px);
-        }
-
-        .welcome-banner {
-            background: linear-gradient(135deg, var(--venous-blue) 0%, var(--primary-color) 100%);
-            border-radius: var(--border-radius-lg);
-            padding: 2rem;
-            color: white;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-md);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .welcome-banner::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 300px;
-            height: 100%;
-            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
-            opacity: 0.4;
-            pointer-events: none;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            border: 1px solid var(--gray-200);
-            transition: var(--transition-all);
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .course-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .course-card {
-            background: white;
-            border-radius: var(--border-radius-lg);
-            overflow: hidden;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--gray-200);
-            transition: var(--transition-all);
-            flex-direction: column;
-        }
-
-        .course-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .course-thumb {
-            height: 160px;
-            background: var(--gray-100);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gray-400);
-            position: relative;
-        }
-
-        .course-thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .course-content {
-            padding: 1.5rem;
-        }
-
-        .progress-container {
-            margin: 1rem 0;
-        }
-
-        .progress-bar {
-            height: 8px;
-            background: var(--gray-200);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--primary-color);
-            width: 0%;
-            transition: width 1s ease-in-out;
-        }
-
-        .alert-box {
-            padding: 1rem;
-            background: #fee2e2;
-            color: #991b1b;
-            border-radius: var(--border-radius-md);
-            margin-bottom: 2rem;
-            display: none;
-        }
-    </style>
 </head>
 
-<body>
-    <!-- Overlay for mobile menu -->
+<body class="academy-page" data-page="home">
     <div class="overlay" id="overlay"></div>
 
-    <!-- Enhanced Modern Header -->
     <header>
         <div class="header-container">
             <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">
@@ -174,308 +24,88 @@
             </button>
 
             <nav class="nav-menu" id="nav-menu" role="navigation" aria-label="Main navigation">
-                <a href="/">Home</a>
-                <a href="/about/">About Us</a>
-                <a href="/faqs/">FAQs</a>
-                <a href="/learning/" class="active" style="color: var(--primary-color);">My Dashboard</a>
-                <a href="/courses/">Browse Courses</a>
+                <a href="/learning/">Homepage</a>
+                <a href="/learning/general-overview.html">General Overview</a>
+                <a href="/learning/about-academy.html">About Us</a>
+                <a href="/contact/">Contact Us</a>
             </nav>
 
-            <a href="/" class="logo" aria-label="DentalPrep - Home"
-                style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+            <a href="/learning/" class="logo" aria-label="DentalPrep - Learning Home" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
                 <div class="logo-icon" style="font-size: 2rem; color: var(--arterial-red);">
                     <i class="fas fa-tooth"></i>
                 </div>
-                <div class="logo-text"
-                    style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                <div class="logo-text" style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
                     Dental<span style="color: var(--arterial-red);">Prep</span>
                 </div>
             </a>
 
             <div class="auth-buttons">
-                <div class="user-profile-btn" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <div id="user-avatar"
-                        style="width: 35px; height: 35px; background: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                        U</div>
-                    <button id="logout-btn" class="auth-btn logout-btn" title="Logout">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                </div>
+                <button id="logout-btn" class="auth-btn logout-btn" title="Logout" style="border: 0; cursor: pointer;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span style="margin-left: 0.4rem;">Logout</span>
+                </button>
             </div>
         </div>
     </header>
 
-    <div class="dashboard-container">
+    <main class="academy-shell">
+        <section class="academy-hero">
+            <h1>Dental Prep</h1>
+            <p><strong>About Academy:</strong> <span id="about-academy-text">Dental Prep is your structured BDS preparation platform where each subject is organized into simple blocks, so you can move from foundation topics to clinical application with clarity and confidence.</span></p>
+        </section>
 
-        <div id="alert-box" class="alert-box"></div>
+        <section class="academy-grid" aria-label="Main navigation action boxes">
+            <a class="academy-box" href="/learning/general-overview.html">
+                <h3>General Overview</h3>
+                <p>Books, premium notes, important slides, short notes, and videos.</p>
+            </a>
 
-        <!-- Welcome Banner -->
-        <div class="welcome-banner">
-            <h1 class="text-3xl font-bold mb-2">Welcome Back, <span id="user-name">Student</span>! 👋</h1>
-            <p class="opacity-90">Pick up where you left off. Your journey to dental excellence continues.</p>
-        </div>
+            <a class="academy-box" href="/learning/anatomy.html">
+                <h3>Anatomy</h3>
+                <p>Block A/B/C learning with resources.</p>
+            </a>
 
-        <!-- Stats Grid -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;">
-                    <i class="fas fa-book-open"></i>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-500 font-medium">Enrolled Courses</div>
-                    <div class="text-2xl font-bold" id="stat-courses">0</div>
-                </div>
+            <a class="academy-box" href="/learning/physiology.html">
+                <h3>Physiology</h3>
+                <p>Block A/B/C learning with resources.</p>
+            </a>
+
+            <a class="academy-box" href="/learning/biochemistry.html">
+                <h3>Biochemistry</h3>
+                <p>Block A/B/C learning with resources.</p>
+            </a>
+
+            <a class="academy-box" href="/learning/oral-biology.html">
+                <h3>Oral Biology</h3>
+                <p>Block A/B/C learning with resources.</p>
+            </a>
+
+            <a class="academy-box" href="/learning/pharmacology.html">
+                <h3>Pharmacology (Prime and Minus)</h3>
+                <p>Block A/B/C learning with resources.</p>
+            </a>
+
+            <a class="academy-box" href="/learning/about-academy.html">
+                <h3>About Us</h3>
+                <p>Team profile, intro video, notes, PDFs, and contact numbers.</p>
+            </a>
+        </section>
+
+        <section class="academy-flow">
+            <h2>Student Flow</h2>
+            <div class="flow-pill-row">
+                <span class="flow-pill">Login</span>
+                <span class="flow-pill">Homepage</span>
+                <span class="flow-pill">Independent Subject Page</span>
+                <span class="flow-pill">Block A/B/C</span>
+                <span class="flow-pill">Videos + Notes + Clinical Content</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon" style="background: #f0fdf4; color: #22c55e;">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-500 font-medium">Completed Lessons</div>
-                    <div class="text-2xl font-bold" id="stat-completed">0</div>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon" style="background: #fff7ed; color: #f97316;">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-500 font-medium">Study Hours</div>
-                    <div class="text-2xl font-bold">12.5</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- My Courses -->
-        <div class="section-header">
-            <h2 class="text-2xl font-bold text-gray-800">My Courses</h2>
-            <a href="/courses/" class="cta-btn cta-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Browse
-                All</a>
-        </div>
-
-        <div id="courses-loader" class="text-center py-10">
-            <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
-            <p class="mt-2 text-gray-500">Loading your courses...</p>
-        </div>
-
-        <div id="courses-container" class="course-grid hidden">
-            <!-- Courses injected here -->
-        </div>
-
-        <div id="no-courses-msg" class="hidden text-center py-10 bg-white rounded-xl border border-gray-200">
-            <div class="mb-4 text-gray-300 text-5xl"><i class="fas fa-folder-open"></i></div>
-            <h3 class="text-xl font-bold text-gray-700">No courses yet</h3>
-            <p class="text-gray-500 mb-6">Start your learning journey by exploring our catalog.</p>
-            <a href="/courses/" class="cta-btn cta-primary">Explore Courses</a>
-        </div>
-
-        <div class="section-header" style="margin-top: 3rem;">
-            <h2 class="text-2xl font-bold text-gray-800">Available Quizzes</h2>
-            <a href="/quiz/" class="cta-btn cta-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Open Quiz Page</a>
-        </div>
-
-        <div id="quizzes-loader" class="text-center py-10">
-            <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
-            <p class="mt-2 text-gray-500">Loading quizzes...</p>
-        </div>
-
-        <div id="quizzes-container" class="course-grid hidden">
-            <!-- Quizzes injected here -->
-        </div>
-
-        <div id="no-quizzes-msg" class="hidden text-center py-10 bg-white rounded-xl border border-gray-200">
-            <div class="mb-4 text-gray-300 text-5xl"><i class="fas fa-file-alt"></i></div>
-            <h3 class="text-xl font-bold text-gray-700">No quizzes yet</h3>
-            <p class="text-gray-500 mb-6">New quizzes will appear here as soon as they are added by admin.</p>
-        </div>
-
-    </div>
-
-    <!-- Enhanced Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-brand">
-                    <div class="footer-logo">
-                        <i class="fas fa-tooth" style="color: var(--arterial-red); font-size: 1.5rem;"></i>
-                        <div class="brand-name"
-                            style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: white;">
-                            Dental<span style="color: var(--arterial-red);">Prep</span></div>
-                    </div>
-                    <p class="footer-tagline">Empowering dental students worldwide.</p>
-                </div>
-
-                <div class="footer-section">
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="/">Home</a></li>
-                        <li><a href="/learning/">Dashboard</a></li>
-                        <li><a href="/courses/">Courses</a></li>
-                        <li><a href="/contact/">Contact Support</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <div class="footer-bottom-content">
-                <div class="copyright">&copy; 2026 DentalPrep. All rights reserved.</div>
-            </div>
-        </div>
-    </footer>
+        </section>
+    </main>
 
     <script src="../static/js/api.js"></script>
-    <script src="../static/js/landing.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const { getApiBase } = window.DentalPrepApi || {};
-            const API_BASE = getApiBase ? getApiBase() : "http://localhost:4000/api";
-            const token = localStorage.getItem('dentalprep_token');
-
-            const userNameEl = document.getElementById('user-name');
-            const userAvatarEl = document.getElementById('user-avatar');
-            const coursesContainer = document.getElementById('courses-container');
-            const loader = document.getElementById('courses-loader');
-            const noCoursesMsg = document.getElementById('no-courses-msg');
-            const quizzesContainer = document.getElementById('quizzes-container');
-            const quizzesLoader = document.getElementById('quizzes-loader');
-            const noQuizzesMsg = document.getElementById('no-quizzes-msg');
-            const alertBox = document.getElementById('alert-box');
-            const statCourses = document.getElementById('stat-courses');
-
-            // Logout handler
-            document.getElementById('logout-btn').addEventListener('click', () => {
-                localStorage.removeItem('dentalprep_token');
-                window.location.href = '/login/';
-            });
-
-            if (!token) {
-                window.location.href = '/login/';
-                return;
-            }
-
-            try {
-                const [coursesRes, quizzesRes, lessonsRes] = await Promise.all([
-                    fetch(`${API_BASE}/courses`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }),
-                    fetch(`${API_BASE}/quizzes`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }),
-                    fetch(`${API_BASE}/lessons`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    })
-                ]);
-
-                if (coursesRes.status === 401 || coursesRes.status === 403) {
-                    throw new Error("Session expired");
-                }
-
-                if (!coursesRes.ok) {
-                    throw new Error("Failed to load courses");
-                }
-
-                const data = await coursesRes.json();
-                const quizzesData = quizzesRes.ok ? await quizzesRes.json() : { quizzes: [] };
-                const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
-                const lessonLookup = (lessonsData.lessons || []).reduce((acc, lesson) => {
-                    acc[lesson.id] = lesson;
-                    return acc;
-                }, {});
-
-                // Update Name if available
-                if (data.user && data.user.name) {
-                    userNameEl.innerText = data.user.name;
-                    userAvatarEl.innerText = data.user.name.charAt(0).toUpperCase();
-                }
-
-                // Render Courses
-                loader.classList.add('hidden');
-
-                const courses = data.courses || [];
-                statCourses.innerText = courses.length;
-
-                if (courses.length === 0) {
-                    noCoursesMsg.classList.remove('hidden');
-                } else {
-                    coursesContainer.classList.remove('hidden');
-                    coursesContainer.innerHTML = courses.map(course => `
-                        <div class="course-card">
-                            <div class="course-thumb">
-                                <i class="fas fa-tooth" style="font-size: 3rem; color: var(--gray-300);"></i>
-                            </div>
-                            <div class="course-content">
-                                <h3 class="text-xl font-bold mb-2 text-gray-800">${course.title || 'Untitled Course'}</h3>
-                                <p class="text-sm text-gray-500 mb-4">${course.lessonsCount || 0} Lessons • ${course.quizCount || 0} Quizzes</p>
-                                
-                                <div class="progress-container">
-                                    <div class="flex justify-between text-xs font-semibold mb-1 text-gray-600">
-                                        <span>Progress</span>
-                                        <span>${course.progress || 0}%</span>
-                                    </div>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: ${course.progress || 0}%"></div>
-                                    </div>
-                                </div>
-                                
-                                <a href="/course-player/?id=${course.id}" class="cta-btn cta-primary w-full text-center justify-center mt-2">Continue Learning</a>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-
-                quizzesLoader.classList.add('hidden');
-                const quizzes = quizzesData.quizzes || [];
-
-                if (quizzes.length === 0) {
-                    noQuizzesMsg.classList.remove('hidden');
-                } else {
-                    quizzesContainer.classList.remove('hidden');
-                    quizzesContainer.innerHTML = quizzes.map(quiz => {
-                        const lesson = lessonLookup[quiz.lessonId];
-                        const lessonTitle = lesson ? lesson.title : 'Lesson';
-                        return `
-                            <div class="course-card">
-                                <div class="course-thumb">
-                                    <i class="fas fa-file-alt" style="font-size: 3rem; color: var(--gray-300);"></i>
-                                </div>
-                                <div class="course-content">
-                                    <h3 class="text-xl font-bold mb-2 text-gray-800">${quiz.title || 'Untitled Quiz'}</h3>
-                                    <p class="text-sm text-gray-500 mb-4">${lessonTitle} • ${quiz.questions || 0} Questions</p>
-                                    <a href="/quiz/?id=${quiz.id}" class="cta-btn cta-primary w-full text-center justify-center mt-2">Start Quiz</a>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-
-            } catch (err) {
-                console.error(err);
-                if (err.message === "Session expired") {
-                    localStorage.removeItem('dentalprep_token');
-                    window.location.href = '/login/?msg=session_expired';
-                } else {
-                    loader.classList.add('hidden');
-                    quizzesLoader.classList.add('hidden');
-                    alertBox.style.display = 'block';
-                    alertBox.textContent = "Error loading courses. Please refresh the page.";
-                }
-            }
-
-            const menuBtn = document.getElementById('mobile-menu-btn');
-            const navMenu = document.getElementById('nav-menu');
-            const overlay = document.getElementById('overlay');
-            if (menuBtn) {
-                menuBtn.addEventListener('click', () => {
-                    navMenu.classList.toggle('show');
-                    overlay.classList.toggle('show');
-                });
-                overlay.addEventListener('click', () => {
-                    navMenu.classList.remove('show');
-                    overlay.classList.remove('show');
-                });
-            }
-        });
-    </script>
+    <script src="../static/js/script.js"></script>
+    <script src="../static/js/academy.js"></script>
 </body>
 
 </html>

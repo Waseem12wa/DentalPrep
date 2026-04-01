@@ -85,6 +85,7 @@
     getToken,
     setToken,
     clearToken,
+    fetch: apiFetch,
     apiFetch,
     getProfile,
     requireAuth

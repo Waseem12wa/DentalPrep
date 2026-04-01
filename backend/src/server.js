@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 const path = require("path");
 const fs = require("fs");
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const app = express();
 
@@ -29,6 +29,43 @@ app.use(cors({
 
 app.use(express.json());
 
+// Reliable file delivery for uploaded resources (documents/videos).
+app.get("/api/files/:name", (req, res) => {
+  const rawName = String(req.params.name || "");
+  const safeName = path.basename(rawName);
+  if (!safeName || safeName !== rawName) {
+    return res.status(400).json({ message: "Invalid file name" });
+  }
+
+  const uploadsDir = path.join(__dirname, "../../static/uploads");
+  const filePath = path.join(uploadsDir, safeName);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: "File not found" });
+  }
+
+  const ext = path.extname(safeName).toLowerCase();
+  const inlineExts = new Set([".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".webm", ".ogg", ".txt"]);
+  const mimeMap = {
+    ".pdf": "application/pdf",
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
+    ".ogg": "video/ogg",
+    ".mov": "video/quicktime",
+    ".m4v": "video/x-m4v",
+    ".doc": "application/msword",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".ppt": "application/vnd.ms-powerpoint",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  };
+
+  if (mimeMap[ext]) {
+    res.type(mimeMap[ext]);
+  }
+  res.setHeader("Accept-Ranges", "bytes");
+  res.setHeader("Content-Disposition", `${inlineExts.has(ext) ? "inline" : "attachment"}; filename=\"${safeName}\"`);
+  return res.sendFile(filePath);
+});
+
 // Serve static files with correct MIME types
 app.use(express.static(path.join(__dirname, "../../"), {
   setHeaders: (res, filePath) => {
@@ -47,8 +84,8 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     time: new Date().toISOString(),
-    storage: "json",
-    dataDir: path.join(__dirname, "../data")
+    storage: "mongodb",
+    db: "dentalprep"
   });
 });
 
@@ -57,91 +94,15 @@ const port = process.env.PORT || 4000;
 
 // Async initialization function
 async function startServer() {
-  // Initialize JSON storage BEFORE importing routes
-  const dataDir = path.join(__dirname, "../data");
-  console.log(`Initializing data directory: ${dataDir}`);
-
   try {
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-      console.log(`Created data directory: ${dataDir}`);
-    }
+    // Import DB once so mongoose connection initializes before route usage.
+    require("./db");
 
-    // Create initial data files if they don't exist
-    const initFiles = {
-      "users.json": [],
-      "courses.json": [],
-      "lessons.json": [],
-      "quizzes.json": [],
-      "progress.json": [],
-      "contacts.json": [],
-      "subscriptions.json": [],
-      "reviews.json": [],
-      "ai_chats.json": [],
-      "subject_content.json": [],
-      "academy_profile.json": [
-        {
-          "id": "academy_profile",
-          "aboutAcademyText": "Dental Prep is your structured BDS preparation platform where each subject is organized into simple blocks, helping students move from fundamentals to clinical confidence.",
-          "generalOverview": {
-            "books": [
-              { "title": "BDS Core Reading List", "url": "#" }
-            ],
-            "premiumNotes": [
-              { "title": "Premium Notes Pack", "url": "#" }
-            ],
-            "importantSlides": [
-              { "title": "Important Slides Collection", "url": "#" }
-            ],
-            "shortNotes": [
-              { "title": "Short Notes for Final Revision", "url": "#" }
-            ],
-            "videos": [
-              { "title": "General Overview Video 1", "url": "https://www.youtube.com/@pulseprepofficial" },
-              { "title": "General Overview Video 2", "url": "https://www.youtube.com/@pulseprepofficial" },
-              { "title": "General Overview Video 3", "url": "https://www.youtube.com/@pulseprepofficial" },
-              { "title": "General Overview Video 4", "url": "https://www.youtube.com/@pulseprepofficial" },
-              { "title": "General Overview Video 5", "url": "https://www.youtube.com/@pulseprepofficial" },
-              { "title": "General Overview Video 6", "url": "https://www.youtube.com/@pulseprepofficial" }
-            ]
-          },
-          "aboutUs": {
-            "profileImageUrl": "/static/images/favicon.png",
-            "introVideoUrl": "https://www.youtube.com/@pulseprepofficial",
-            "notes": [
-              { "title": "Academy Intro Notes", "url": "#" }
-            ],
-            "pdfResources": [
-              { "title": "Academy Resource PDF", "url": "#" }
-            ],
-            "contactEmail": "admin@dentalprep.com",
-            "contactNumbers": ["+92 335 9591271"],
-            "socialLinks": {
-              "facebook": "https://facebook.com/profile.php?id=61576776451528",
-              "youtube": "https://www.youtube.com/@pulseprepofficial",
-              "instagram": "https://instagram.com/pulseprepofficial",
-              "linkedin": "https://linkedin.com/in/pulse-prep-778292368"
-            }
-          }
-        }
-      ]
-    };
-
-    Object.entries(initFiles).forEach(([filename, defaultData]) => {
-      const filePath = path.join(dataDir, filename);
-      if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, JSON.stringify(defaultData, null, 2));
-        console.log(`Created ${filename}`);
-      }
-    });
-
-    console.log("JSON storage initialized successfully");
-
-    // Seed admin user
+    // Seed admin user in MongoDB.
     const seedAdmin = require("./seedAdmin");
     await seedAdmin();
   } catch (err) {
-    console.error("Failed to initialize storage:", err);
+    console.error("Failed to initialize backend:", err);
     process.exit(1);
   }
 
@@ -170,7 +131,7 @@ async function startServer() {
   // Start server
   app.listen(port, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${port}`);
-    console.log(`📁 Data directory: ${dataDir}`);
+    console.log("🗄️ Storage: MongoDB (dentalprep)");
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   }).on('error', (err) => {
     console.error('❌ Failed to start server:', err);

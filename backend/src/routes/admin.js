@@ -49,12 +49,14 @@ function isYoutubeUrl(value) {
 function createAssetRecord(file, kind, index = 0) {
   const ext = path.extname(file.originalname || "");
   const title = path.basename(file.originalname || `${kind}_${index + 1}`, ext) || `${kind} ${index + 1}`;
+  const fileUrl = `/static/uploads/${file.filename}`;
   return {
     id: `${kind}_${generateId()}`,
     kind,
     title,
     fileName: file.originalname,
-    fileUrl: `/static/uploads/${file.filename}`,
+    fileUrl,
+    url: fileUrl,
     mimeType: file.mimetype || "application/octet-stream",
     size: file.size || 0
   };
@@ -150,26 +152,34 @@ function sanitizeLinks(value) {
       if (!item || typeof item !== "object") {
         return null;
       }
-      const title = String(item.title || "").trim();
-      const url = String(item.url || "").trim();
+      const raw = (item && typeof item.toObject === "function") ? item.toObject() : item;
+      const doc = raw && raw._doc ? raw._doc : raw;
+      const title = String((doc && doc.title) || "").trim();
+      const rawUrl = (doc && doc.url) || "";
+      const rawFileUrl = (doc && doc.fileUrl) || "";
+      const preferredUrl = (rawUrl && String(rawUrl).trim() !== "#") ? rawUrl : (rawFileUrl || rawUrl || "");
+      const url = String(preferredUrl || "").trim();
       if (!title && !url) {
+        return null;
+      }
+      if (!url || url === "#") {
         return null;
       }
       return {
         title: title || url || "Resource",
-        url: url || "#"
+        url
       };
     })
     .filter(Boolean);
 }
 
-function ensureAcademyProfile() {
-  const existing = AcademyProfile.findOne({ id: "academy_profile" });
+async function ensureAcademyProfile() {
+  const existing = await AcademyProfile.findOne({ id: "academy_profile" });
   if (existing) {
     return existing;
   }
 
-  return AcademyProfile.findOneAndUpdate(
+  return await AcademyProfile.findOneAndUpdate(
     { id: "academy_profile" },
     {
       id: "academy_profile",
@@ -203,12 +213,12 @@ function ensureAcademyProfile() {
   );
 }
 
-function buildStudentAnalytics() {
-  const courses = Course.find({});
-  const lessons = Lesson.find({});
-  const quizzes = Quiz.find({});
-  const progressItems = Progress.find({});
-  const students = User.find({}).filter((user) => user.role !== "admin");
+async function buildStudentAnalytics() {
+  const courses = await Course.find({});
+  const lessons = await Lesson.find({});
+  const quizzes = await Quiz.find({});
+  const progressItems = await Progress.find({});
+  const students = (await User.find({})).filter((user) => user.role !== "admin");
 
   const coursesById = courses.reduce((acc, course) => {
     acc[course.courseId] = course;
@@ -306,7 +316,7 @@ router.post("/admin/course", adminAuth, async (req, res) => {
     }
 
     const id = courseId || `course_${normalizeId(title)}`;
-    const course = Course.findOneAndUpdate(
+    const course = await Course.findOneAndUpdate(
       { courseId: id },
       {
         courseId: id,
@@ -332,15 +342,129 @@ router.post("/admin/course", adminAuth, async (req, res) => {
   }
 });
 
+router.delete("/admin/course/:courseId", adminAuth, async (req, res) => {
+  try {
+    const courseId = String(req.params.courseId || "").trim();
+    if (!courseId) {
+      return res.status(400).json({ message: "Course ID is required" });
+    }
+
+    const course = await Course.findOne({ courseId });
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    const lessonRows = await Lesson.find({ courseId }, { lessonId: 1 });
+    const lessonIds = lessonRows.map((row) => row.lessonId).filter(Boolean);
+
+    const directQuizRows = await Quiz.find({ courseId }, { quizId: 1 });
+    const lessonQuizRows = lessonIds.length ? await Quiz.find({ lessonId: { $in: lessonIds } }, { quizId: 1 }) : [];
+    const quizIds = Array.from(new Set([...directQuizRows, ...lessonQuizRows].map((row) => row.quizId).filter(Boolean)));
+
+    const progressOrFilters = [{ courseId }];
+    if (lessonIds.length) {
+      progressOrFilters.push({ lessonId: { $in: lessonIds } });
+      progressOrFilters.push({ referenceId: { $in: lessonIds } });
+    }
+    if (quizIds.length) {
+      progressOrFilters.push({ quizId: { $in: quizIds } });
+      progressOrFilters.push({ referenceId: { $in: quizIds } });
+    }
+
+    const [deletedLessons, deletedQuizzes, deletedReviews, deletedProgress, deletedCourse] = await Promise.all([
+      Lesson.deleteMany({ courseId }),
+      Quiz.deleteMany({ $or: [{ courseId }, ...(lessonIds.length ? [{ lessonId: { $in: lessonIds } }] : [])] }),
+      Review.deleteMany({ courseId }),
+      Progress.deleteMany({ $or: progressOrFilters }),
+      Course.deleteOne({ courseId })
+    ]);
+
+    return res.json({
+      message: "Course and related data deleted permanently",
+      deleted: {
+        course: deletedCourse.deletedCount || 0,
+        lessons: deletedLessons.deletedCount || 0,
+        quizzes: deletedQuizzes.deletedCount || 0,
+        reviews: deletedReviews.deletedCount || 0,
+        progress: deletedProgress.deletedCount || 0
+      }
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/courses - Get all courses for admin dropdown (requires admin auth)
+router.get("/courses", adminAuth, async (_req, res) => {
+  try {
+    const courses = await Course.find({}).sort({ title: 1 });
+    const allLessons = await Lesson.find({});
+    const allQuizzes = await Quiz.find({});
+    
+    const data = courses.map((course) => {
+      const courseLessons = allLessons.filter((lesson) => lesson.courseId === course.courseId);
+      const courseQuizzes = allQuizzes.filter((quiz) => quiz.courseId === course.courseId);
+      
+      return {
+        id: course.courseId,
+        title: course.title,
+        description: course.description || "",
+        category: course.category || "",
+        curriculumTags: course.curriculumTags || [],
+        lessonsCount: courseLessons.length,
+        quizCount: courseQuizzes.length
+      };
+    });
+    
+    res.json({ courses: data });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/lessons - Get all lessons for admin panel (requires admin auth)
+router.get("/lessons", adminAuth, async (_req, res) => {
+  try {
+    const lessons = await Lesson.find({}).sort({ title: 1 });
+    const data = lessons.map((lesson) => ({
+      id: lesson.lessonId,
+      title: lesson.title,
+      courseId: lesson.courseId,
+      summary: lesson.summary || "",
+      videoUrl: lesson.videoUrl || ""
+    }));
+    res.json({ lessons: data });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/quizzes - Get all quizzes for admin panel (requires admin auth)
+router.get("/quizzes", adminAuth, async (_req, res) => {
+  try {
+    const quizzes = await Quiz.find({}).sort({ title: 1 });
+    const data = quizzes.map((quiz) => ({
+      id: quiz.quizId,
+      title: quiz.title,
+      courseId: quiz.courseId,
+      lessonId: quiz.lessonId,
+      questionCount: (quiz.questions || []).length
+    }));
+    res.json({ quizzes: data });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.get("/admin/overview", adminAuth, async (_req, res) => {
   try {
-    const courses = Course.find({});
-    const lessons = Lesson.find({});
-    const quizzes = Quiz.find({});
-    const progressItems = Progress.find({}).sort((left, right) => new Date(right.updatedAt || right.createdAt || 0) - new Date(left.updatedAt || left.createdAt || 0));
-    const reviews = Review.find({}).sort((left, right) => new Date(right.updatedAt || right.createdAt || 0) - new Date(left.updatedAt || left.createdAt || 0));
+    const courses = await Course.find({});
+    const lessons = await Lesson.find({});
+    const quizzes = await Quiz.find({});
+    const progressItems = (await Progress.find({})).sort((left, right) => new Date(right.updatedAt || right.createdAt || 0) - new Date(left.updatedAt || left.createdAt || 0));
+    const reviews = (await Review.find({})).sort((left, right) => new Date(right.updatedAt || right.createdAt || 0) - new Date(left.updatedAt || left.createdAt || 0));
     const quizAttempts = progressItems.filter((item) => item.itemType === "quiz" || item.quizId);
-    const usersById = User.find({}).reduce((acc, user) => {
+    const usersById = (await User.find({})).reduce((acc, user) => {
       acc[user._id] = user;
       return acc;
     }, {});
@@ -352,7 +476,7 @@ router.get("/admin/overview", adminAuth, async (_req, res) => {
       acc[course.courseId] = course;
       return acc;
     }, {});
-    const studentAnalytics = buildStudentAnalytics();
+    const studentAnalytics = await buildStudentAnalytics();
 
     const recentResults = quizAttempts
       .map((item) => {
@@ -414,7 +538,7 @@ router.get("/admin/overview", adminAuth, async (_req, res) => {
 
 router.get("/admin/student-analytics", adminAuth, async (_req, res) => {
   try {
-    return res.json({ students: buildStudentAnalytics() });
+    return res.json({ students: await buildStudentAnalytics() });
   } catch (_err) {
     return res.status(500).json({ message: "Server error" });
   }
@@ -422,8 +546,8 @@ router.get("/admin/student-analytics", adminAuth, async (_req, res) => {
 
 router.get("/admin/academy/content", adminAuth, async (_req, res) => {
   try {
-    const profile = ensureAcademyProfile();
-    const blocks = SubjectContent.find({});
+    const profile = await ensureAcademyProfile();
+    const blocks = await SubjectContent.find({});
 
     return res.json({
       profile,
@@ -467,8 +591,8 @@ router.post(
       const noteResources = (req.files?.noteFiles || []).map((file, index) => createAssetRecord(file, "note", index));
       const clinicalResources = (req.files?.clinicalFiles || []).map((file, index) => createAssetRecord(file, "clinical", index));
 
-      const existing = SubjectContent.findOne({ id });
-      const next = SubjectContent.findOneAndUpdate(
+      const existing = await SubjectContent.findOne({ id });
+      const next = await SubjectContent.findOneAndUpdate(
         { id },
         {
           id,
@@ -499,11 +623,12 @@ router.post(
     { name: "overviewBooksFiles", maxCount: 50 },
     { name: "overviewPremiumFiles", maxCount: 50 },
     { name: "overviewSlidesFiles", maxCount: 50 },
-    { name: "overviewShortFiles", maxCount: 50 }
+    { name: "overviewShortFiles", maxCount: 50 },
+    { name: "overviewVideoFiles", maxCount: 50 }
   ]),
   async (req, res) => {
     try {
-      const profile = ensureAcademyProfile();
+      const profile = await ensureAcademyProfile();
       const body = req.body || {};
 
       const aboutAcademyText = String(body.aboutAcademyText || profile.aboutAcademyText || "").trim();
@@ -514,17 +639,27 @@ router.post(
       const overviewPremiumFiles = (req.files?.overviewPremiumFiles || []).map((file, index) => createAssetRecord(file, "premium_notes", index));
       const overviewSlidesFiles = (req.files?.overviewSlidesFiles || []).map((file, index) => createAssetRecord(file, "slides", index));
       const overviewShortFiles = (req.files?.overviewShortFiles || []).map((file, index) => createAssetRecord(file, "short_notes", index));
+      const overviewVideoFiles = (req.files?.overviewVideoFiles || []).map((file, index) => {
+        const asset = createAssetRecord(file, "video", index);
+        return {
+          title: asset.title,
+          url: asset.fileUrl
+        };
+      });
 
       // Use uploaded files if provided, otherwise keep existing
       const books = overviewBooksFiles.length ? overviewBooksFiles : sanitizeLinks(profile.generalOverview?.books || []);
       const premiumNotes = overviewPremiumFiles.length ? overviewPremiumFiles : sanitizeLinks(profile.generalOverview?.premiumNotes || []);
       const importantSlides = overviewSlidesFiles.length ? overviewSlidesFiles : sanitizeLinks(profile.generalOverview?.importantSlides || []);
       const shortNotes = overviewShortFiles.length ? overviewShortFiles : sanitizeLinks(profile.generalOverview?.shortNotes || []);
-      const videos = String(body.overviewVideos || "").trim() ? parseLineLinks(body.overviewVideos) : sanitizeLinks(profile.generalOverview?.videos || []);
+      const manualVideos = String(body.overviewVideos || "").trim() ? parseLineLinks(body.overviewVideos) : [];
+      const videos = (manualVideos.length || overviewVideoFiles.length)
+        ? [...manualVideos, ...overviewVideoFiles]
+        : sanitizeLinks(profile.generalOverview?.videos || []);
       const aboutNotes = String(body.aboutNotes || "").trim() ? parseLineLinks(body.aboutNotes) : sanitizeLinks(profile.aboutUs?.notes || []);
       const aboutPdfResources = String(body.aboutPdfResources || "").trim() ? parseLineLinks(body.aboutPdfResources) : sanitizeLinks(profile.aboutUs?.pdfResources || []);
 
-      const updated = AcademyProfile.findOneAndUpdate(
+      const updated = await AcademyProfile.findOneAndUpdate(
         { id: "academy_profile" },
         {
           id: "academy_profile",
@@ -576,7 +711,7 @@ router.post(
         return res.status(400).json({ message: "Title and courseId are required" });
       }
 
-      const course = Course.findOne({ courseId });
+      const course = await Course.findOne({ courseId });
       if (!course) {
         return res.status(404).json({ message: "Course not found" });
       }
@@ -608,14 +743,14 @@ router.post(
         const currentLessonId = sources.length === 1
           ? (lessonId || `lesson_${normalizeId(title)}`)
           : `lesson_${normalizeId(title)}_${index + 1}`;
-        const existingLesson = Lesson.findOne({ lessonId: currentLessonId });
+        const existingLesson = await Lesson.findOne({ lessonId: currentLessonId });
         const currentTitle = sources.length === 1 ? title : `${title} ${index + 1}`;
         const audioItems = uploadedAudios.length ? uploadedAudios : Array.isArray(existingLesson?.audioItems) ? existingLesson.audioItems : [];
         const materials = uploadedMaterials.length ? uploadedMaterials : Array.isArray(existingLesson?.materials) ? existingLesson.materials : [];
         const caseStudyItems = parsedCaseStudies.length ? parsedCaseStudies : Array.isArray(existingLesson?.caseStudies) ? existingLesson.caseStudies : [];
         const videoValue = currentSource.videoUrl || existingLesson?.videoUrl || "";
 
-        const lesson = Lesson.findOneAndUpdate(
+        const lesson = await Lesson.findOneAndUpdate(
           { lessonId: currentLessonId },
           {
             lessonId: currentLessonId,
@@ -662,13 +797,13 @@ router.post("/admin/quiz", adminAuth, async (req, res) => {
       return res.status(400).json({ message: "lessonId, title, and questions are required" });
     }
 
-    const lesson = Lesson.findOne({ lessonId });
+    const lesson = await Lesson.findOne({ lessonId });
     if (!lesson) {
       return res.status(404).json({ message: "Lesson not found" });
     }
 
     const quizId = lesson.quizId || `quiz_${normalizeId(lessonId)}`;
-    const quiz = Quiz.findOneAndUpdate(
+    const quiz = await Quiz.findOneAndUpdate(
       { quizId },
       { quizId, courseId: lesson.courseId, lessonId, title, questions },
       { new: true, upsert: true }
@@ -797,11 +932,11 @@ router.post("/admin/quiz/upload", adminAuth, quizUpload.single("file"), async (r
       return res.status(400).json({ message: "No questions found" });
     }
 
-    let lesson = Lesson.findOne({ title: lessonTitle });
+    let lesson = await Lesson.findOne({ title: lessonTitle });
     if (!lesson) {
       const courseId = "course_general";
-      if (!Course.findOne({ courseId })) {
-        Course.findOneAndUpdate(
+      if (!await Course.findOne({ courseId })) {
+        await Course.findOneAndUpdate(
           { courseId },
           { courseId, title: "General Course", description: "General lesson and quiz bank", category: "General", curriculumTags: ["General"] },
           { new: true, upsert: true }
@@ -809,7 +944,7 @@ router.post("/admin/quiz/upload", adminAuth, quizUpload.single("file"), async (r
       }
 
       const newLessonId = `lesson_${normalizeId(lessonTitle)}`;
-      lesson = Lesson.findOneAndUpdate(
+      lesson = await Lesson.findOneAndUpdate(
         { lessonId: newLessonId },
         {
           lessonId: newLessonId,
@@ -828,7 +963,7 @@ router.post("/admin/quiz/upload", adminAuth, quizUpload.single("file"), async (r
     }
 
     const quizId = lesson.quizId || `quiz_${normalizeId(lesson.lessonId)}`;
-    const quiz = Quiz.findOneAndUpdate(
+    const quiz = await Quiz.findOneAndUpdate(
       { quizId },
       { quizId, courseId: lesson.courseId, lessonId: lesson.lessonId, title: lessonTitle, questions },
       { new: true, upsert: true }
@@ -855,7 +990,7 @@ router.get("/quiz", async (req, res) => {
       return res.status(400).json({ message: "lessonId is required" });
     }
 
-    const quiz = Quiz.findOne({ lessonId });
+    const quiz = await Quiz.findOne({ lessonId });
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }

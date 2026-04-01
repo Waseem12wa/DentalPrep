@@ -472,6 +472,12 @@ Scenario: ..."></textarea>
                             <textarea id="overview-videos-input" name="overviewVideos" class="form-input" rows="4" placeholder="Overview Video 1|https://youtube.com/watch?v=...&#10;Overview Playlist|https://www.youtube.com/playlist?list=..."></textarea>
                         </div>
                         <div class="form-group">
+                            <label class="form-label">Or Upload Overview Video File(s)</label>
+                            <input type="file" id="overview-video-files" name="overviewVideoFiles" class="form-input" accept="video/*" multiple>
+                            <div id="overview-video-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
+                            <small style="color: #6b7280;">Uploaded files are saved permanently and shown in General Overview for students.</small>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">About Intro Video/Playlist URL</label>
                             <input type="url" id="about-video-input" name="introVideoUrl" class="form-input" placeholder="https://youtube.com/watch?v=... or https://www.youtube.com/playlist?list=...">
                         </div>
@@ -664,7 +670,10 @@ Scenario: ..."></textarea>
                             <div class="text-sm text-gray-500">${course.category || "Uncategorized"}${(course.curriculumTags || []).length ? ` • ${(course.curriculumTags || []).join(", ")}` : ""}</div>
                             ${course.description ? `<div class="text-sm text-gray-600" style="margin-top: 0.25rem;">${course.description}</div>` : ""}
                         </div>
-                        <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${course.id}</span>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${course.id}</span>
+                            <button type="button" class="cta-btn" style="background:#dc2626;color:#fff;border:none;padding:0.35rem 0.65rem;font-size:0.8rem;" onclick="deleteCourse('${course.id}', '${(course.title || "").replace(/'/g, "\\'")}')">Delete</button>
+                        </div>
                     `;
                     list.appendChild(courseDiv);
 
@@ -677,6 +686,29 @@ Scenario: ..."></textarea>
                 console.error("Failed to load courses:", err);
                 list.innerHTML = '<div class="p-3 bg-white border border-red-200 rounded shadow-sm text-red-600">Unable to load courses.</div>';
                 select.innerHTML = '<option value="">Unable to load courses</option>';
+            }
+        }
+
+        async function deleteCourse(courseId, courseTitle) {
+            const confirmed = window.confirm(`Delete course "${courseTitle || courseId}" permanently? This will also delete all related lessons, quizzes, reviews, and progress records.`);
+            if (!confirmed) return;
+
+            showMessage(generalMsg, "", null);
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/course/${encodeURIComponent(courseId)}`, {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${adminToken}`
+                    }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Delete failed");
+
+                showMessage(generalMsg, data.message || "Course deleted successfully", "success");
+                await Promise.all([loadCourses(), loadLessons(), loadQuizzes(), loadStudentAnalytics()]);
+            } catch (err) {
+                showMessage(generalMsg, err.message, "error");
             }
         }
 
@@ -1038,6 +1070,18 @@ Scenario: ..."></textarea>
                 }
                 const videosInput = document.getElementById("overview-videos-input");
                 if (videosInput) videosInput.value = linksToText(overview.videos);
+                const overviewVideoInput = document.getElementById("overview-video-files");
+                if (overviewVideoInput && !overviewVideoInput.files.length) {
+                    const overviewVideoList = document.getElementById("overview-video-list");
+                    if (overviewVideoList && overview.videos && overview.videos.length) {
+                        const listHtml = overview.videos.map((v, i) => {
+                            const url = v.url || v.fileUrl || "#";
+                            const title = v.title || `Video ${i + 1}`;
+                            return `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${url}" target="_blank">${title}</a></div>`;
+                        }).join("");
+                        overviewVideoList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current videos:<br>${listHtml}</div>`;
+                    }
+                }
 
                 const aboutVideoInput = document.getElementById("about-video-input");
                 if (aboutVideoInput) aboutVideoInput.value = about.introVideoUrl || "";
@@ -1142,6 +1186,7 @@ Scenario: ..."></textarea>
         setupFileInputListener("overview-premium-files", "overview-premium-list");
         setupFileInputListener("overview-slides-files", "overview-slides-list");
         setupFileInputListener("overview-short-files", "overview-short-list");
+        setupFileInputListener("overview-video-files", "overview-video-list");
 
         document.getElementById("academy-profile-form").addEventListener("submit", async (e) => {
             e.preventDefault();

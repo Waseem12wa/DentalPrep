@@ -95,13 +95,17 @@ document.addEventListener("DOMContentLoaded", () => {
           method: "POST",
           body: JSON.stringify({ name, email, password })
         });
-        // We do NOT set token immediately on signup anymore if we wait for verification
-        // But for User Experience in this demo, the backend returns a token anyway.
-        // The message says "check email". 
-
-        showMessage(signupForm, data.message || "Account created.", "success");
-        // Optional: clear form
-        signupForm.reset();
+        
+        if (data.token) {
+          setToken(data.token);
+          showMessage(signupForm, "Account created successfully! Redirecting to learning...", "success");
+          setTimeout(() => {
+            window.location.href = "/learning/";
+          }, 800);
+        } else {
+          showMessage(signupForm, data.message || "Account created. Please check your email to verify.", "success");
+          signupForm.reset();
+        }
       } catch (err) {
         showMessage(signupForm, err.message || "Signup failed.");
       } finally {

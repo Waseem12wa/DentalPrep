@@ -1,8 +1,8 @@
-const express = require("express");
+﻿const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { User, Subscription } = require("../db");
+const { User, Subscription, generateId } = require("../db");
 const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
@@ -15,15 +15,18 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "Name, email, and password are required" });
     }
 
-    const existing = User.findOne({ email });
+    // FIX: Add await for Mongoose operations
+    const existing = await User.findOne({ email });
     if (existing) {
       return res.status(409).json({ message: "Email already in use" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(20).toString("hex");
+    const userId = `user_${generateId()}`;
 
-    const user = User.create({
+    const user = await User.create({
+      _id: userId,
       name,
       email,
       passwordHash,
@@ -32,7 +35,6 @@ router.post("/signup", async (req, res) => {
       role: "student"
     });
 
-    // Mock Email Service
     console.log(`[MOCK EMAIL] Verification Link: http://localhost:5500/verify/?token=${verificationToken}`);
 
     const token = jwt.sign(
@@ -44,7 +46,7 @@ router.post("/signup", async (req, res) => {
     return res.status(201).json({
       token,
       user: { id: user._id, name: user.name, email: user.email },
-      message: "Account created! Please check your email to verify."
+      message: "Account created! Check email to verify."
     });
   } catch (err) {
     console.error(err);
@@ -57,10 +59,10 @@ router.post("/verify-email", async (req, res) => {
     const { token } = req.body;
     if (!token) return res.status(400).json({ message: "Token required" });
 
-    const user = User.findOne({ verificationToken: token });
+    const user = await User.findOne({ verificationToken: token });
     if (!user) return res.status(400).json({ message: "Invalid or expired token" });
 
-    User.findByIdAndUpdate(user._id, {
+    await User.findByIdAndUpdate(user._id, {
       isVerified: true,
       verificationToken: null,
       updatedAt: new Date().toISOString()
@@ -75,17 +77,16 @@ router.post("/verify-email", async (req, res) => {
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
-    const user = User.findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const resetToken = crypto.randomBytes(20).toString("hex");
-    User.findByIdAndUpdate(user._id, {
+    await User.findByIdAndUpdate(user._id, {
       resetPasswordToken: resetToken,
       resetPasswordExpires: Date.now() + 3600000,
       updatedAt: new Date().toISOString()
     });
 
-    // Mock Email
     console.log(`[MOCK EMAIL] Reset Link: http://localhost:5500/reset-password/?token=${resetToken}`);
 
     return res.json({ message: "Password reset link sent to email" });
@@ -97,14 +98,14 @@ router.post("/forgot-password", async (req, res) => {
 router.post("/reset-password", async (req, res) => {
   try {
     const { token, password } = req.body;
-    const user = User.findOne({ resetPasswordToken: token });
+    const user = await User.findOne({ resetPasswordToken: token });
 
     if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    User.findByIdAndUpdate(user._id, {
+    await User.findByIdAndUpdate(user._id, {
       passwordHash,
       resetPasswordToken: null,
       resetPasswordExpires: null,
@@ -125,7 +126,7 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    const user = User.findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -153,12 +154,12 @@ router.post("/login", async (req, res) => {
 
 router.get("/user/profile", authMiddleware, async (req, res) => {
   try {
-    const user = User.findById(req.user.id);
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const subscription = Subscription.findOne({ userId: req.user.id, status: "active" });
+    const subscription = await Subscription.findOne({ userId: req.user.id, status: "active" });
 
     return res.json({
       user: {

@@ -21,6 +21,36 @@
         return Array.isArray(items) ? items : [];
     }
 
+    function resolveResourceUrl(value) {
+        var url = String(value || '').trim();
+        if (!url) {
+            return '#';
+        }
+
+        if (/^https?:\/\//i.test(url)) {
+            return url;
+        }
+
+        var apiBase = (window.DentalPrepApi && typeof window.DentalPrepApi.getApiBase === 'function')
+            ? String(window.DentalPrepApi.getApiBase() || '')
+            : '';
+        var apiOrigin = apiBase ? apiBase.replace(/\/api\/?$/, '') : '';
+
+        // Route uploaded files through backend file endpoint for stable open/download behavior.
+        var uploadMatch = url.match(/^\/?static\/uploads\/([^?#/]+)(?:[?#].*)?$/i);
+        if (uploadMatch && uploadMatch[1]) {
+            var filePath = '/api/files/' + encodeURIComponent(uploadMatch[1]);
+            return apiOrigin ? (apiOrigin + filePath) : filePath;
+        }
+
+        return url;
+    }
+
+    function isValidResourceUrl(url) {
+        var value = String(url || '').trim();
+        return Boolean(value) && value !== '#';
+    }
+
     function safeDecode(value) {
         try {
             return decodeURIComponent(value);
@@ -82,7 +112,7 @@
 
         return '<div class="video-embed-grid">' + links.map(function (item, index) {
             var title = item && item.title ? item.title : ('Video ' + (index + 1));
-            var url = item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#';
+            var url = resolveResourceUrl(item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#');
             var parsedYoutube = parseYouTubeUrl(url);
             var playlistId = parsedYoutube.playlistId;
             var videoId = parsedYoutube.videoId;
@@ -137,8 +167,44 @@
 
         return '<div class="video-list">' + links.map(function (item, index) {
             var title = item && item.title ? item.title : ('Resource ' + (index + 1));
-            var url = item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#';
+            var url = resolveResourceUrl(item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#');
+            if (!isValidResourceUrl(url)) {
+                return '<span class="muted-note">' + escapeHtml(title) + ' (file link unavailable)</span>';
+            }
             return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(title) + '</a>';
+        }).join('') + '</div>';
+    }
+
+    function renderSimpleVideoList(items, emptyText) {
+        var links = normalizeLinks(items);
+        if (!links.length) {
+            return '<p class="muted-note">' + escapeHtml(emptyText) + '</p>';
+        }
+
+        return '<div class="simple-video-grid">' + links.map(function (item, index) {
+            var title = item && item.title ? item.title : ('Video ' + (index + 1));
+            var url = resolveResourceUrl(item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#');
+            
+            if (isLikelyVideoFile(url)) {
+                return [
+                    '<div class="video-card-simple">',
+                    '<h5>' + escapeHtml(title) + '</h5>',
+                    '<video controls preload="metadata" style="width: 100%; max-width: 300px;">',
+                    '<source src="' + escapeHtml(url) + '">',
+                    'Your browser does not support the video tag.',
+                    '</video>',
+                    '</div>'
+                ].join('');
+            }
+
+            return [
+                '<div class="video-card-simple">',
+                '<h5>' + escapeHtml(title) + '</h5>',
+                (isValidResourceUrl(url)
+                    ? ('<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" class="video-link-btn">Watch Video</a>')
+                    : '<span class="muted-note">Video link unavailable</span>'),
+                '</div>'
+            ].join('');
         }).join('') + '</div>';
     }
 
@@ -167,6 +233,7 @@
         }
 
         var aboutText = document.getElementById('about-academy-text');
+        var dynamicCoursesGrid = document.getElementById('dynamic-courses-grid');
         if (!aboutText) {
             return;
         }
@@ -178,6 +245,36 @@
                 : aboutText.textContent;
         } catch (_err) {
             // Keep fallback text if API fetch fails.
+        }
+
+        if (!dynamicCoursesGrid) {
+            return;
+        }
+
+        try {
+            var courseData = await fetchJson('/courses');
+            var courses = Array.isArray(courseData && courseData.courses) ? courseData.courses : [];
+
+            if (!courses.length) {
+                dynamicCoursesGrid.innerHTML = '<p class="muted-note">No courses available yet. Ask admin to create a course.</p>';
+                return;
+            }
+
+            dynamicCoursesGrid.innerHTML = courses.map(function (course) {
+                var title = escapeHtml(course.title || 'Untitled Course');
+                var description = escapeHtml(course.description || 'Course content with lessons and quizzes.');
+                var lessonCount = Number(course.lessonsCount || 0);
+                var quizCount = Number(course.quizCount || 0);
+                return [
+                    '<a class="academy-box" href="/course-player/?id=' + encodeURIComponent(course.id || '') + '">',
+                    '<h3>' + title + '</h3>',
+                    '<p>' + description + '</p>',
+                    '<p style="margin-top: 0.4rem; font-weight: 700;">' + lessonCount + ' lesson(s) • ' + quizCount + ' quiz(zes)</p>',
+                    '</a>'
+                ].join('');
+            }).join('');
+        } catch (_err) {
+            dynamicCoursesGrid.innerHTML = '<p class="muted-note">Unable to load your courses right now.</p>';
         }
     }
 
@@ -210,8 +307,57 @@
 
             blockContainer.innerHTML = (subject.blocks || []).map(function (block) {
                 var topics = Array.isArray(block.topics) ? block.topics : [];
+                var sections = Array.isArray(block.sections) ? block.sections : [];
                 var topicLine = topics.join(', ');
-
+                var hasSectionContent = sections.some(function (section) {
+                    var sectionVideos = normalizeLinks(section && section.videoItems);
+                    var sectionNotes = normalizeLinks(section && section.noteResources);
+                    var sectionClinical = normalizeLinks(section && section.clinicalResources);
+                    var noteText = String((section && section.noteText) || '').trim();
+                    var clinicalText = String((section && section.clinicalText) || '').trim();
+                    return sectionVideos.length > 0 || sectionNotes.length > 0 || sectionClinical.length > 0 || Boolean(noteText) || Boolean(clinicalText);
+                });
+                
+                // If we have sections with individual resources, render them
+                if (sections.length > 0 && hasSectionContent) {
+                    var sectionsHtml = sections.map(function (section) {
+                        return [
+                            '<div class="block-section">',
+                            '<h5 class="section-title">' + escapeHtml(section.name || 'Section') + '</h5>',
+                            '<div class="section-resources">',
+                            '<div class="resource-item">',
+                            '<h4>YouTube Lecture Links</h4>',
+                            renderVideoItems(section.videoItems, 'No lecture links uploaded yet.'),
+                            '</div>',
+                            '<div class="resource-item">',
+                            '<h4>Preparation Notes</h4>',
+                            section.noteText ? '<p>' + escapeHtml(section.noteText) + '</p>' : '<p>Focused notes for: ' + escapeHtml(section.name || 'this section') + '</p>',
+                            renderLinkList(section.noteResources, 'No note files uploaded yet.'),
+                            '</div>',
+                            '<div class="resource-item">',
+                            '<h4>Clinical Content</h4>',
+                            section.clinicalText ? '<p>' + escapeHtml(section.clinicalText) + '</p>' : '<p>Clinical highlights and practical relevance for this section.</p>',
+                            renderLinkList(section.clinicalResources, 'No clinical resources uploaded yet.'),
+                            '</div>',
+                            '</div>',
+                            '</div>'
+                        ].join('');
+                    }).join('');
+                    
+                    return [
+                        '<article class="block-card">',
+                        '<span class="block-label">' + escapeHtml(block.blockTitle || block.blockKey) + '</span>',
+                        '<ul class="block-topic-list">',
+                        topics.map(function (topic) { return '<li>' + escapeHtml(topic) + '</li>'; }).join(''),
+                        '</ul>',
+                        '<div class="sections-container">',
+                        sectionsHtml,
+                        '</div>',
+                        '</article>'
+                    ].join('');
+                }
+                
+                // Fallback to old structure if no sections
                 return [
                     '<article class="block-card">',
                     '<span class="block-label">' + escapeHtml(block.blockTitle || block.blockKey) + '</span>',
@@ -255,7 +401,7 @@
             document.getElementById('overview-premium').innerHTML = renderLinkList(overview.premiumNotes, 'No premium notes added yet.');
             document.getElementById('overview-slides').innerHTML = renderLinkList(overview.importantSlides, 'No important slides added yet.');
             document.getElementById('overview-short').innerHTML = renderLinkList(overview.shortNotes, 'No short notes added yet.');
-            document.getElementById('overview-videos').innerHTML = renderVideoItems(overview.videos, 'No overview videos added yet.');
+            document.getElementById('overview-videos').innerHTML = renderSimpleVideoList(overview.videos, 'No overview videos added yet.');
         } catch (_err) {
             // Keep static fallback labels if fetch fails.
         }

@@ -1,4 +1,5 @@
 const express = require("express");
+const { Subscription, generateId } = require("../db");
 const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
@@ -22,14 +23,34 @@ router.post("/confirm-payment", authMiddleware, async (req, res) => {
         // Simulate payment processing delay
         await new Promise(r => setTimeout(r, 1000));
 
-        // Mock subscription confirmation (no database needed)
+        const normalizedPlan = String(plan || "monthly").toLowerCase() === "annual" ? "annual" : "monthly";
+        const now = new Date();
+        const expiresAt = new Date(now);
+        expiresAt.setDate(expiresAt.getDate() + (normalizedPlan === "annual" ? 365 : 30));
+
+        const subscription = await Subscription.findOneAndUpdate(
+            { userId: req.user.id, status: "active" },
+            {
+                _id: `sub_${generateId()}`,
+                userId: req.user.id,
+                plan: normalizedPlan,
+                status: "active",
+                startedAt: now,
+                expiresAt,
+                paymentId: paymentDetails?.paymentId || `pay_${Date.now()}`
+            },
+            { new: true, upsert: true }
+        );
+
         return res.json({
             success: true,
             subscription: {
-                plan,
-                status: "active",
-                startedAt: new Date(),
-                paymentId: "pay_" + Date.now()
+                id: subscription._id,
+                plan: subscription.plan,
+                status: subscription.status,
+                startedAt: subscription.startedAt,
+                expiresAt: subscription.expiresAt,
+                paymentId: subscription.paymentId
             }
         });
     } catch (err) {

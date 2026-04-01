@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Past Papers | DentalPrep</title>
+    <link rel="shortcut icon" type="image/x-icon" href="../static/images/favicon.png">
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="../static/css/academy.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="academy-page" data-page="subject" data-subject-key="past-papers">
+    <div class="overlay" id="overlay"></div>
+
+    <header>
+        <div class="header-container">
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <nav class="nav-menu" id="nav-menu" role="navigation" aria-label="Main navigation">
+                <a href="/learning/">Homepage</a>
+                <a href="/learning/general-overview.html">General Overview</a>
+                <a href="/learning/about-academy.html">About Us</a>
+            </nav>
+
+            <a href="/learning/" class="logo" aria-label="DentalPrep - Learning Home" style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                <div class="logo-icon" style="font-size: 2rem; color: var(--arterial-red);">
+                    <i class="fas fa-tooth"></i>
+                </div>
+                <div class="logo-text" style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                    Dental<span style="color: var(--arterial-red);">Prep</span>
+                </div>
+            </a>
+
+            <div class="auth-buttons">
+                <a href="/learning/" class="auth-btn login-btn"><span>Back</span></a>
+            </div>
+        </div>
+    </header>
+
+    <main class="academy-shell">
+        <a class="back-link" href="/learning/">&larr; Back to Homepage</a>
+
+        <section class="subject-header">
+            <h1 id="subject-title">Subject</h1>
+            <p class="subject-subtitle" id="subject-intro"></p>
+        </section>
+
+        <section class="block-grid" id="block-container"></section>
+    </main>
+
+    <script src="../static/js/api.js"></script>
+    <script src="../static/js/script.js"></script>
+    <script src="../static/js/academy.js"></script>
+    <script>
+        // Special rendering for past papers - PDF only
+        (function () {
+            const originalRenderSubjectPage = window.renderSubjectPageForPastPapers;
+            
+            async function renderPastPapersPage() {
+                var page = document.body.dataset.page;
+                var subjectKey = document.body.dataset.subjectKey || 'past-papers';
+                
+                if (page !== 'subject' || subjectKey !== 'past-papers') {
+                    return;
+                }
+
+                var titleEl = document.getElementById('subject-title');
+                var introEl = document.getElementById('subject-intro');
+                var blockContainer = document.getElementById('block-container');
+
+                if (!titleEl || !introEl || !blockContainer) {
+                    return;
+                }
+
+                blockContainer.innerHTML = '<p class="muted-note">Loading past papers...</p>';
+
+                try {
+                    var { apiFetch } = window.DentalPrepApi || {};
+                    if (!apiFetch) {
+                        throw new Error('API helper unavailable');
+                    }
+                    
+                    var data = await apiFetch('/subjects/' + encodeURIComponent(subjectKey) + '/content');
+                    var subject = data.subject;
+                    titleEl.textContent = subject.title;
+                    introEl.textContent = subject.intro;
+
+                    function escapeHtml(value) {
+                        return String(value || '')
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#39;');
+                    }
+
+                    function normalizeArray(value) {
+                        return Array.isArray(value) ? value : [];
+                    }
+
+                    function normalizeLinkItems(value) {
+                        if (!Array.isArray(value)) {
+                            return [];
+                        }
+                        return value
+                            .map((item) => {
+                                if (!item || typeof item !== "object") {
+                                    return null;
+                                }
+                                const title = String(item.title || "").trim();
+                                const url = String(item.url || "").trim();
+                                if (!title && !url) {
+                                    return null;
+                                }
+                                return {
+                                    title: title || url || "Resource",
+                                    url: url || "#"
+                                };
+                            })
+                            .filter(Boolean);
+                    }
+
+                    blockContainer.innerHTML = (subject.blocks || []).map(function (block) {
+                        var pdfResources = normalizeLinkItems(block.noteResources || block.clinicalResources || []);
+                        
+                        return [
+                            '<article class="block-card">',
+                            '<span class="block-label">' + escapeHtml(block.blockTitle || block.blockKey) + '</span>',
+                            '<div class="resource-list">',
+                            '<div class="resource-item">',
+                            '<h4>Past Papers (PDF)</h4>',
+                            pdfResources.length ? 
+                                '<div class="pdf-list">' + 
+                                pdfResources.map(function (item) {
+                                    return '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer" class="pdf-link">' +
+                                        '<i class="fas fa-file-pdf"></i> ' + escapeHtml(item.title) + '</a>';
+                                }).join('') + 
+                                '</div>' :
+                                '<p class="muted-note">No past papers uploaded yet.</p>',
+                            '</div>',
+                            '</div>',
+                            '</article>'
+                        ].join('');
+                    }).join('');
+                } catch (_err) {
+                    blockContainer.innerHTML = '<p class="muted-note">Unable to load past papers right now.</p>';
+                }
+            }
+
+            // Wait for DOM to be ready and then call this special renderer
+            document.addEventListener('DOMContentLoaded', renderPastPapersPage);
+        })();
+    </script>
+</body>
+
+</html>

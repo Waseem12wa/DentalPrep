@@ -331,30 +331,116 @@
             </div>
         </div>
 
-        <!-- My Courses -->
-        <div class="section-header">
-            <h2 class="text-2xl font-bold text-gray-800">My Courses</h2>
-            <a href="/courses/" class="cta-btn cta-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Browse
-                All</a>
+        <!-- Tab Navigation -->
+        <div style="border-bottom: 2px solid var(--gray-200); margin-bottom: 2rem; overflow-x: auto;">
+            <div style="display: flex; gap: 1rem; padding-bottom: 0.5rem;">
+                <button class="tab-btn active" onclick="switchDashboardTab('courses')" style="padding: 0.5rem 1rem; font-weight: 600; color: var(--text-light); background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; white-space: nowrap;">
+                    <i class="fas fa-book-open" style="margin-right: 0.5rem;"></i>Courses
+                </button>
+                <button class="tab-btn" onclick="switchDashboardTab('lessons')" style="padding: 0.5rem 1rem; font-weight: 600; color: var(--text-light); background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; white-space: nowrap;">
+                    <i class="fas fa-video" style="margin-right: 0.5rem;"></i>Lessons
+                </button>
+                <button class="tab-btn" onclick="switchDashboardTab('quizzes')" style="padding: 0.5rem 1rem; font-weight: 600; color: var(--text-light); background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; white-space: nowrap;">
+                    <i class="fas fa-file-circle-check" style="margin-right: 0.5rem;"></i>Quizzes
+                </button>
+                <button class="tab-btn" onclick="switchDashboardTab('academy')" style="padding: 0.5rem 1rem; font-weight: 600; color: var(--text-light); background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; white-space: nowrap;">
+                    <i class="fas fa-graduation-cap" style="margin-right: 0.5rem;"></i>Academy Content
+                </button>
+            </div>
         </div>
 
-        <div id="courses-loader" class="text-center py-10">
-            <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
-            <p class="mt-2 text-gray-500">Loading your courses...</p>
+        <!-- Courses Tab -->
+        <div id="tab-courses" class="tab-content">
+            <div class="section-header">
+                <h2 class="text-2xl font-bold text-gray-800">My Courses</h2>
+                <a href="/courses/" class="cta-btn cta-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Browse All</a>
+            </div>
+
+            <div id="courses-loader" class="text-center py-10">
+                <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
+                <p class="mt-2 text-gray-500">Loading your courses...</p>
+            </div>
+
+            <div id="courses-container" class="course-grid hidden">
+                <!-- Courses injected here -->
+            </div>
+
+            <div id="no-courses-msg" class="hidden text-center py-10 bg-white rounded-xl border border-gray-200">
+                <div class="mb-4 text-gray-300 text-5xl"><i class="fas fa-folder-open"></i></div>
+                <h3 class="text-xl font-bold text-gray-700">No courses yet</h3>
+                <p class="text-gray-500 mb-6">Start your learning journey by exploring our catalog.</p>
+                <a href="/courses/" class="cta-btn cta-primary">Explore Courses</a>
+            </div>
         </div>
 
-        <div id="courses-container" class="course-grid hidden">
-            <!-- Courses injected here -->
+        <!-- Lessons Tab -->
+        <div id="tab-lessons" class="tab-content hidden">
+            <div class="section-header">
+                <h2 class="text-2xl font-bold text-gray-800">My Lessons</h2>
+                <p class="text-gray-500">Video lessons and course material</p>
+            </div>
+
+            <div id="lessons-loader" class="text-center py-10">
+                <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
+                <p class="mt-2 text-gray-500">Loading your lessons...</p>
+            </div>
+
+            <div id="lessons-container" class="hidden">
+                <!-- Lessons injected here -->
+            </div>
+
+            <div id="no-lessons-msg" class="hidden text-center py-10 bg-white rounded-xl border border-gray-200">
+                <div class="mb-4 text-gray-300 text-5xl"><i class="fas fa-video"></i></div>
+                <h3 class="text-xl font-bold text-gray-700">No lessons available</h3>
+                <p class="text-gray-500 mb-6">Lessons will appear as you enroll in courses.</p>
+            </div>
         </div>
 
-        <div id="no-courses-msg" class="hidden text-center py-10 bg-white rounded-xl border border-gray-200">
-            <div class="mb-4 text-gray-300 text-5xl"><i class="fas fa-folder-open"></i></div>
-            <h3 class="text-xl font-bold text-gray-700">No courses yet</h3>
-            <p class="text-gray-500 mb-6">Start your learning journey by exploring our catalog.</p>
-            <a href="/courses/" class="cta-btn cta-primary">Explore Courses</a>
+        <!-- Quizzes Tab -->
+        <div id="tab-quizzes" class="tab-content hidden">
+            <div class="section-header">
+                <h2 class="text-2xl font-bold text-gray-800">My Quizzes</h2>
+                <p class="text-gray-500">Practice assessments with auto-marking</p>
+            </div>
+
+            <div id="quizzes-loader" class="text-center py-10">
+                <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
+                <p class="mt-2 text-gray-500">Loading quizzes...</p>
+            </div>
+
+            <div id="quizzes-list" class="hidden" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+                <!-- Quizzes injected here -->
+            </div>
+
+            <div id="quiz-solver" class="hidden" style="background: white; border-radius: var(--border-radius-lg); padding: 2rem; border: 1px solid var(--gray-200);">
+                <!-- Quiz solver will be shown here -->
+            </div>
+
+            <div id="no-quizzes-msg" class="hidden text-center py-10 bg-white rounded-xl border border-gray-200">
+                <div class="mb-4 text-gray-300 text-5xl"><i class="fas fa-file-circle-check"></i></div>
+                <h3 class="text-xl font-bold text-gray-700">No quizzes available</h3>
+                <p class="text-gray-500 mb-6">Quizzes will appear as course material is added.</p>
+            </div>
         </div>
 
-        <div class="analytics-layout">
+        <!-- Academy Content Tab -->
+        <div id="tab-academy" class="tab-content hidden">
+            <div class="section-header">
+                <h2 class="text-2xl font-bold text-gray-800">Academy Content</h2>
+                <p class="text-gray-500">General overview and study resources</p>
+            </div>
+
+            <div id="academy-loader" class="text-center py-10">
+                <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
+                <p class="mt-2 text-gray-500">Loading academy content...</p>
+            </div>
+
+            <div id="academy-content" class="hidden">
+                <!-- Academy content injected here -->
+            </div>
+        </div>
+
+        <div class="analytics-layout" style="margin-top: 3rem;">
             <section class="analytics-card">
                 <div class="section-header" style="margin-bottom: 0;">
                     <h2 class="text-2xl font-bold text-gray-800">Weak Areas</h2>

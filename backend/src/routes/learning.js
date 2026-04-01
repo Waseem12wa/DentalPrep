@@ -16,22 +16,45 @@ const SUBJECT_CONFIG = {
   anatomy: { title: "Anatomy", intro: "Understand structural concepts through a block-based progression." },
   physiology: { title: "Physiology", intro: "Build functional understanding with focused block practice." },
   biochemistry: { title: "Biochemistry", intro: "Master pathways, metabolism, and applied biochemical logic." },
-  "oral-biology": { title: "Oral Biology", intro: "Study oral tissues, development, and biological relevance." }
+  "oral-biology": { title: "Oral Biology", intro: "Study oral tissues, development, and biological relevance." },
+  "prime-minors": { title: "Prime and Minors", intro: "Focused topics and minor subjects for comprehensive coverage." },
+  "past-papers": { title: "Past Papers (Block-wise)", intro: "Practice with exam papers organized by block level." }
 };
 
 const DEFAULT_BLOCKS = {
-  "block-a": { blockKey: "block-a", blockTitle: "Block A", topics: ["Foundation", "Blood"] },
-  "block-b": { blockKey: "block-b", blockTitle: "Block B", topics: ["Craniofacial"] },
-  "block-c": { blockKey: "block-c", blockTitle: "Block C", topics: ["Cervicofacial", "UGS + GIT", "Cardiopulmonary"] }
+  "block-a": { 
+    blockKey: "block-a", 
+    blockTitle: "Block A", 
+    topics: ["Foundation", "Blood"],
+    sections: [
+      { name: "Foundation", videoItems: [], noteResources: [], clinicalResources: [] },
+      { name: "Blood", videoItems: [], noteResources: [], clinicalResources: [] }
+    ]
+  },
+  "block-b": { 
+    blockKey: "block-b", 
+    blockTitle: "Block B", 
+    topics: ["Craniofacial"]
+  },
+  "block-c": { 
+    blockKey: "block-c", 
+    blockTitle: "Block C", 
+    topics: ["Cervicofacial", "UGS + GIT", "Cardiopulmonary"],
+    sections: [
+      { name: "Cervicofacial", videoItems: [], noteResources: [], clinicalResources: [] },
+      { name: "UGS + GIT", videoItems: [], noteResources: [], clinicalResources: [] },
+      { name: "Cardiopulmonary", videoItems: [], noteResources: [], clinicalResources: [] }
+    ]
+  }
 };
 
-function ensureAcademyProfile() {
-  const existing = AcademyProfile.findOne({ id: "academy_profile" });
+async function ensureAcademyProfile() {
+  const existing = await AcademyProfile.findOne({ id: "academy_profile" });
   if (existing) {
     return existing;
   }
 
-  return AcademyProfile.findOneAndUpdate(
+  return await AcademyProfile.findOneAndUpdate(
     { id: "academy_profile" },
     {
       id: "academy_profile",
@@ -41,7 +64,7 @@ function ensureAcademyProfile() {
         premiumNotes: [{ title: "Premium Notes Pack", url: "#" }],
         importantSlides: [{ title: "Important Slides Collection", url: "#" }],
         shortNotes: [{ title: "Short Notes for Final Revision", url: "#" }],
-        videos: Array.from({ length: 6 }).map((_, index) => ({
+        videos: Array.from({ length: 7 }).map((_, index) => ({
           title: `General Overview Video ${index + 1}`,
           url: "https://www.youtube.com/@pulseprepofficial"
         }))
@@ -88,8 +111,8 @@ function normalizeLinkItems(value) {
     .filter(Boolean);
 }
 
-function getSubjectBlocks(subjectKey) {
-  const storedRows = SubjectContent.find({ subjectKey });
+async function getSubjectBlocks(subjectKey) {
+  const storedRows = await SubjectContent.find({ subjectKey });
   const rowLookup = storedRows.reduce((acc, row) => {
     acc[row.blockKey] = row;
     return acc;
@@ -97,10 +120,37 @@ function getSubjectBlocks(subjectKey) {
 
   return Object.values(DEFAULT_BLOCKS).map((defaultBlock) => {
     const saved = rowLookup[defaultBlock.blockKey] || {};
+    const topics = normalizeArray(saved.topics).length ? normalizeArray(saved.topics) : defaultBlock.topics;
+    
+    const sections = topics.map((topicName) => {
+      const sectionData = (saved.sections || []).find(s => s.name === topicName);
+      if (sectionData) {
+        return {
+          name: topicName,
+          videoItems: normalizeLinkItems(sectionData.videoItems),
+          noteText: String(sectionData.noteText || "").trim(),
+          noteResources: normalizeArray(sectionData.noteResources),
+          clinicalText: String(sectionData.clinicalText || "").trim(),
+          clinicalResources: normalizeArray(sectionData.clinicalResources)
+        };
+      }
+      
+      const defaultSection = (defaultBlock.sections || []).find(s => s.name === topicName) || {};
+      return {
+        name: topicName,
+        videoItems: normalizeLinkItems(defaultSection.videoItems),
+        noteText: String(defaultSection.noteText || "").trim(),
+        noteResources: normalizeArray(defaultSection.noteResources),
+        clinicalText: String(defaultSection.clinicalText || "").trim(),
+        clinicalResources: normalizeArray(defaultSection.clinicalResources)
+      };
+    });
+
     return {
       blockKey: defaultBlock.blockKey,
       blockTitle: defaultBlock.blockTitle,
-      topics: normalizeArray(saved.topics).length ? normalizeArray(saved.topics) : defaultBlock.topics,
+      topics: topics,
+      sections: sections,
       videoItems: normalizeLinkItems(saved.videoItems),
       noteText: String(saved.noteText || "").trim(),
       noteResources: normalizeArray(saved.noteResources),
@@ -167,13 +217,12 @@ function buildWeakAreas(progressItems, quizzesById, lessonsById, coursesById) {
     .slice(0, 5);
 }
 
-function findAssistantContext(prompt, courseId, lessonId) {
+async function findAssistantContext(prompt, courseId, lessonId) {
   const tokens = tokenize(prompt);
-  const courses = courseId ? Course.find({ courseId }) : Course.find({});
-  const lessons = lessonId ? Lesson.find({ lessonId }) : courseId ? Lesson.find({ courseId }) : Lesson.find({});
-  const quizzes = (courseId || lessonId)
-    ? Quiz.find({}).filter((quiz) => (!courseId || quiz.courseId === courseId) && (!lessonId || quiz.lessonId === lessonId))
-    : Quiz.find({});
+  const courses = courseId ? await Course.find({ courseId }) : await Course.find({});
+  const lessons = lessonId ? await Lesson.find({ lessonId }) : courseId ? await Lesson.find({ courseId }) : await Lesson.find({});
+  const allQuizzes = (courseId || lessonId) ? await Quiz.find({}) : await Quiz.find({});
+  const quizzes = allQuizzes.filter((quiz) => (!courseId || quiz.courseId === courseId) && (!lessonId || quiz.lessonId === lessonId));
 
   const matchedCourses = courses
     .map((course) => ({ item: course, score: scoreText(`${course.title} ${course.description || ""} ${(course.curriculumTags || []).join(" ")} ${course.category || ""}`, tokens) }))
@@ -304,45 +353,30 @@ async function maybeGenerateAiReply(prompt, context) {
 
 router.get("/courses", authMiddleware, async (req, res) => {
   try {
-    const courses = Course.find({}).sort(byText("title"));
-    const allLessons = Lesson.find({});
-    const allQuizzes = Quiz.find({});
-    const progressItems = req.user.id ? Progress.find({ userId: req.user.id, completed: true }) : [];
+    const courses = await Course.find({}).sort({ title: 1 });
+    const lessons = await Lesson.find({});
+    const quizzes = await Quiz.find({});
 
-    const data = courses.map((course) => {
-      const courseLessons = allLessons.filter((lesson) => lesson.courseId === course.courseId);
-      const courseQuizzes = allQuizzes.filter((quiz) => quiz.courseId === course.courseId);
-      const totalTrackableItems = courseLessons.length + courseQuizzes.length;
-      const completedItems = progressItems.filter((item) => item.courseId === course.courseId).length;
-      const audioCount = courseLessons.reduce((sum, lesson) => sum + normalizeArray(lesson.audioItems).length, 0);
-      const materialsCount = courseLessons.reduce((sum, lesson) => sum + normalizeArray(lesson.materials).length, 0);
-      const caseStudiesCount = courseLessons.reduce((sum, lesson) => sum + normalizeArray(lesson.caseStudies).length, 0);
-      const progress = totalTrackableItems ? Math.round((completedItems / totalTrackableItems) * 100) : 0;
-
-      return {
+    return res.json({
+      courses: courses.map((course) => ({
         id: course.courseId,
         title: course.title,
         description: course.description || "",
         category: course.category || "",
         curriculumTags: normalizeArray(course.curriculumTags),
-        lessonsCount: courseLessons.length,
-        quizCount: courseQuizzes.length,
-        audioCount,
-        materialsCount,
-        caseStudiesCount,
-        progress
-      };
+        lessonsCount: lessons.filter((lesson) => lesson.courseId === course.courseId).length,
+        quizCount: quizzes.filter((quiz) => quiz.courseId === course.courseId).length
+      }))
     });
-
-    res.json({ courses: data });
-  } catch (_err) {
-    res.status(500).json({ message: "Server error" });
+  } catch (err) {
+    console.error("GET /api/courses failed:", err);
+    return res.status(500).json({ message: err.message || "Server error" });
   }
 });
 
-router.get("/academy/content", authMiddleware, (req, res) => {
+router.get("/academy/content", authMiddleware, async (req, res) => {
   try {
-    const profile = ensureAcademyProfile();
+    const profile = await ensureAcademyProfile();
     return res.json({
       profile: {
         id: profile.id,
@@ -370,7 +404,7 @@ router.get("/academy/content", authMiddleware, (req, res) => {
   }
 });
 
-router.get("/subjects/:subjectKey/content", authMiddleware, (req, res) => {
+router.get("/subjects/:subjectKey/content", authMiddleware, async (req, res) => {
   try {
     const subjectKey = String(req.params.subjectKey || "").trim();
     if (!Object.prototype.hasOwnProperty.call(SUBJECT_CONFIG, subjectKey)) {
@@ -382,7 +416,7 @@ router.get("/subjects/:subjectKey/content", authMiddleware, (req, res) => {
         key: subjectKey,
         title: SUBJECT_CONFIG[subjectKey].title,
         intro: SUBJECT_CONFIG[subjectKey].intro,
-        blocks: getSubjectBlocks(subjectKey)
+        blocks: await getSubjectBlocks(subjectKey)
       }
     });
   } catch (_err) {
@@ -392,13 +426,13 @@ router.get("/subjects/:subjectKey/content", authMiddleware, (req, res) => {
 
 router.get("/courses/:id", authMiddleware, async (req, res) => {
   try {
-    const course = Course.findOne({ courseId: req.params.id });
+    const course = await Course.findOne({ courseId: req.params.id });
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    const lessons = Lesson.find({ courseId: course.courseId }).sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
-    const quizzes = Quiz.find({ courseId: course.courseId });
+    const lessons = await Lesson.find({ courseId: course.courseId }).sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
+    const quizzes = await Quiz.find({ courseId: course.courseId });
     const lessonSummaries = lessons.map((lesson) => buildLessonResponse(lesson, course));
 
     return res.json({
@@ -419,45 +453,41 @@ router.get("/courses/:id", authMiddleware, async (req, res) => {
   }
 });
 
-router.get("/lessons", authMiddleware, (req, res) => {
+router.get("/lessons", authMiddleware, async (req, res) => {
   try {
     const filter = req.query.courseId ? { courseId: req.query.courseId } : {};
-    const lessons = Lesson.find(filter).sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
-    const coursesById = Course.find({}).reduce((acc, course) => {
+    const lessons = await Lesson.find(filter);
+    lessons.sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
+    const allCourses = await Course.find({});
+    const coursesById = allCourses.reduce((acc, course) => {
       acc[course.courseId] = course;
       return acc;
     }, {});
 
-    res.json({ lessons: lessons.map((lesson) => buildLessonResponse(lesson, coursesById[lesson.courseId])) });
-  } catch (_err) {
-    res.status(500).json({ message: "Server error" });
+    return res.json({ lessons: lessons.map((lesson) => buildLessonResponse(lesson, coursesById[lesson.courseId])) });
+  } catch (err) {
+    console.error("GET /api/lessons failed:", err);
+    return res.status(500).json({ message: err.message || "Server error" });
   }
 });
 
-router.get("/videos/:id", authMiddleware, (req, res) => {
+router.get("/videos/:id", authMiddleware, async (req, res) => {
   try {
-    const lesson = Lesson.findOne({ lessonId: req.params.id });
+    const lesson = await Lesson.findOne({ lessonId: req.params.id });
     if (!lesson) {
       return res.status(404).json({ message: "Video not found" });
     }
 
-    const course = Course.findOne({ courseId: lesson.courseId });
-    const quiz = lesson.quizId ? Quiz.findOne({ quizId: lesson.quizId }) : null;
-    const progressItem = req.user.id
-      ? Progress.find({ userId: req.user.id, courseId: lesson.courseId }).find((item) => item.referenceId === lesson.lessonId || item.lessonId === lesson.lessonId)
-      : null;
+    const course = await Course.findOne({ courseId: lesson.courseId });
+    const quiz = lesson.quizId ? await Quiz.findOne({ quizId: lesson.quizId }) : null;
+    const progressList = req.user.id ? await Progress.find({ userId: req.user.id, courseId: lesson.courseId }) : [];
+    const progressItem = progressList.find((item) => item.referenceId === lesson.lessonId || item.lessonId === lesson.lessonId) || null;
 
     return res.json({
       video: {
         ...buildLessonResponse(lesson, course),
         progress: progressItem || null,
-        quiz: quiz
-          ? {
-              id: quiz.quizId,
-              title: quiz.title,
-              questionCount: normalizeArray(quiz.questions).length
-            }
-          : null
+        quiz: quiz ? { id: quiz.quizId, title: quiz.title, questionCount: normalizeArray(quiz.questions).length } : null
       }
     });
   } catch (_err) {
@@ -465,19 +495,18 @@ router.get("/videos/:id", authMiddleware, (req, res) => {
   }
 });
 
-router.get("/materials", authMiddleware, (req, res) => {
+router.get("/materials", authMiddleware, async (req, res) => {
   try {
     const courseFilter = req.query.courseId;
     const lessonFilter = req.query.lessonId;
-    const coursesById = Course.find({}).reduce((acc, course) => {
+    const allCourses = await Course.find({});
+    const coursesById = allCourses.reduce((acc, course) => {
       acc[course.courseId] = course;
       return acc;
     }, {});
 
-    const lessons = Lesson.find({}).filter((lesson) => (
-      (!courseFilter || lesson.courseId === courseFilter)
-      && (!lessonFilter || lesson.lessonId === lessonFilter)
-    ));
+    const allLessons = await Lesson.find({});
+    const lessons = allLessons.filter((lesson) => (!courseFilter || lesson.courseId === courseFilter) && (!lessonFilter || lesson.lessonId === lessonFilter));
 
     const materials = lessons.flatMap((lesson) => normalizeArray(lesson.materials).map((material) => ({
       id: material.id,
@@ -499,26 +528,24 @@ router.get("/materials", authMiddleware, (req, res) => {
   }
 });
 
-router.get("/quizzes", authMiddleware, (req, res) => {
+router.get("/quizzes", authMiddleware, async (req, res) => {
   try {
     const filter = {};
     if (req.query.courseId) filter.courseId = req.query.courseId;
     if (req.query.lessonId) filter.lessonId = req.query.lessonId;
 
-    const progressByQuizId = req.user.id
-      ? Progress.find({ userId: req.user.id, itemType: "quiz" }).reduce((acc, item) => {
-          const id = item.quizId || item.referenceId;
-          if (!id) {
-            return acc;
-          }
-          if (!acc[id] || Number(item.score) > Number(acc[id].score || 0)) {
-            acc[id] = item;
-          }
-          return acc;
-        }, {})
-      : {};
+    const progressList = req.user.id ? await Progress.find({ userId: req.user.id, itemType: "quiz" }) : [];
+    const progressByQuizId = progressList.reduce((acc, item) => {
+      const id = item.quizId || item.referenceId;
+      if (!id) return acc;
+      if (!acc[id] || Number(item.score) > Number(acc[id].score || 0)) {
+        acc[id] = item;
+      }
+      return acc;
+    }, {});
 
-    const quizzes = Quiz.find(filter).sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
+    const quizzes = await Quiz.find(filter);
+    quizzes.sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
     const summaries = quizzes.map((quiz) => ({
       id: quiz.quizId,
       courseId: quiz.courseId,
@@ -529,14 +556,15 @@ router.get("/quizzes", authMiddleware, (req, res) => {
     }));
 
     return res.json({ quizzes: summaries });
-  } catch (_err) {
-    return res.status(500).json({ message: "Server error" });
+  } catch (err) {
+    console.error("GET /api/quizzes failed:", err);
+    return res.status(500).json({ message: err.message || "Server error" });
   }
 });
 
-router.get("/quizzes/:id", authMiddleware, (req, res) => {
+router.get("/quizzes/:id", authMiddleware, async (req, res) => {
   try {
-    const quiz = Quiz.findOne({ quizId: req.params.id });
+    const quiz = await Quiz.findOne({ quizId: req.params.id });
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }
@@ -557,33 +585,20 @@ router.get("/quizzes/:id", authMiddleware, (req, res) => {
 
 router.get("/analytics", authMiddleware, async (req, res) => {
   try {
-    const courses = Course.find({});
-    const lessons = Lesson.find({});
-    const quizzes = Quiz.find({});
-    const items = Progress.find({ userId: req.user.id }).sort(byDateDesc);
+    const courses = await Course.find({});
+    const lessons = await Lesson.find({});
+    const quizzes = await Quiz.find({});
+    const items = await Progress.find({ userId: req.user.id }).sort(byDateDesc);
     const completedLessons = items.filter((item) => item.itemType === "lesson" && item.completed).length;
     const quizAttempts = items.filter((item) => item.itemType === "quiz");
     const completedQuizAttempts = quizAttempts.filter((item) => item.completed).length;
-    const avgScore = quizAttempts.length
-      ? Math.round(quizAttempts.reduce((sum, item) => sum + (Number(item.score) || 0), 0) / quizAttempts.length)
-      : 0;
+    const avgScore = quizAttempts.length ? Math.round(quizAttempts.reduce((sum, item) => sum + (Number(item.score) || 0), 0) / quizAttempts.length) : 0;
     const totalTrackableItems = lessons.length + quizzes.length;
-    const completionRate = totalTrackableItems
-      ? Math.round(((completedLessons + completedQuizAttempts) / totalTrackableItems) * 100)
-      : 0;
+    const completionRate = totalTrackableItems ? Math.round(((completedLessons + completedQuizAttempts) / totalTrackableItems) * 100) : 0;
 
-    const quizzesById = quizzes.reduce((acc, quiz) => {
-      acc[quiz.quizId] = quiz;
-      return acc;
-    }, {});
-    const lessonsById = lessons.reduce((acc, lesson) => {
-      acc[lesson.lessonId] = lesson;
-      return acc;
-    }, {});
-    const coursesById = courses.reduce((acc, course) => {
-      acc[course.courseId] = course;
-      return acc;
-    }, {});
+    const quizzesById = quizzes.reduce((acc, quiz) => { acc[quiz.quizId] = quiz; return acc; }, {});
+    const lessonsById = lessons.reduce((acc, lesson) => { acc[lesson.lessonId] = lesson; return acc; }, {});
+    const coursesById = courses.reduce((acc, course) => { acc[course.courseId] = course; return acc; }, {});
 
     const weakAreas = buildWeakAreas(items, quizzesById, lessonsById, coursesById);
     const recentActivity = items.slice(0, 8).map((item) => ({
@@ -614,21 +629,20 @@ router.get("/analytics", authMiddleware, async (req, res) => {
 router.get("/reviews", authMiddleware, async (req, res) => {
   try {
     const filter = req.query.courseId ? { courseId: req.query.courseId } : {};
-    const reviews = Review.find(filter)
-      .sort(byDateDesc)
-      .map((review) => {
-        const user = User.findById(review.userId);
-        return {
-          id: review._id,
-          courseId: review.courseId,
-          rating: review.rating,
-          comment: review.comment,
-          userName: user ? user.name : review.userName || "Student",
-          createdAt: review.createdAt
-        };
-      });
+    const reviews = await Review.find(filter).sort(byDateDesc);
+    const reviewsWithUserNames = await Promise.all(reviews.map(async (review) => {
+      const user = await User.findById(review.userId);
+      return {
+        id: review._id,
+        courseId: review.courseId,
+        rating: review.rating,
+        comment: review.comment,
+        userName: user ? user.name : review.userName || "Student",
+        createdAt: review.createdAt
+      };
+    }));
 
-    return res.json({ reviews });
+    return res.json({ reviews: reviewsWithUserNames });
   } catch (_err) {
     return res.status(500).json({ message: "Server error" });
   }
@@ -641,24 +655,24 @@ router.post("/reviews", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "courseId, rating, and comment are required" });
     }
 
-    const course = Course.findOne({ courseId });
+    const course = await Course.findOne({ courseId });
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    const lessons = Lesson.find({ courseId });
+    const lessons = await Lesson.find({ courseId });
     if (lessons.length === 0) {
       return res.status(400).json({ message: "This course has no lessons yet" });
     }
 
-    const completedLessonsList = Progress.find({ userId: req.user.id, courseId, itemType: "lesson", completed: true });
+    const completedLessonsList = await Progress.find({ userId: req.user.id, courseId, itemType: "lesson", completed: true });
     if (completedLessonsList.length < lessons.length) {
       return res.status(400).json({ message: "Complete all lessons before leaving a review" });
     }
 
     const numericRating = Math.max(1, Math.min(5, Number(rating)));
-    const user = User.findById(req.user.id);
-    const review = Review.findOneAndUpdate(
+    const user = await User.findById(req.user.id);
+    const review = await Review.findOneAndUpdate(
       { userId: req.user.id, courseId },
       {
         userId: req.user.id,
@@ -678,21 +692,18 @@ router.post("/reviews", authMiddleware, async (req, res) => {
 
 router.get("/assistant/history", authMiddleware, async (req, res) => {
   try {
-    const chats = AiChat.find({ userId: req.user.id })
-      .filter((chat) => (!req.query.courseId || chat.courseId === req.query.courseId) && (!req.query.lessonId || chat.lessonId === req.query.lessonId))
-      .sort(byDateDesc)
-      .slice(0, 25)
-      .map((chat) => ({
-        id: chat._id,
-        prompt: chat.prompt,
-        response: chat.response,
-        sourceTitles: normalizeArray(chat.sourceTitles),
-        courseId: chat.courseId || null,
-        lessonId: chat.lessonId || null,
-        createdAt: chat.createdAt
-      }));
+    const chats = await AiChat.find({ userId: req.user.id }).sort(byDateDesc).limit(100);
+    const filteredChats = chats.filter((chat) => (!req.query.courseId || chat.courseId === req.query.courseId) && (!req.query.lessonId || chat.lessonId === req.query.lessonId)).slice(0, 25).map((chat) => ({
+      id: chat._id,
+      prompt: chat.prompt,
+      response: chat.response,
+      sourceTitles: normalizeArray(chat.sourceTitles),
+      courseId: chat.courseId || null,
+      lessonId: chat.lessonId || null,
+      createdAt: chat.createdAt
+    }));
 
-    return res.json({ chats });
+    return res.json({ chats: filteredChats });
   } catch (_err) {
     return res.status(500).json({ message: "Server error" });
   }
@@ -708,15 +719,11 @@ router.post("/assistant/explain", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "A topic or question is required" });
     }
 
-    const context = findAssistantContext(prompt, courseId, lessonId);
+    const context = await findAssistantContext(prompt, courseId, lessonId);
     const reply = await maybeGenerateAiReply(prompt, context);
-    const sourceTitles = [
-      ...context.courses.map((item) => item.title),
-      ...context.lessons.map((item) => item.title),
-      ...context.quizzes.map((item) => item.title)
-    ].filter(Boolean);
+    const sourceTitles = [...context.courses.map((item) => item.title), ...context.lessons.map((item) => item.title), ...context.quizzes.map((item) => item.title)].filter(Boolean);
 
-    const chat = AiChat.create({
+    const chat = await AiChat.create({
       _id: `ai_${generateId()}`,
       userId: req.user.id,
       courseId,

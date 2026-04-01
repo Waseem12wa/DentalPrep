@@ -546,7 +546,7 @@
             }
 
             const params = new URLSearchParams(window.location.search);
-            const courseId = params.get("id");
+            const courseId = params.get("id") || params.get("courseId");
 
             const courseTitleEl = document.getElementById("course-title");
             const courseDescEl = document.getElementById("course-description");
@@ -619,16 +619,39 @@
                     : `Complete all lessons to unlock reviews. ${completedLessons}/${totalLessons} lessons completed, ${reviewCount} review(s) posted so far.`;
             };
 
+            const fetchSafe = async (path, fallbackValue) => {
+                try {
+                    return await api.apiFetch(path);
+                } catch (err) {
+                    console.warn(`Request failed for ${path}:`, err?.message || err);
+                    return fallbackValue;
+                }
+            };
+
             try {
-                const [courseData, quizzesData, progressData, reviewsData] = await Promise.all([
-                    api.apiFetch(`/courses/${encodeURIComponent(courseId)}`),
-                    api.apiFetch(`/quizzes?courseId=${encodeURIComponent(courseId)}`),
-                    api.apiFetch(`/progress?courseId=${encodeURIComponent(courseId)}`),
-                    api.apiFetch(`/reviews?courseId=${encodeURIComponent(courseId)}`)
+                const [courseData, coursesData, lessonsData, quizzesData, progressData, reviewsData] = await Promise.all([
+                    fetchSafe(`/courses/${encodeURIComponent(courseId)}`, { course: null }),
+                    fetchSafe(`/courses`, { courses: [] }),
+                    fetchSafe(`/lessons?courseId=${encodeURIComponent(courseId)}`, { lessons: [] }),
+                    fetchSafe(`/quizzes?courseId=${encodeURIComponent(courseId)}`, { quizzes: [] }),
+                    fetchSafe(`/progress?courseId=${encodeURIComponent(courseId)}`, { items: [] }),
+                    fetchSafe(`/reviews?courseId=${encodeURIComponent(courseId)}`, { reviews: [] })
                 ]);
 
-                const course = courseData.course;
-                const lessons = course?.lessons || [];
+                const listedCourse = (coursesData.courses || []).find((item) => item && item.id === courseId) || null;
+                const detailCourse = courseData.course || null;
+                const lessonsFromDetail = detailCourse?.lessons || [];
+                const lessonsFromList = lessonsData.lessons || [];
+                const lessons = lessonsFromDetail.length ? lessonsFromDetail : lessonsFromList;
+                const course = detailCourse || {
+                    id: courseId,
+                    title: listedCourse?.title || "Course",
+                    description: listedCourse?.description || "",
+                    category: listedCourse?.category || "",
+                    curriculumTags: listedCourse?.curriculumTags || [],
+                    materialsCount: 0,
+                    caseStudiesCount: 0
+                };
                 const quizzes = quizzesData.quizzes || [];
                 const progressItems = progressData.items || [];
                 const reviews = reviewsData.reviews || [];
@@ -652,11 +675,6 @@
                 }, {});
 
                 loadingContainer.style.display = "none";
-
-                if (!course) {
-                    errorContainer.innerHTML = '<div class="error-msg">Course not found.</div>';
-                    return;
-                }
 
                 courseTitleEl.textContent = course.title || "Untitled Course";
                 courseDescEl.textContent = course.description || `${lessons.length} lessons available`;
@@ -748,7 +766,7 @@
                             })
                         });
 
-                        const refreshed = await api.apiFetch(`/reviews?courseId=${encodeURIComponent(courseId)}`);
+                        const refreshed = await fetchSafe(`/reviews?courseId=${encodeURIComponent(courseId)}`, { reviews: [] });
                         renderReviews(refreshed.reviews || []);
                         reviewStatus.className = "success-banner";
                         reviewStatus.textContent = "Review saved successfully.";

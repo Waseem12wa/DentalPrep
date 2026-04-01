@@ -142,11 +142,28 @@
     margin: 0;
     font-family: 'Outfit', sans-serif;
     font-size: clamp(1.7rem, 2.8vw, 2.4rem);
+    color: #1f3f81;
+}
+
+body[data-page="general-overview"] .subject-header h1,
+body[data-page="about-academy"] .subject-header h1 {
+    color: #0f2a64;
+    font-weight: 900;
 }
 
 .subject-subtitle {
-    color: #4f6288;
+    color: #ffffff;
     margin-top: 0.4rem;
+    opacity: 0.95;
+}
+
+/* On standalone pages like General Overview, subtitle sits on light background. */
+body[data-page="general-overview"] .subject-subtitle,
+body[data-page="about-academy"] .subject-subtitle,
+body[data-page="subject"][data-subject-key="prime-minors"] .subject-subtitle,
+body[data-page="subject"][data-subject-key="past-papers"] .subject-subtitle {
+    color: #5a6f98;
+    opacity: 1;
 }
 
 .block-grid {
@@ -180,6 +197,35 @@
     color: #243b68;
 }
 
+.sections-container {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.block-section {
+    background: #f8fbff;
+    border: 1px solid #dce9f7;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.section-title {
+    margin: 0 0 0.8rem 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1f3f81;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #d0e0f0;
+    font-family: 'Outfit', sans-serif;
+}
+
+.section-resources {
+    display: grid;
+    gap: 0.65rem;
+}
+
 .resource-list {
     display: grid;
     gap: 0.5rem;
@@ -203,6 +249,39 @@
     font-size: 0.84rem;
     color: #4f6288;
     text-decoration: none;
+}
+
+.pdf-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.pdf-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    background: #f0f7ff;
+    border: 1px solid #d0e0ff;
+    border-radius: 0.5rem;
+    color: #1e3a8a;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.pdf-link:hover {
+    background: #e0eaff;
+    border-color: #1e3a8a;
+    transform: translateX(2px);
+}
+
+.pdf-link i {
+    font-size: 1rem;
+    color: #dc2626;
 }
 
 .overview-grid,
@@ -302,6 +381,54 @@
     width: 100%;
     height: 100%;
     border: 0;
+}
+
+.simple-video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.video-card-simple {
+    border: 1px solid #d8e6ff;
+    border-radius: 0.8rem;
+    background: #f9fbff;
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.video-card-simple h5 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #203b6f;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+}
+
+.video-card-simple video {
+    width: 100%;
+    border-radius: 0.5rem;
+    background: #0f172a;
+}
+
+.video-link-btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: #1e3a8a;
+    color: white;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    text-align: center;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+}
+
+.video-link-btn:hover {
+    background: #153070;
 }
 
 .about-avatar {

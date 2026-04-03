@@ -39,8 +39,11 @@
         // Route uploaded files through backend file endpoint for stable open/download behavior.
         var uploadMatch = url.match(/^\/?static\/uploads\/([^?#/]+)(?:[?#].*)?$/i);
         if (uploadMatch && uploadMatch[1]) {
-            var filePath = '/api/files/' + encodeURIComponent(uploadMatch[1]);
-            return apiOrigin ? (apiOrigin + filePath) : filePath;
+            var filename = decodeURIComponent(uploadMatch[1]);
+            var filePath = '/api/files/' + encodeURIComponent(filename);
+            var resolved = apiOrigin ? (apiOrigin + filePath) : filePath;
+            console.log('ResolveResourceUrl: ' + filename + ' -> ' + resolved);
+            return resolved;
         }
 
         return url;
@@ -48,7 +51,22 @@
 
     function isValidResourceUrl(url) {
         var value = String(url || '').trim();
-        return Boolean(value) && value !== '#';
+        if (!value || value === '#') {
+            return false;
+        }
+        // Accept http/https URLs, api paths, and data URIs
+        if (/^https?:\/\//i.test(value) || /^\/api\//i.test(value) || /^data:/i.test(value)) {
+            return true;
+        }
+        // For relative paths to uploads
+        if (/^\/static\/uploads\//i.test(value)) {
+            return true;
+        }
+        // Local relative path
+        if (!/^[\/\.]/.test(value)) {
+            return false;
+        }
+        return true;
     }
 
     function safeDecode(value) {
@@ -238,14 +256,18 @@
         var renderRows = function (list, isPaid) {
             return list.map(function (item, index) {
             var title = item && item.title ? item.title : ('Resource ' + (index + 1));
-            var url = resolveResourceUrl(item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#');
+            var rawUrl = item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#';
+            var url = resolveResourceUrl(rawUrl);
             var isLocked = Boolean(item && item.isLocked) || (isPaid && !isValidResourceUrl(url));
             var badge = badgeInline(index, isPaid);
+            
+            console.log('File resource: title=' + title + ', isPaid=' + isPaid + ', isLocked=' + isLocked + ', rawUrl=' + rawUrl + ', resolvedUrl=' + url);
+            
             if (isLocked) {
                 return '<a href="#" class="locked-pdf-link locked-access-link" data-kind="file" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> ' + escapeHtml(title) + ' (Paid content)</a>' + badge;
             }
             if (!isValidResourceUrl(url)) {
-                console.warn('Invalid resource URL for', title, ':', url);
+                console.warn('Invalid resource URL for ' + title + ', rawUrl: ' + rawUrl + ', resolvedUrl: ' + url);
                 return '<span class="muted-note">' + escapeHtml(title) + ' (file link unavailable - check upload)</span>';
             }
             return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(title) + '</a>' + badge;
@@ -558,7 +580,9 @@
         blockContainer.innerHTML = '<p class="muted-note">Loading subject content...</p>';
 
         try {
+            console.log('Fetching subject content for: ' + subjectKey);
             var data = await fetchJson('/subjects/' + encodeURIComponent(subjectKey) + '/content');
+            console.log('Subject content fetched successfully:', data);
             var subject = data.subject || {};
             titleEl.textContent = subject.title || 'Subject';
             introEl.textContent = subject.intro || '';
@@ -644,17 +668,21 @@
             blockContainer.querySelectorAll('.locked-access-link').forEach(function (link) {
                 link.addEventListener('click', async function (event) {
                     event.preventDefault();
+                    event.stopPropagation();
+                    
                     var contentKind = String(link.getAttribute('data-kind') || 'content').trim();
                     var subjectKeyVal = String(link.getAttribute('data-subject-key') || subjectKey || '').trim();
                     var blockKeyVal = String(link.getAttribute('data-block-key') || '').trim();
                     var sectionNameVal = String(link.getAttribute('data-section-name') || '').trim();
-                    var resourceTitle = String(link.getAttribute('data-title') || 'Paid PDF').trim();
+                    var resourceTitle = String(link.getAttribute('data-title') || 'Paid ' + contentKind).trim();
 
+                    console.log('Locked resource clicked: kind=' + contentKind + ', subjectKey=' + subjectKeyVal + ', blockKey=' + blockKeyVal + ', sectionName=' + sectionNameVal);
+                    
                     var promptText = [
                         'This ' + contentKind + ' is paid content (PKR 500).',
                         'Easypaisa Number: 03327939323',
                         'Account Name: Muhammad Yousaf',
-                        'After payment, enter proof/reference below and submit request for admin approval.',
+                        'After payment, enter proof/reference and submit request for admin approval.',
                         '',
                         'Resource: ' + resourceTitle,
                         'Block: ' + blockKeyVal,
@@ -664,11 +692,13 @@
                     ].join('\n');
 
                     var paymentProof = window.prompt(promptText, 'EP Transaction ID / Screenshot note');
-                    if (paymentProof === null) {
+                    if (paymentProof === null || paymentProof === '') {
+                        console.log('User cancelled payment prompt');
                         return;
                     }
 
                     try {
+                        console.log('Submitting payment request for: ' + resourceTitle);
                         await fetchJson('/pdf-access/request', {
                             method: 'POST',
                             body: JSON.stringify({

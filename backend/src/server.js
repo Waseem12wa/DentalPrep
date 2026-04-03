@@ -32,15 +32,29 @@ const authMiddleware = require("./middleware/auth");
 
 // Reliable file delivery for uploaded resources (documents/videos).
 app.get("/api/files/:name", (req, res) => {
-  const rawName = String(req.params.name || "");
+  let rawName = String(req.params.name || "");
+  // Decode URI component if it's encoded
+  try {
+    rawName = decodeURIComponent(rawName);
+  } catch (_err) {
+    // If decode fails, use the raw name
+  }
+  
   const safeName = path.basename(rawName);
-  if (!safeName || safeName !== rawName) {
+  if (!safeName) {
     return res.status(400).json({ message: "Invalid file name" });
   }
 
   const uploadsDir = path.join(__dirname, "../../static/uploads");
   const filePath = path.join(uploadsDir, safeName);
+  
+  // Prevent path traversal attacks
+  if (!filePath.startsWith(uploadsDir)) {
+    return res.status(400).json({ message: "Invalid file path" });
+  }
+  
   if (!fs.existsSync(filePath)) {
+    console.warn(`File not found: ${filePath}`);
     return res.status(404).json({ message: "File not found" });
   }
 

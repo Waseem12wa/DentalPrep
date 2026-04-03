@@ -110,6 +110,13 @@
             return '<p class="muted-note">' + escapeHtml(emptyText) + '</p>';
         }
 
+        function badgeHtml(index, isPaid) {
+            if (isPaid) {
+                return '<span style="display:inline-block;margin-top:0.35rem;padding:0.12rem 0.5rem;border-radius:999px;font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;">Paid</span>';
+            }
+            return '<span style="display:inline-block;margin-top:0.35rem;padding:0.12rem 0.5rem;border-radius:999px;font-size:0.72rem;font-weight:700;background:#dcfce7;color:#166534;">Free ' + (index + 1) + '/3</span>';
+        }
+
         var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() !== 'paid'; });
         var paidLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() === 'paid'; });
 
@@ -124,11 +131,13 @@
             var playlistId = parsedYoutube.playlistId;
             var videoId = parsedYoutube.videoId;
             var isLocked = Boolean(item && item.isLocked) || (isPaid && !isValidResourceUrl(url));
+            var accessBadge = badgeHtml(index, isPaid);
 
             if (isLocked) {
                 return [
                     '<div class="video-embed-card">',
                     '<h5>' + escapeHtml(displayTitle) + '</h5>',
+                    accessBadge,
                     '<a href="#" class="locked-pdf-link locked-access-link" data-kind="video" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> Paid content (click to request access)</a>',
                     '</div>'
                 ].join('');
@@ -141,6 +150,7 @@
                 return [
                     '<div class="video-embed-card">',
                     '<h5>' + escapeHtml(displayTitle) + '</h5>',
+                    accessBadge,
                     '<div class="video-frame-wrap">',
                     '<iframe src="https://www.youtube.com/embed/' + escapeHtml(videoId) + videoWithPlaylist + '" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
                     '</div>',
@@ -152,6 +162,7 @@
                 return [
                     '<div class="video-embed-card">',
                     '<h5>' + escapeHtml(displayTitle) + ' (Playlist)</h5>',
+                    accessBadge,
                     '<div class="video-frame-wrap">',
                     '<iframe src="https://www.youtube.com/embed/videoseries?list=' + escapeHtml(playlistId) + '&rel=0" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
                     '</div>',
@@ -163,6 +174,7 @@
                 return [
                     '<div class="video-embed-card">',
                     '<h5>' + escapeHtml(displayTitle) + '</h5>',
+                    accessBadge,
                     '<div class="video-frame-wrap">',
                     '<video controls preload="metadata" src="' + escapeHtml(url) + '"></video>',
                     '</div>',
@@ -175,6 +187,7 @@
                 return [
                     '<div class="video-embed-card">',
                     '<h5>' + escapeHtml(displayTitle) + '</h5>',
+                    accessBadge,
                     '<div class="video-frame-wrap" style="background:#000; display:flex; align-items:center; justify-content:center; min-height:300px; border-radius:0.5rem;">',
                     '<div style="text-align:center; color:#fff;">',
                     '<p style="margin-bottom:1rem;"><i class="fas fa-play-circle" style="font-size:3rem;"></i></p>',
@@ -188,6 +201,7 @@
             return [
                 '<div class="video-embed-card">',
                 '<h5>' + escapeHtml(displayTitle) + '</h5>',
+                accessBadge,
                 '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">Open resource</a>',
                 '</div>'
             ].join('');
@@ -211,6 +225,13 @@
             return '<p class="muted-note">' + escapeHtml(emptyText) + '</p>';
         }
 
+        function badgeInline(index, isPaid) {
+            if (isPaid) {
+                return ' <span style="display:inline-block;padding:0.05rem 0.45rem;border-radius:999px;font-size:0.68rem;font-weight:700;background:#fef3c7;color:#92400e;vertical-align:middle;">Paid</span>';
+            }
+            return ' <span style="display:inline-block;padding:0.05rem 0.45rem;border-radius:999px;font-size:0.68rem;font-weight:700;background:#dcfce7;color:#166534;vertical-align:middle;">Free ' + (index + 1) + '/3</span>';
+        }
+
         var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() !== 'paid'; });
         var paidLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() === 'paid'; });
 
@@ -219,14 +240,15 @@
             var title = item && item.title ? item.title : ('Resource ' + (index + 1));
             var url = resolveResourceUrl(item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#');
             var isLocked = Boolean(item && item.isLocked) || (isPaid && !isValidResourceUrl(url));
+            var badge = badgeInline(index, isPaid);
             if (isLocked) {
-                return '<a href="#" class="locked-pdf-link locked-access-link" data-kind="file" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> ' + escapeHtml(title) + ' (Paid content)</a>';
+                return '<a href="#" class="locked-pdf-link locked-access-link" data-kind="file" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> ' + escapeHtml(title) + ' (Paid content)</a>' + badge;
             }
             if (!isValidResourceUrl(url)) {
                 console.warn('Invalid resource URL for', title, ':', url);
                 return '<span class="muted-note">' + escapeHtml(title) + ' (file link unavailable - check upload)</span>';
             }
-            return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(title) + '</a>';
+            return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(title) + '</a>' + badge;
             }).join('');
         };
 

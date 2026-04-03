@@ -110,21 +110,31 @@
                     return;
                 }
 
+                const freeMaterials = materials.filter((item) => String(item.accessLevel || 'free') !== 'paid');
+                const paidMaterials = materials.filter((item) => String(item.accessLevel || 'free') === 'paid');
+                const renderGroup = (items, heading, paid) => {
+                    if (!items.length) return "";
+                    return `
+                        <div style="grid-column: 1/-1; margin-top: 0.75rem; font-weight: 700; color: ${paid ? '#92400e' : '#166534'};">${heading}</div>
+                        ${items.map((material) => `
+                            <div class="material-card">
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #111827;">${material.title || material.fileName}</div>
+                                <div style="color: #6b7280; margin-top: 0.4rem;">${material.courseTitle} • ${material.lessonTitle}</div>
+                                <div class="chip-row">
+                                    <span class="chip" style="background: ${paid ? '#fef3c7' : '#ecfdf3'}; color: ${paid ? '#92400e' : '#166534'};">${paid ? 'Paid Content' : 'Free Demo'}</span>
+                                    ${(material.curriculumTags || []).map((tag) => `<span class="chip">${tag}</span>`).join("")}
+                                </div>
+                                ${material.isLocked || !material.fileUrl
+                                    ? '<div style="margin-top:0.75rem; color:#92400e; font-weight:600;"><i class="fas fa-lock"></i> Paid material. Upgrade to access.</div>'
+                                    : `<div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem;"><a href="${material.fileUrl}" target="_blank" rel="noopener noreferrer" class="btn-primary">Open</a><a href="${material.fileUrl}" download class="btn-primary">Download</a></div>`}
+                            </div>
+                        `).join("")}
+                    `;
+                };
+
                 titleEl.textContent = lessonId ? "Lesson Materials" : courseId ? "Course Materials" : "Study Materials";
                 subtitleEl.textContent = lessonId ? "Files attached to the selected lesson." : courseId ? "Files uploaded across lessons in this course." : "Files available across your LMS content.";
-                listEl.innerHTML = materials.map((material) => `
-                    <div class="material-card">
-                        <div style="font-size: 1.1rem; font-weight: 700; color: #111827;">${material.title || material.fileName}</div>
-                        <div style="color: #6b7280; margin-top: 0.4rem;">${material.courseTitle} • ${material.lessonTitle}</div>
-                        <div class="chip-row">
-                            ${(material.curriculumTags || []).map((tag) => `<span class="chip">${tag}</span>`).join("")}
-                        </div>
-                        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem;">
-                            <a href="${material.fileUrl}" target="_blank" rel="noopener noreferrer" class="btn-primary">Open</a>
-                            <a href="${material.fileUrl}" download class="btn-primary">Download</a>
-                        </div>
-                    </div>
-                `).join("");
+                listEl.innerHTML = `${renderGroup(freeMaterials, 'Free Demo', false)}${renderGroup(paidMaterials, 'Paid Content', true)}`;
             } catch (err) {
                 emptyEl.style.display = "block";
                 emptyEl.textContent = err.message || "Unable to load materials.";

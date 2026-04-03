@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema({
     password: String,
     verificationToken: String,
     isVerified: { type: Boolean, default: false },
+    accountStatus: { type: String, enum: ["pending", "active", "blocked"], default: "pending" },
     role: { type: String, enum: ["admin", "student", "teacher"], default: "student" },
     resetPasswordToken: String,
     resetPasswordExpires: Date,
@@ -49,6 +50,7 @@ const lessonSchema = new mongoose.Schema({
     lessonId: { type: String, unique: true },
     courseId: String,
     title: String,
+    accessLevel: { type: String, enum: ["free", "paid"], default: "free" },
     summary: String,
     videoUrl: String,
     videoType: String,
@@ -197,6 +199,26 @@ const academyProfileSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 }, { collection: "academy_profile" });
 
+// PDF Access Payment Request Schema
+const pdfAccessRequestSchema = new mongoose.Schema({
+    _id: String,
+    userId: String,
+    subjectKey: String,
+    blockKey: String,
+    sectionName: String,
+    amount: { type: Number, default: 300 },
+    paymentMethod: { type: String, default: "easypaisa" },
+    easypaisaNumber: String,
+    easypaisaAccountName: String,
+    paymentProof: String,
+    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    reviewedBy: String,
+    reviewedAt: Date,
+    adminNote: String,
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+}, { collection: "pdf_access_requests" });
+
 // ===== MODELS =====
 
 const User = mongoose.model("User", userSchema);
@@ -210,6 +232,7 @@ const Review = mongoose.model("Review", reviewSchema);
 const AiChat = mongoose.model("AiChat", aiChatSchema);
 const SubjectContent = mongoose.model("SubjectContent", subjectContentSchema);
 const AcademyProfile = mongoose.model("AcademyProfile", academyProfileSchema);
+const PdfAccessRequest = mongoose.model("PdfAccessRequest", pdfAccessRequestSchema);
 
 // ===== HELPER FUNCTIONS =====
 
@@ -242,6 +265,7 @@ module.exports = {
     AiChat,
     SubjectContent,
     AcademyProfile,
+    PdfAccessRequest,
     readData,
     writeData,
     generateId,

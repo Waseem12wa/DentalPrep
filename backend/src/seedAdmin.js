@@ -17,6 +17,7 @@ async function seedAdmin() {
                 password: hashedPassword,
                 passwordHash: hashedPassword,
                 isVerified: true,
+                    accountStatus: "active", // Explicitly setting account status to active
                 role: "admin",
                 createdAt: new Date(),
                 updatedAt: new Date()

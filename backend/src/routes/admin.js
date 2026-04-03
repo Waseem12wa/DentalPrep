@@ -1,9 +1,10 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
-const { Course, Lesson, Quiz, Progress, Review, User, SubjectContent, AcademyProfile, generateId } = require("../db");
+const { Course, Lesson, Quiz, Progress, Review, User, Subscription, AiChat, SubjectContent, AcademyProfile, PdfAccessRequest, generateId } = require("../db");
 
 const router = express.Router();
 
@@ -46,7 +47,11 @@ function isYoutubeUrl(value) {
   return /(?:youtube\.com|youtu\.be)/i.test(String(value || ""));
 }
 
-function createAssetRecord(file, kind, index = 0) {
+function normalizeAccessLevel(value) {
+  return String(value || "free").trim().toLowerCase() === "paid" ? "paid" : "free";
+}
+
+function createAssetRecord(file, kind, index = 0, accessLevel = "free") {
   const ext = path.extname(file.originalname || "");
   const title = path.basename(file.originalname || `${kind}_${index + 1}`, ext) || `${kind} ${index + 1}`;
   const fileUrl = `/static/uploads/${file.filename}`;
@@ -57,6 +62,7 @@ function createAssetRecord(file, kind, index = 0) {
     fileName: file.originalname,
     fileUrl,
     url: fileUrl,
+    accessLevel: normalizeAccessLevel(accessLevel),
     mimeType: file.mimetype || "application/octet-stream",
     size: file.size || 0
   };
@@ -121,7 +127,8 @@ function parseCaseStudies(value) {
     .filter((item) => item.title || item.scenario || item.diagnosis || item.discussion || item.relevance);
 }
 
-function parseLineLinks(value) {
+function parseLineLinks(value, accessLevel) {
+  const normalizedAccessLevel = accessLevel ? normalizeAccessLevel(accessLevel) : null;
   return String(value || "")
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -129,16 +136,24 @@ function parseLineLinks(value) {
     .map((line, index) => {
       const parts = line.split("|").map((part) => part.trim());
       if (parts.length >= 2) {
-        return {
+        const item = {
           title: parts[0] || `Resource ${index + 1}`,
           url: parts.slice(1).join("|") || "#"
         };
+        if (normalizedAccessLevel) {
+          item.accessLevel = normalizedAccessLevel;
+        }
+        return item;
       }
 
-      return {
+      const item = {
         title: `Resource ${index + 1}`,
         url: parts[0] || "#"
       };
+      if (normalizedAccessLevel) {
+        item.accessLevel = normalizedAccessLevel;
+      }
+      return item;
     });
 }
 
@@ -157,6 +172,7 @@ function sanitizeLinks(value) {
       const title = String((doc && doc.title) || "").trim();
       const rawUrl = (doc && doc.url) || "";
       const rawFileUrl = (doc && doc.fileUrl) || "";
+      const accessLevel = normalizeAccessLevel((doc && doc.accessLevel) || "free");
       const preferredUrl = (rawUrl && String(rawUrl).trim() !== "#") ? rawUrl : (rawFileUrl || rawUrl || "");
       const url = String(preferredUrl || "").trim();
       if (!title && !url) {
@@ -167,10 +183,78 @@ function sanitizeLinks(value) {
       }
       return {
         title: title || url || "Resource",
-        url
+        url,
+        accessLevel
       };
     })
     .filter(Boolean);
+}
+
+function mergeUniqueStrings(existingValues, incomingValues) {
+  const seen = new Set();
+  const merged = [];
+
+  const add = (value) => {
+    const normalized = String(value || "").trim();
+    if (!normalized) {
+      return;
+    }
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    merged.push(normalized);
+  };
+
+  (Array.isArray(existingValues) ? existingValues : []).forEach(add);
+  (Array.isArray(incomingValues) ? incomingValues : []).forEach(add);
+
+  return merged;
+}
+
+function mergeUniqueLinks(existingItems, incomingItems) {
+  const seen = new Set();
+  const merged = [];
+
+  const add = (item) => {
+    if (!item || typeof item !== "object") {
+      return;
+    }
+
+    const raw = (item && typeof item.toObject === "function") ? item.toObject() : item;
+    const doc = raw && raw._doc ? raw._doc : raw;
+    const title = String((doc && doc.title) || "").trim();
+    const rawUrl = (doc && doc.url) || "";
+    const rawFileUrl = (doc && doc.fileUrl) || "";
+    const accessLevel = normalizeAccessLevel((doc && doc.accessLevel) || "free");
+    const preferredUrl = (rawUrl && String(rawUrl).trim() !== "#") ? rawUrl : (rawFileUrl || rawUrl || "");
+    const url = String(preferredUrl || "").trim();
+
+    if (!url || url === "#") {
+      return;
+    }
+
+    const normalizedTitle = title || url || "Resource";
+    const key = `${normalizedTitle.toLowerCase()}|${url.toLowerCase()}`;
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    merged.push({
+      ...doc,
+      title: normalizedTitle,
+      url,
+      accessLevel,
+      fileUrl: String((doc && doc.fileUrl) || url).trim()
+    });
+  };
+
+  (Array.isArray(existingItems) ? existingItems : []).forEach(add);
+  (Array.isArray(incomingItems) ? incomingItems : []).forEach(add);
+
+  return merged;
 }
 
 async function ensureAcademyProfile() {
@@ -273,6 +357,74 @@ async function buildStudentAnalytics() {
       };
     })
     .sort((left, right) => right.completionRate - left.completionRate || right.avgScore - left.avgScore);
+}
+
+async function buildManagedStudents() {
+  const courses = await Course.find({});
+  const lessons = await Lesson.find({});
+  const quizzes = await Quiz.find({});
+  const progressItems = await Progress.find({});
+  const students = (await User.find({})).filter((user) => user.role !== "admin");
+
+  const coursesById = courses.reduce((acc, course) => {
+    acc[course.courseId] = course;
+    return acc;
+  }, {});
+  const lessonsById = lessons.reduce((acc, lesson) => {
+    acc[lesson.lessonId] = lesson;
+    return acc;
+  }, {});
+  const quizzesById = quizzes.reduce((acc, quiz) => {
+    acc[quiz.quizId] = quiz;
+    return acc;
+  }, {});
+  const totalTrackableItems = lessons.length + quizzes.length;
+
+  return students
+    .map((student) => {
+      const userProgress = progressItems.filter((item) => item.userId === student._id);
+      const completedLessons = userProgress.filter((item) => item.itemType === "lesson" && item.completed).length;
+      const quizAttempts = userProgress.filter((item) => item.itemType === "quiz");
+      const avgScore = quizAttempts.length
+        ? Math.round(quizAttempts.reduce((sum, item) => sum + (Number(item.score) || 0), 0) / quizAttempts.length)
+        : 0;
+
+      return {
+        userId: student._id,
+        name: student.name || "Student",
+        email: student.email || "",
+        role: student.role || "student",
+        isVerified: Boolean(student.isVerified),
+        accountStatus: student.accountStatus || "active",
+        completedLessons,
+        quizAttempts: quizAttempts.length,
+        avgScore,
+        completionRate: totalTrackableItems
+          ? Math.round(((completedLessons + quizAttempts.filter((item) => item.completed).length) / totalTrackableItems) * 100)
+          : 0,
+        weakAreas: quizAttempts
+          .filter((item) => Number(item.score) < 70)
+          .sort((left, right) => Number(left.score) - Number(right.score))
+          .slice(0, 3)
+          .map((item) => {
+            const quiz = quizzesById[item.quizId || item.referenceId];
+            const lesson = lessonsById[item.lessonId || quiz?.lessonId];
+            const course = coursesById[item.courseId || lesson?.courseId || quiz?.courseId];
+            return {
+              quizTitle: quiz ? quiz.title : item.title || "Quiz",
+              lessonTitle: lesson ? lesson.title : "Lesson",
+              courseTitle: course ? course.title : item.courseId,
+              score: Number(item.score) || 0
+            };
+          }),
+        updatedAt: userProgress[0]?.updatedAt || student.updatedAt || student.createdAt
+      };
+    })
+    .sort((left, right) => right.completionRate - left.completionRate || right.avgScore - left.avgScore);
+}
+
+function createTemporaryPassword() {
+  return crypto.randomBytes(6).toString("base64url").replace(/[^a-zA-Z0-9]/g, "").slice(0, 10) || `Temp${generateId().slice(0, 6)}`;
 }
 
 function adminAuth(req, res, next) {
@@ -544,6 +696,321 @@ router.get("/admin/student-analytics", adminAuth, async (_req, res) => {
   }
 });
 
+router.get("/admin/users", adminAuth, async (_req, res) => {
+  try {
+    return res.json({ students: await buildManagedStudents() });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/admin/users/:userId/block", adminAuth, async (req, res) => {
+  try {
+    const userId = String(req.params.userId || "").trim();
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if ((user.role || "student") === "admin") {
+      return res.status(403).json({ message: "Admin accounts cannot be blocked" });
+    }
+
+    const updated = await User.findByIdAndUpdate(userId, {
+      accountStatus: "blocked",
+      updatedAt: new Date()
+    }, { new: true });
+
+    return res.json({
+      message: "User blocked",
+      user: {
+        id: updated._id,
+        name: updated.name,
+        email: updated.email,
+        accountStatus: updated.accountStatus || "blocked"
+      }
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/admin/users/:userId/approve", adminAuth, async (req, res) => {
+  try {
+    const userId = String(req.params.userId || "").trim();
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if ((user.role || "student") === "admin") {
+      return res.status(403).json({ message: "Admin account cannot be changed" });
+    }
+
+    const updated = await User.findByIdAndUpdate(userId, {
+      accountStatus: "active",
+      updatedAt: new Date()
+    }, { new: true });
+
+    return res.json({
+      message: "Student approved successfully",
+      user: {
+        id: updated._id,
+        name: updated.name,
+        email: updated.email,
+        accountStatus: updated.accountStatus || "active"
+      }
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/admin/users/:userId/reject", adminAuth, async (req, res) => {
+  try {
+    const userId = String(req.params.userId || "").trim();
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if ((user.role || "student") === "admin") {
+      return res.status(403).json({ message: "Admin account cannot be changed" });
+    }
+
+    const updated = await User.findByIdAndUpdate(userId, {
+      accountStatus: "blocked",
+      updatedAt: new Date()
+    }, { new: true });
+
+    return res.json({
+      message: "Student rejected",
+      user: {
+        id: updated._id,
+        name: updated.name,
+        email: updated.email,
+        accountStatus: updated.accountStatus || "blocked"
+      }
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/admin/users/:userId/unblock", adminAuth, async (req, res) => {
+  try {
+    const userId = String(req.params.userId || "").trim();
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if ((user.role || "student") === "admin") {
+      return res.status(403).json({ message: "Admin accounts do not use block status" });
+    }
+
+    const updated = await User.findByIdAndUpdate(userId, {
+      accountStatus: "active",
+      updatedAt: new Date()
+    }, { new: true });
+
+    return res.json({
+      message: "User unblocked",
+      user: {
+        id: updated._id,
+        name: updated.name,
+        email: updated.email,
+        accountStatus: updated.accountStatus || "active"
+      }
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/admin/users/:userId/reset-password", adminAuth, async (req, res) => {
+  try {
+    const userId = String(req.params.userId || "").trim();
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if ((user.role || "student") === "admin") {
+      return res.status(403).json({ message: "Admin password is managed separately" });
+    }
+
+    const tempPassword = String(req.body?.password || "").trim() || createTemporaryPassword();
+    const bcrypt = require("bcryptjs");
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    await User.findByIdAndUpdate(userId, {
+      passwordHash,
+      password: undefined,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+      updatedAt: new Date()
+    });
+
+    return res.json({
+      message: "Password reset successfully",
+      tempPassword
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/admin/users/:userId/impersonate", adminAuth, async (req, res) => {
+  try {
+    const userId = String(req.params.userId || "").trim();
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if ((user.role || "student") === "admin") {
+      return res.status(403).json({ message: "Admin account impersonation is not allowed" });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role || "student",
+        impersonatedBy: req.admin.email,
+        impersonatedByRole: "admin"
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role || "student",
+        accountStatus: user.accountStatus || "active"
+      }
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.delete("/admin/users/:userId", adminAuth, async (req, res) => {
+  try {
+    const userId = String(req.params.userId || "").trim();
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if ((user.role || "student") === "admin") {
+      return res.status(403).json({ message: "Admin accounts cannot be deleted here" });
+    }
+
+    await Promise.all([
+      Progress.deleteMany({ userId }),
+      Subscription.deleteMany({ userId }),
+      Review.deleteMany({ userId }),
+      AiChat.deleteMany({ userId }),
+      PdfAccessRequest.deleteMany({ userId }),
+      User.deleteOne({ _id: userId })
+    ]);
+
+    return res.json({ message: "User deleted permanently" });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/admin/pdf-access-requests", adminAuth, async (_req, res) => {
+  try {
+    const requests = await PdfAccessRequest.find({});
+    const usersById = (await User.find({})).reduce((acc, user) => {
+      acc[user._id] = user;
+      return acc;
+    }, {});
+
+    const items = requests
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
+      .map((request) => {
+        const user = usersById[request.userId];
+        return {
+          id: request._id,
+          userId: request.userId,
+          userName: user ? user.name : "Student",
+          userEmail: user ? user.email : "",
+          subjectKey: request.subjectKey,
+          blockKey: request.blockKey,
+          sectionName: request.sectionName,
+          amount: Number(request.amount || 300),
+          paymentMethod: request.paymentMethod || "easypaisa",
+          easypaisaNumber: request.easypaisaNumber || "03327939323",
+          easypaisaAccountName: request.easypaisaAccountName || "Muhammad Yousaf",
+          paymentProof: request.paymentProof || "",
+          status: request.status || "pending",
+          adminNote: request.adminNote || "",
+          reviewedBy: request.reviewedBy || "",
+          reviewedAt: request.reviewedAt || null,
+          createdAt: request.createdAt || null
+        };
+      });
+
+    return res.json({ requests: items });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/admin/pdf-access-requests/:requestId/approve", adminAuth, async (req, res) => {
+  try {
+    const requestId = String(req.params.requestId || "").trim();
+    const request = await PdfAccessRequest.findOne({ _id: requestId });
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    const updated = await PdfAccessRequest.findOneAndUpdate(
+      { _id: requestId },
+      {
+        status: "approved",
+        reviewedBy: req.admin.email || "admin",
+        reviewedAt: new Date(),
+        adminNote: String(req.body?.adminNote || "Approved").trim(),
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    return res.json({ message: "PDF access approved", request: updated });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/admin/pdf-access-requests/:requestId/reject", adminAuth, async (req, res) => {
+  try {
+    const requestId = String(req.params.requestId || "").trim();
+    const request = await PdfAccessRequest.findOne({ _id: requestId });
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    const updated = await PdfAccessRequest.findOneAndUpdate(
+      { _id: requestId },
+      {
+        status: "rejected",
+        reviewedBy: req.admin.email || "admin",
+        reviewedAt: new Date(),
+        adminNote: String(req.body?.adminNote || "Rejected").trim(),
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    return res.json({ message: "PDF access request rejected", request: updated });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.get("/admin/academy/content", adminAuth, async (_req, res) => {
   try {
     const profile = await ensureAcademyProfile();
@@ -562,9 +1029,9 @@ router.post(
   "/admin/academy/block",
   adminAuth,
   contentUpload.fields([
-    { name: "videoFiles", maxCount: 20 },
-    { name: "noteFiles", maxCount: 20 },
-    { name: "clinicalFiles", maxCount: 20 }
+    { name: "videoFiles", maxCount: 100 },
+    { name: "noteFiles", maxCount: 100 },
+    { name: "clinicalFiles", maxCount: 100 }
   ]),
   async (req, res) => {
     try {
@@ -576,22 +1043,59 @@ router.post(
       }
 
       const id = `${subjectKey}_${blockKey}`;
+      const contentAccessLevel = normalizeAccessLevel(req.body?.contentAccessLevel);
+      const rawSectionName = String(req.body?.sectionName || "").trim();
+      const sectionName = rawSectionName && rawSectionName !== "__block__" ? rawSectionName : "";
       const topics = splitValues(req.body?.topics);
       const noteText = String(req.body?.noteText || "").trim();
       const clinicalText = String(req.body?.clinicalText || "").trim();
-      const videoItems = parseLineLinks(req.body?.videoLinks);
+      const videoItems = parseLineLinks(req.body?.videoLinks, contentAccessLevel);
 
       const uploadedVideos = (req.files?.videoFiles || []).map((file, index) => ({
         title: path.basename(file.originalname || `Video ${index + 1}`, path.extname(file.originalname || "")),
         url: `/static/uploads/${file.filename}`,
+        accessLevel: contentAccessLevel,
         mimeType: file.mimetype || "application/octet-stream",
         size: file.size || 0
       }));
 
-      const noteResources = (req.files?.noteFiles || []).map((file, index) => createAssetRecord(file, "note", index));
-      const clinicalResources = (req.files?.clinicalFiles || []).map((file, index) => createAssetRecord(file, "clinical", index));
+      const noteResources = (req.files?.noteFiles || []).map((file, index) => createAssetRecord(file, "note", index, contentAccessLevel));
+      const clinicalResources = (req.files?.clinicalFiles || []).map((file, index) => createAssetRecord(file, "clinical", index, contentAccessLevel));
 
       const existing = await SubjectContent.findOne({ id });
+      const existingSections = Array.isArray(existing?.sections)
+        ? existing.sections.map((section) => {
+            const doc = section && typeof section.toObject === "function" ? section.toObject() : section;
+            return {
+              name: String(doc?.name || "").trim(),
+              videoItems: sanitizeLinks(doc?.videoItems || []),
+              noteText: String(doc?.noteText || "").trim(),
+              noteResources: mergeUniqueLinks([], doc?.noteResources || []),
+              clinicalText: String(doc?.clinicalText || "").trim(),
+              clinicalResources: mergeUniqueLinks([], doc?.clinicalResources || [])
+            };
+          }).filter((section) => section.name)
+        : [];
+
+      let nextSections = existingSections;
+      if (sectionName) {
+        const lower = sectionName.toLowerCase();
+        const currentSection = existingSections.find((section) => String(section.name || "").toLowerCase() === lower) || {};
+        const updatedSection = {
+          name: sectionName,
+          videoItems: sanitizeLinks(mergeUniqueLinks(currentSection.videoItems, [...videoItems, ...uploadedVideos])),
+          noteText: noteText || currentSection.noteText || "",
+          noteResources: mergeUniqueLinks(currentSection.noteResources, noteResources),
+          clinicalText: clinicalText || currentSection.clinicalText || "",
+          clinicalResources: mergeUniqueLinks(currentSection.clinicalResources, clinicalResources)
+        };
+
+        nextSections = [
+          ...existingSections.filter((section) => String(section.name || "").toLowerCase() !== lower),
+          updatedSection
+        ];
+      }
+
       const next = await SubjectContent.findOneAndUpdate(
         { id },
         {
@@ -599,12 +1103,21 @@ router.post(
           subjectKey,
           blockKey,
           blockTitle: String(req.body?.blockTitle || existing?.blockTitle || blockKey).trim(),
-          topics: topics.length ? topics : (Array.isArray(existing?.topics) ? existing.topics : []),
-          videoItems: sanitizeLinks([...(videoItems.length ? videoItems : sanitizeLinks(existing?.videoItems || [])), ...uploadedVideos]),
-          noteText: noteText || existing?.noteText || "",
-          clinicalText: clinicalText || existing?.clinicalText || "",
-          noteResources: noteResources.length ? noteResources : (Array.isArray(existing?.noteResources) ? existing.noteResources : []),
-          clinicalResources: clinicalResources.length ? clinicalResources : (Array.isArray(existing?.clinicalResources) ? existing.clinicalResources : [])
+          topics: sectionName
+            ? mergeUniqueStrings(existing?.topics, [...topics, sectionName])
+            : mergeUniqueStrings(existing?.topics, topics),
+          sections: nextSections,
+          videoItems: sectionName
+            ? sanitizeLinks(existing?.videoItems || [])
+            : sanitizeLinks(mergeUniqueLinks(existing?.videoItems, [...videoItems, ...uploadedVideos])),
+          noteText: sectionName ? (existing?.noteText || "") : (noteText || existing?.noteText || ""),
+          clinicalText: sectionName ? (existing?.clinicalText || "") : (clinicalText || existing?.clinicalText || ""),
+          noteResources: sectionName
+            ? mergeUniqueLinks([], existing?.noteResources || [])
+            : mergeUniqueLinks(existing?.noteResources, noteResources),
+          clinicalResources: sectionName
+            ? mergeUniqueLinks([], existing?.clinicalResources || [])
+            : mergeUniqueLinks(existing?.clinicalResources, clinicalResources)
         },
         { new: true, upsert: true }
       );
@@ -647,17 +1160,15 @@ router.post(
         };
       });
 
-      // Use uploaded files if provided, otherwise keep existing
-      const books = overviewBooksFiles.length ? overviewBooksFiles : sanitizeLinks(profile.generalOverview?.books || []);
-      const premiumNotes = overviewPremiumFiles.length ? overviewPremiumFiles : sanitizeLinks(profile.generalOverview?.premiumNotes || []);
-      const importantSlides = overviewSlidesFiles.length ? overviewSlidesFiles : sanitizeLinks(profile.generalOverview?.importantSlides || []);
-      const shortNotes = overviewShortFiles.length ? overviewShortFiles : sanitizeLinks(profile.generalOverview?.shortNotes || []);
+      // Always merge with existing files so future uploads append instead of replacing prior content.
+      const books = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.books, overviewBooksFiles));
+      const premiumNotes = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.premiumNotes, overviewPremiumFiles));
+      const importantSlides = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.importantSlides, overviewSlidesFiles));
+      const shortNotes = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.shortNotes, overviewShortFiles));
       const manualVideos = String(body.overviewVideos || "").trim() ? parseLineLinks(body.overviewVideos) : [];
-      const videos = (manualVideos.length || overviewVideoFiles.length)
-        ? [...manualVideos, ...overviewVideoFiles]
-        : sanitizeLinks(profile.generalOverview?.videos || []);
-      const aboutNotes = String(body.aboutNotes || "").trim() ? parseLineLinks(body.aboutNotes) : sanitizeLinks(profile.aboutUs?.notes || []);
-      const aboutPdfResources = String(body.aboutPdfResources || "").trim() ? parseLineLinks(body.aboutPdfResources) : sanitizeLinks(profile.aboutUs?.pdfResources || []);
+      const videos = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.videos, [...manualVideos, ...overviewVideoFiles]));
+      const aboutNotes = sanitizeLinks(mergeUniqueLinks(profile.aboutUs?.notes, String(body.aboutNotes || "").trim() ? parseLineLinks(body.aboutNotes) : []));
+      const aboutPdfResources = sanitizeLinks(mergeUniqueLinks(profile.aboutUs?.pdfResources, String(body.aboutPdfResources || "").trim() ? parseLineLinks(body.aboutPdfResources) : []));
 
       const updated = await AcademyProfile.findOneAndUpdate(
         { id: "academy_profile" },
@@ -700,13 +1211,14 @@ router.post(
   "/admin/lesson",
   adminAuth,
   contentUpload.fields([
-    { name: "videoFiles", maxCount: 20 },
-    { name: "audioFiles", maxCount: 20 },
-    { name: "materialFiles", maxCount: 20 }
+    { name: "videoFiles", maxCount: 100 },
+    { name: "audioFiles", maxCount: 100 },
+    { name: "materialFiles", maxCount: 100 }
   ]),
   async (req, res) => {
     try {
       const { title, courseId, videoUrl, lessonId, summary, caseStudies } = req.body || {};
+      const contentAccessLevel = normalizeAccessLevel(req.body?.contentAccessLevel);
       if (!title || !courseId) {
         return res.status(400).json({ message: "Title and courseId are required" });
       }
@@ -717,9 +1229,9 @@ router.post(
       }
 
       const videoUrls = splitValues(videoUrl);
-      const uploadedVideos = (req.files?.videoFiles || []).map((file, index) => createAssetRecord(file, "video", index));
-      const uploadedAudios = (req.files?.audioFiles || []).map((file, index) => createAssetRecord(file, "audio", index));
-      const uploadedMaterials = (req.files?.materialFiles || []).map((file, index) => createAssetRecord(file, "material", index));
+      const uploadedVideos = (req.files?.videoFiles || []).map((file, index) => createAssetRecord(file, "video", index, contentAccessLevel));
+      const uploadedAudios = (req.files?.audioFiles || []).map((file, index) => createAssetRecord(file, "audio", index, contentAccessLevel));
+      const uploadedMaterials = (req.files?.materialFiles || []).map((file, index) => createAssetRecord(file, "material", index, contentAccessLevel));
       const parsedCaseStudies = parseCaseStudies(caseStudies);
       const summaryText = String(summary || "").trim();
 
@@ -745,8 +1257,8 @@ router.post(
           : `lesson_${normalizeId(title)}_${index + 1}`;
         const existingLesson = await Lesson.findOne({ lessonId: currentLessonId });
         const currentTitle = sources.length === 1 ? title : `${title} ${index + 1}`;
-        const audioItems = uploadedAudios.length ? uploadedAudios : Array.isArray(existingLesson?.audioItems) ? existingLesson.audioItems : [];
-        const materials = uploadedMaterials.length ? uploadedMaterials : Array.isArray(existingLesson?.materials) ? existingLesson.materials : [];
+        const audioItems = mergeUniqueLinks(existingLesson?.audioItems, uploadedAudios);
+        const materials = mergeUniqueLinks(existingLesson?.materials, uploadedMaterials);
         const caseStudyItems = parsedCaseStudies.length ? parsedCaseStudies : Array.isArray(existingLesson?.caseStudies) ? existingLesson.caseStudies : [];
         const videoValue = currentSource.videoUrl || existingLesson?.videoUrl || "";
 
@@ -756,6 +1268,7 @@ router.post(
             lessonId: currentLessonId,
             courseId,
             title: currentTitle,
+            accessLevel: contentAccessLevel,
             summary: summaryText || existingLesson?.summary || "",
             videoUrl: videoValue,
             videoType: videoValue ? (currentSource.videoType || existingLesson?.videoType || (isYoutubeUrl(videoValue) ? "youtube" : "upload")) : null,

@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     role: { type: String, default: "student" },
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
+    accountStatus: { type: String, enum: ["pending", "active", "blocked"], default: "pending" },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date }
   },

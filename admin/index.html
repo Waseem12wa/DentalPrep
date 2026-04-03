@@ -216,6 +216,7 @@
             <button class="tab-btn" onclick="switchTab('quizzes')">Quizzes</button>
             <button class="tab-btn" onclick="switchTab('upload')">Bulk Upload</button>
             <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
+            <button class="tab-btn" onclick="switchTab('students')">Students</button>
             <button class="tab-btn" onclick="switchTab('academy')">Academy Content</button>
         </nav>
 
@@ -276,6 +277,14 @@
                         <textarea name="summary" class="form-input" rows="3" placeholder="Add the core explanation, objectives, or notes students should read before opening the lesson."></textarea>
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Content Type</label>
+                        <select name="contentAccessLevel" class="form-select">
+                            <option value="free">Free Demo</option>
+                            <option value="paid">Paid Content</option>
+                        </select>
+                        <small style="color: #6b7280;">Use this to separate demo lessons/files from premium paid lessons/files.</small>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">YouTube URL(s)</label>
                         <textarea name="videoUrl" class="form-input" rows="4" placeholder="https://youtube.com/...
 https://youtube.com/another-video"></textarea>
@@ -293,7 +302,7 @@ https://youtube.com/another-video"></textarea>
                     <div class="form-group">
                         <label class="form-label">Upload Study Materials</label>
                         <input type="file" name="materialFiles" class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple>
-                        <small style="color: #6b7280;">Students will be able to view or download these files from the lesson and materials page.</small>
+                        <small style="color: #6b7280;">Upload one or many PDFs/files. New uploads are added to existing lesson materials (not replaced).</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Clinical Case Studies</label>
@@ -386,6 +395,24 @@ Scenario: ..."></textarea>
             </div>
         </div>
 
+        <div id="tab-students" class="tab-content hidden">
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Student Account Control</h3>
+                <p class="text-sm text-gray-500 mb-4">Block, unblock, reset passwords, impersonate, or delete student accounts.</p>
+                <div id="students-control-list" class="grid gap-3">
+                    <div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">Loading student accounts...</div>
+                </div>
+            </div>
+
+            <div class="admin-card" style="margin-top: 1rem;">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">PDF Access Payment Requests</h3>
+                <p class="text-sm text-gray-500 mb-4;">Approve or reject Easypaisa payment requests for paid PDFs (beyond first 3 free per module).</p>
+                <div id="pdf-access-requests-list" class="grid gap-3">
+                    <div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">Loading payment requests...</div>
+                </div>
+            </div>
+        </div>
+
         <div id="tab-academy" class="tab-content hidden">
             <div class="dashboard-grid" style="margin-top: 0;">
                 <div class="admin-card">
@@ -398,6 +425,8 @@ Scenario: ..."></textarea>
                                 <option value="physiology">Physiology</option>
                                 <option value="biochemistry">Biochemistry</option>
                                 <option value="oral-biology">Oral Biology</option>
+                                <option value="prime-minors">Prime and Minors</option>
+                                <option value="past-papers">Past Papers</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -413,12 +442,28 @@ Scenario: ..."></textarea>
                             <input type="text" id="academy-topics" name="topics" class="form-input" placeholder="Foundation, Blood">
                         </div>
                         <div class="form-group">
+                            <label class="form-label">Upload Target</label>
+                            <select id="academy-section-select" name="sectionName" class="form-select">
+                                <option value="__block__">Whole Block (legacy)</option>
+                            </select>
+                            <small style="color: #6b7280;">Choose a module folder (e.g., Foundation, Blood) to upload separately.</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Content Type</label>
+                            <select name="contentAccessLevel" class="form-select">
+                                <option value="free">Free Demo</option>
+                                <option value="paid">Paid Content</option>
+                            </select>
+                            <small style="color: #6b7280;">For Past Papers and all subjects, uploads in this save will be tagged as Free Demo or Paid Content.</small>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">Video/Playlist Links (Title|URL per line)</label>
                             <textarea id="academy-video-links" name="videoLinks" class="form-input" rows="4" placeholder="Foundation Lecture|https://youtube.com/watch?v=...&#10;Full Playlist|https://www.youtube.com/playlist?list=..."></textarea>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Or Upload Video File(s)</label>
                             <input type="file" name="videoFiles" class="form-input" accept="video/*" multiple>
+                            <small style="color: #6b7280;">You can upload many files at once for this block. New uploads are added to existing files.</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Preparation Notes Text</label>
@@ -426,7 +471,8 @@ Scenario: ..."></textarea>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Upload Notes File(s)</label>
-                            <input type="file" name="noteFiles" class="form-input" multiple>
+                            <input type="file" name="noteFiles" class="form-input" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                            <small style="color: #6b7280;">For Past Papers Block A/B/C, upload multiple PDFs together. Existing files are kept.</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Clinical Content Text</label>
@@ -434,7 +480,8 @@ Scenario: ..."></textarea>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Upload Clinical File(s)</label>
-                            <input type="file" name="clinicalFiles" class="form-input" multiple>
+                            <input type="file" name="clinicalFiles" class="form-input" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                            <small style="color: #6b7280;">You can upload multiple PDFs/files in one save. Each save appends to this block.</small>
                         </div>
                         <button type="submit" class="cta-btn cta-primary">Save Block Content</button>
                     </form>
@@ -450,21 +497,25 @@ Scenario: ..."></textarea>
                         <div class="form-group">
                             <label class="form-label">General Overview Books (PDF/PPT files)</label>
                             <input type="file" id="overview-books-files" name="overviewBooksFiles" class="form-input" multiple accept=".pdf,.ppt,.pptx,.doc,.docx">
+                            <small style="color: #6b7280;">Select one or more files. New uploads are added to the existing books list.</small>
                             <div id="overview-books-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Premium Notes (PDF/PPT files)</label>
                             <input type="file" id="overview-premium-files" name="overviewPremiumFiles" class="form-input" multiple accept=".pdf,.ppt,.pptx,.doc,.docx">
+                            <small style="color: #6b7280;">Select one or more files. Existing premium notes stay in place when you add more.</small>
                             <div id="overview-premium-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Important Slides (PDF/PPT files)</label>
                             <input type="file" id="overview-slides-files" name="overviewSlidesFiles" class="form-input" multiple accept=".pdf,.ppt,.pptx">
+                            <small style="color: #6b7280;">Select one or more files. Uploaded slides are appended, not replaced.</small>
                             <div id="overview-slides-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Short Notes (PDF files)</label>
                             <input type="file" id="overview-short-files" name="overviewShortFiles" class="form-input" multiple accept=".pdf,.doc,.docx">
+                            <small style="color: #6b7280;">Select one or more files. Short notes will keep previous uploads too.</small>
                             <div id="overview-short-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
@@ -474,6 +525,7 @@ Scenario: ..."></textarea>
                         <div class="form-group">
                             <label class="form-label">Or Upload Overview Video File(s)</label>
                             <input type="file" id="overview-video-files" name="overviewVideoFiles" class="form-input" accept="video/*" multiple>
+                            <small style="color: #6b7280;">Select multiple videos if needed. New files are added to the existing overview videos.</small>
                             <div id="overview-video-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                             <small style="color: #6b7280;">Uploaded files are saved permanently and shown in General Overview for students.</small>
                         </div>
@@ -567,6 +619,7 @@ Scenario: ..."></textarea>
         const loginForm = document.getElementById("login-form");
         const loginMsg = document.getElementById("login-msg");
         const generalMsg = document.getElementById("general-msg");
+        let studentsLoaded = false;
 
         // Initialize
         function init() {
@@ -594,6 +647,7 @@ Scenario: ..."></textarea>
             loadLessons();
             loadQuizzes();
             loadStudentAnalytics();
+            loadStudents();
             loadAcademyContent();
         }
 
@@ -1014,6 +1068,178 @@ Scenario: ..."></textarea>
             }
         }
 
+        async function loadStudents() {
+            const container = document.getElementById("students-control-list");
+            const requestsContainer = document.getElementById("pdf-access-requests-list");
+            if (!container) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/users`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+                const students = data.students || [];
+                studentsLoaded = true;
+
+                container.innerHTML = students.length
+                    ? students.map((student) => `
+                        <div class="p-4 bg-white border border-gray-200 rounded shadow-sm">
+                            <div class="flex justify-between items-start gap-4 flex-wrap">
+                                <div>
+                                    <div class="font-semibold text-gray-800">${student.name}</div>
+                                    <div class="text-sm text-gray-500">${student.email || "No email available"}</div>
+                                    <div class="text-sm" style="margin-top: 0.35rem; color: ${student.accountStatus === 'blocked' ? '#b91c1c' : '#166534'};">Status: ${student.accountStatus || 'active'} • ${student.isVerified ? 'Verified' : 'Not verified'}</div>
+                                    <div class="text-sm text-gray-600" style="margin-top: 0.5rem;">Completed lessons: ${student.completedLessons} • Quiz attempts: ${student.quizAttempts} • Avg score: ${student.avgScore}% • Completion: ${student.completionRate}%</div>
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: #2563eb; color: white;" onclick="studentAction('approve', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Approve</button>
+                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: #b45309; color: white;" onclick="studentAction('reject', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Reject</button>
+                                    <button type="button" class="cta-btn cta-secondary" style="padding: 0.45rem 0.8rem;" onclick="studentAction('impersonate', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Open as Student</button>
+                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: ${student.accountStatus === 'blocked' ? '#059669' : '#dc2626'}; color: white;" onclick="studentAction('${student.accountStatus === 'blocked' ? 'unblock' : 'block'}', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">${student.accountStatus === 'blocked' ? 'Unblock' : 'Block'}</button>
+                                    <button type="button" class="cta-btn cta-secondary" style="padding: 0.45rem 0.8rem;" onclick="studentAction('reset-password', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Reset Password</button>
+                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: #7c2d12; color: white;" onclick="studentAction('delete', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join("")
+                    : '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No student accounts found.</div>';
+            } catch (err) {
+                container.innerHTML = '<div class="p-3 bg-white border border-red-200 rounded shadow-sm text-red-600">Unable to load student accounts.</div>';
+            }
+
+            if (requestsContainer) {
+                try {
+                    const res = await fetch(`${API_BASE}/admin/pdf-access-requests`, {
+                        headers: { Authorization: `Bearer ${adminToken}` }
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Failed to load requests');
+                    const requests = data.requests || [];
+                    requestsContainer.innerHTML = requests.length
+                        ? requests.map((request) => `
+                            <div class="p-4 bg-white border border-gray-200 rounded shadow-sm">
+                                <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+                                    <div>
+                                        <div class="font-semibold text-gray-800">${request.userName} (${request.userEmail || 'no email'})</div>
+                                        <div class="text-sm text-gray-600" style="margin-top:0.35rem;">${request.subjectKey} • ${request.blockKey} • ${request.sectionName}</div>
+                                        <div class="text-sm" style="margin-top:0.35rem; color:${request.status === 'approved' ? '#166534' : request.status === 'rejected' ? '#991b1b' : '#92400e'};">Status: ${request.status} • Amount: PKR ${request.amount || 300}</div>
+                                        <div class="text-sm text-gray-700" style="margin-top:0.35rem;">Easypaisa: ${request.easypaisaNumber || '03327939323'} (${request.easypaisaAccountName || 'Muhammad Yousaf'})</div>
+                                        ${request.paymentProof ? `<div class="text-sm text-gray-700" style="margin-top:0.35rem;"><strong>Proof:</strong> ${request.paymentProof}</div>` : ''}
+                                    </div>
+                                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-start;">
+                                        ${request.status === 'pending' ? `
+                                            <button type="button" class="cta-btn" style="padding:0.45rem 0.8rem; background:#059669; color:white;" onclick="pdfRequestAction('approve', ${JSON.stringify(request.id)})">Approve</button>
+                                            <button type="button" class="cta-btn" style="padding:0.45rem 0.8rem; background:#dc2626; color:white;" onclick="pdfRequestAction('reject', ${JSON.stringify(request.id)})">Reject</button>
+                                        ` : '<span class="text-sm text-gray-500">Reviewed</span>'}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')
+                        : '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No payment requests yet.</div>';
+                } catch (err) {
+                    requestsContainer.innerHTML = '<div class="p-3 bg-white border border-red-200 rounded shadow-sm text-red-600">Unable to load payment requests.</div>';
+                }
+            }
+        }
+
+        window.studentAction = async function(action, userId, studentName) {
+            if (!userId) return;
+
+            if (action === 'delete' && !confirm(`Delete ${studentName}? This will remove their account and progress permanently.`)) {
+                return;
+            }
+
+            if ((action === 'block' || action === 'unblock') && !confirm(`${action === 'block' ? 'Block' : 'Unblock'} ${studentName}?`)) {
+                return;
+            }
+
+            if ((action === 'approve' || action === 'reject') && !confirm(`${action === 'approve' ? 'Approve' : 'Reject'} ${studentName}?`)) {
+                return;
+            }
+
+            if (action === 'reset-password') {
+                const tempPassword = prompt(`Enter a new password for ${studentName}. Leave blank to auto-generate a temporary one.`) || "";
+                try {
+                    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(userId)}/reset-password`, {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Bearer ${adminToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ password: tempPassword })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Failed to reset password');
+                    showMessage(generalMsg, `Password reset for ${studentName}. Temporary password: ${data.tempPassword}`, 'success');
+                    return;
+                } catch (err) {
+                    showMessage(generalMsg, err.message, 'error');
+                    return;
+                }
+            }
+
+            try {
+                if (action === 'delete') {
+                    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(userId)}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${adminToken}` }
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Failed to delete user');
+                    showMessage(generalMsg, `${studentName} deleted successfully.`, 'success');
+                } else if (action === 'impersonate') {
+                    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(userId)}/impersonate`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${adminToken}` }
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Failed to impersonate user');
+                    localStorage.setItem('dentalprep_token', data.token);
+                    showMessage(generalMsg, `Opened ${studentName} as student.`, 'success');
+                    window.location.href = '/dashboard/';
+                    return;
+                } else {
+                    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(userId)}/${action}`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${adminToken}` }
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Action failed');
+                    showMessage(generalMsg, `${studentName} ${action === 'block' ? 'blocked' : 'unblocked'} successfully.`, 'success');
+                }
+
+                await loadStudents();
+                await loadStudentAnalytics();
+            } catch (err) {
+                showMessage(generalMsg, err.message, 'error');
+            }
+        };
+
+        window.pdfRequestAction = async function(action, requestId) {
+            if (!requestId) return;
+            const endpoint = action === 'approve'
+                ? `${API_BASE}/admin/pdf-access-requests/${encodeURIComponent(requestId)}/approve`
+                : `${API_BASE}/admin/pdf-access-requests/${encodeURIComponent(requestId)}/reject`;
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ adminNote: action === 'approve' ? 'Payment verified manually' : 'Payment not verified' })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Request action failed');
+                showMessage(generalMsg, action === 'approve' ? 'PDF access approved.' : 'PDF access request rejected.', 'success');
+                await loadStudents();
+            } catch (err) {
+                showMessage(generalMsg, err.message, 'error');
+            }
+        };
+
         function linksToText(items) {
             return (Array.isArray(items) ? items : [])
                 .map((item) => `${item.title || "Resource"}|${item.url || "#"}`)
@@ -1113,6 +1339,7 @@ Scenario: ..."></textarea>
         function loadSelectedBlockContent() {
             const subjectSelect = document.getElementById("academy-subject-select");
             const blockSelect = document.getElementById("academy-block-select");
+            const sectionSelect = document.getElementById("academy-section-select");
             if (!subjectSelect || !blockSelect) {
                 return;
             }
@@ -1122,18 +1349,36 @@ Scenario: ..."></textarea>
             const topicsInput = document.getElementById("academy-topics");
             if (topicsInput) topicsInput.value = selected && Array.isArray(selected.topics) ? selected.topics.join(", ") : "";
 
+            if (sectionSelect) {
+                const currentSelection = sectionSelect.value || "__block__";
+                const topics = selected && Array.isArray(selected.topics) ? selected.topics : [];
+                const options = ['<option value="__block__">Whole Block (legacy)</option>']
+                    .concat(topics.map((topic) => `<option value="${topic}">${topic} Module</option>`));
+                sectionSelect.innerHTML = options.join("");
+                if (topics.includes(currentSelection)) {
+                    sectionSelect.value = currentSelection;
+                }
+            }
+
+            const selectedSectionName = sectionSelect ? sectionSelect.value : "__block__";
+            const selectedSection = selectedSectionName && selectedSectionName !== "__block__"
+                ? ((selected && Array.isArray(selected.sections) ? selected.sections : []).find((section) => section.name === selectedSectionName) || null)
+                : null;
+
             const videoInput = document.getElementById("academy-video-links");
-            if (videoInput) videoInput.value = linksToText(selected ? selected.videoItems : []);
+            if (videoInput) videoInput.value = linksToText(selectedSection ? selectedSection.videoItems : (selected ? selected.videoItems : []));
 
             const noteText = document.getElementById("academy-note-text");
-            if (noteText) noteText.value = selected ? (selected.noteText || "") : "";
+            if (noteText) noteText.value = selectedSection ? (selectedSection.noteText || "") : (selected ? (selected.noteText || "") : "");
 
             const clinicalText = document.getElementById("academy-clinical-text");
-            if (clinicalText) clinicalText.value = selected ? (selected.clinicalText || "") : "";
+            if (clinicalText) clinicalText.value = selectedSection ? (selectedSection.clinicalText || "") : (selected ? (selected.clinicalText || "") : "");
         }
 
         document.getElementById("academy-subject-select").addEventListener("change", loadSelectedBlockContent);
         document.getElementById("academy-block-select").addEventListener("change", loadSelectedBlockContent);
+        document.getElementById("academy-section-select").addEventListener("change", loadSelectedBlockContent);
+        document.getElementById("academy-topics").addEventListener("change", loadSelectedBlockContent);
 
         document.getElementById("academy-block-form").addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -1146,6 +1391,11 @@ Scenario: ..."></textarea>
             formData.set("subjectKey", subjectKey);
             formData.set("blockKey", blockKey);
             formData.set("blockTitle", blockTitle);
+
+            const sectionSelect = document.getElementById("academy-section-select");
+            if (sectionSelect && sectionSelect.value === "__block__") {
+                formData.delete("sectionName");
+            }
 
             setLoading(btn, true);
             try {
@@ -1225,7 +1475,12 @@ Scenario: ..."></textarea>
             if (tabName === 'quizzes') btns[2].classList.add("active");
             if (tabName === 'upload') btns[3].classList.add("active");
             if (tabName === 'analytics') btns[4].classList.add("active");
-            if (tabName === 'academy') btns[5].classList.add("active");
+            if (tabName === 'students') btns[5].classList.add('active');
+            if (tabName === 'academy') btns[6].classList.add('active');
+
+            if (tabName === 'students' && !studentsLoaded) {
+                loadStudents();
+            }
         }
 
         window.switchTab = switchTab; // make global for onclick

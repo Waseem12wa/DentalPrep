@@ -32,21 +32,15 @@ router.post("/signup", async (req, res) => {
       passwordHash,
       verificationToken,
       isVerified: false,
+      accountStatus: "pending",
       role: "student"
     });
 
     console.log(`[MOCK EMAIL] Verification Link: http://localhost:5500/verify/?token=${verificationToken}`);
 
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
     return res.status(201).json({
-      token,
       user: { id: user._id, name: user.name, email: user.email },
-      message: "Account created! Check email to verify."
+      message: "Account created successfully. Please wait for admin approval before logging in."
     });
   } catch (err) {
     console.error(err);
@@ -131,6 +125,15 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    const accountStatus = user.accountStatus || "pending";
+    if (accountStatus !== "active") {
+      return res.status(403).json({
+        message: accountStatus === "pending"
+          ? "Your account is pending admin approval."
+          : "Your account is blocked. Contact admin."
+      });
+    }
+
     const storedHash = user.passwordHash || user.password;
     const isMatch = storedHash ? await bcrypt.compare(password, storedHash) : false;
     if (!isMatch) {
@@ -166,7 +169,8 @@ router.get("/user/profile", authMiddleware, async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role || "student"
+        role: user.role || "student",
+        accountStatus: user.accountStatus || "active"
       },
       subscription: subscription
         ? {

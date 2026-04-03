@@ -34,6 +34,57 @@ document.addEventListener("DOMContentLoaded", async () => {
     }">${text}</div>`;
   };
 
+  const clearQuestionFeedback = () => {
+    if (!formEl) return;
+
+    formEl.querySelectorAll(".question-feedback").forEach((el) => el.remove());
+    formEl.querySelectorAll(".option-correct, .option-wrong, .option-correct-answer").forEach((el) => {
+      el.classList.remove("option-correct", "option-wrong", "option-correct-answer");
+    });
+  };
+
+  const renderQuestionFeedback = (question, selectedIndex) => {
+    if (!formEl) return false;
+
+    const card = formEl.querySelector(`[data-question-id='${question.id}']`);
+    if (!card) return false;
+
+    const correctIndex = question.options.findIndex((opt) => opt === question.correctAnswer);
+    const isAnswered = Number.isInteger(selectedIndex);
+    const isCorrect = isAnswered && selectedIndex === correctIndex;
+
+    const feedback = document.createElement("div");
+    feedback.className = "question-feedback";
+
+    if (!isAnswered) {
+      feedback.classList.add("feedback-unanswered");
+      feedback.textContent = "Not answered. Correct answer: " + question.correctAnswer;
+      card.appendChild(feedback);
+      return false;
+    }
+
+    if (isCorrect) {
+      feedback.classList.add("feedback-correct");
+      feedback.textContent = "Correct";
+    } else {
+      feedback.classList.add("feedback-wrong");
+      feedback.textContent = "Wrong. Correct answer: " + question.correctAnswer;
+    }
+
+    const selectedOption = card.querySelector(`input[name='${question.id}'][value='${selectedIndex}']`)?.closest("label");
+    const correctOption = card.querySelector(`input[name='${question.id}'][value='${correctIndex}']`)?.closest("label");
+
+    if (selectedOption) {
+      selectedOption.classList.add(isCorrect ? "option-correct" : "option-wrong");
+    }
+    if (correctOption && !isCorrect) {
+      correctOption.classList.add("option-correct-answer");
+    }
+
+    card.appendChild(feedback);
+    return isCorrect;
+  };
+
   try {
     const data = await api.apiFetch(`/quizzes/${quizId}`);
     quiz = data.quiz;
@@ -49,6 +100,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       quiz.questions.forEach((question, index) => {
         const card = document.createElement("div");
         card.className = "question-card";
+        card.setAttribute("data-question-id", question.id);
         card.innerHTML = `
           <div style="font-weight: 700;">${index + 1}. ${question.question}</div>
         `;
@@ -76,10 +128,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     submitBtn.addEventListener("click", async () => {
       if (!quiz) return;
 
+      clearQuestionFeedback();
+
       let correct = 0;
       quiz.questions.forEach((question) => {
         const selected = formEl.querySelector(`input[name='${question.id}']:checked`);
-        if (selected && question.options[Number(selected.value)] === question.correctAnswer) {
+        const selectedIndex = selected ? Number(selected.value) : null;
+        const isCorrect = renderQuestionFeedback(question, selectedIndex);
+        if (isCorrect) {
           correct += 1;
         }
       });

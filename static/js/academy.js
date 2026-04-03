@@ -110,12 +110,26 @@
             return '<p class="muted-note">' + escapeHtml(emptyText) + '</p>';
         }
 
-        return '<div class="video-embed-grid">' + links.map(function (item, index) {
+        var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free') !== 'paid'; });
+        var paidLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free') === 'paid'; });
+
+        var renderCards = function (list, isPaid) {
+            return list.map(function (item, index) {
             var title = item && item.title ? item.title : ('Video ' + (index + 1));
             var url = resolveResourceUrl(item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#');
             var parsedYoutube = parseYouTubeUrl(url);
             var playlistId = parsedYoutube.playlistId;
             var videoId = parsedYoutube.videoId;
+            var isLocked = Boolean(item && item.isLocked) || (isPaid && !isValidResourceUrl(url));
+
+            if (isLocked) {
+                return [
+                    '<div class="video-embed-card">',
+                    '<h5>' + escapeHtml(title) + '</h5>',
+                    '<div class="muted-note"><i class="fas fa-lock"></i> Paid content. Upgrade to access.</div>',
+                    '</div>'
+                ].join('');
+            }
 
             if (playlistId) {
                 return [
@@ -156,7 +170,18 @@
                 '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">Open resource</a>',
                 '</div>'
             ].join('');
-        }).join('') + '</div>';
+            }).join('');
+        };
+
+        var sections = [];
+        if (freeLinks.length) {
+            sections.push('<div style="font-weight:700;color:#166534;margin:0.6rem 0;">Free Demo</div><div class="video-embed-grid">' + renderCards(freeLinks, false) + '</div>');
+        }
+        if (paidLinks.length) {
+            sections.push('<div style="font-weight:700;color:#92400e;margin:0.9rem 0 0.6rem;">Paid Content</div><div class="video-embed-grid">' + renderCards(paidLinks, true) + '</div>');
+        }
+
+        return sections.join('');
     }
 
     function renderLinkList(items, emptyText) {
@@ -165,14 +190,33 @@
             return '<p class="muted-note">' + escapeHtml(emptyText) + '</p>';
         }
 
-        return '<div class="video-list">' + links.map(function (item, index) {
+        var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free') !== 'paid'; });
+        var paidLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free') === 'paid'; });
+
+        var renderRows = function (list, isPaid) {
+            return list.map(function (item, index) {
             var title = item && item.title ? item.title : ('Resource ' + (index + 1));
             var url = resolveResourceUrl(item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#');
+            var isLocked = Boolean(item && item.isLocked) || (isPaid && !isValidResourceUrl(url));
+            if (isLocked) {
+                return '<a href="#" class="locked-pdf-link" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> ' + escapeHtml(title) + ' (Paid content)</a>';
+            }
             if (!isValidResourceUrl(url)) {
                 return '<span class="muted-note">' + escapeHtml(title) + ' (file link unavailable)</span>';
             }
             return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(title) + '</a>';
-        }).join('') + '</div>';
+            }).join('');
+        };
+
+        var sections = [];
+        if (freeLinks.length) {
+            sections.push('<div style="font-weight:700;color:#166534;margin:0.6rem 0;">Free Demo</div><div class="video-list">' + renderRows(freeLinks, false) + '</div>');
+        }
+        if (paidLinks.length) {
+            sections.push('<div style="font-weight:700;color:#92400e;margin:0.9rem 0 0.6rem;">Paid Content</div><div class="video-list">' + renderRows(paidLinks, true) + '</div>');
+        }
+
+        return sections.join('');
     }
 
     function renderSimpleVideoList(items, emptyText) {
@@ -292,6 +336,7 @@
         var titleEl = document.getElementById('subject-title');
         var introEl = document.getElementById('subject-intro');
         var blockContainer = document.getElementById('block-container');
+        window.__currentSubjectKey = subjectKey;
 
         if (!titleEl || !introEl || !blockContainer) {
             return;
@@ -308,22 +353,26 @@
             blockContainer.innerHTML = (subject.blocks || []).map(function (block) {
                 var topics = Array.isArray(block.topics) ? block.topics : [];
                 var sections = Array.isArray(block.sections) ? block.sections : [];
-                var topicLine = topics.join(', ');
-                var hasSectionContent = sections.some(function (section) {
-                    var sectionVideos = normalizeLinks(section && section.videoItems);
-                    var sectionNotes = normalizeLinks(section && section.noteResources);
-                    var sectionClinical = normalizeLinks(section && section.clinicalResources);
-                    var noteText = String((section && section.noteText) || '').trim();
-                    var clinicalText = String((section && section.clinicalText) || '').trim();
-                    return sectionVideos.length > 0 || sectionNotes.length > 0 || sectionClinical.length > 0 || Boolean(noteText) || Boolean(clinicalText);
-                });
-                
-                // If we have sections with individual resources, render them
-                if (sections.length > 0 && hasSectionContent) {
-                    var sectionsHtml = sections.map(function (section) {
+                var sectionList = sections.length
+                    ? sections
+                    : topics.map(function (topicName) {
+                        return {
+                            name: topicName,
+                            videoItems: [],
+                            noteText: '',
+                            noteResources: [],
+                            clinicalText: '',
+                            clinicalResources: []
+                        };
+                    });
+
+                if (sectionList.length > 0) {
+                    var sectionsHtml = sectionList.map(function (section) {
+                        window.__currentBlockKey = block.blockKey || '';
+                        window.__currentSectionName = section.name || '';
                         return [
-                            '<div class="block-section">',
-                            '<h5 class="section-title">' + escapeHtml(section.name || 'Section') + '</h5>',
+                            '<div class="block-section module-folder-card">',
+                            '<h5 class="section-title"><i class="fas fa-folder-open" style="margin-right:0.45rem;color:#1f3f81;"></i>' + escapeHtml(section.name || 'Module') + '</h5>',
                             '<div class="section-resources">',
                             '<div class="resource-item">',
                             '<h4>YouTube Lecture Links</h4>',
@@ -331,39 +380,34 @@
                             '</div>',
                             '<div class="resource-item">',
                             '<h4>Preparation Notes</h4>',
-                            section.noteText ? '<p>' + escapeHtml(section.noteText) + '</p>' : '<p>Focused notes for: ' + escapeHtml(section.name || 'this section') + '</p>',
+                            section.noteText ? '<p>' + escapeHtml(section.noteText) + '</p>' : '<p>Focused notes for: ' + escapeHtml(section.name || 'this module') + '</p>',
                             renderLinkList(section.noteResources, 'No note files uploaded yet.'),
                             '</div>',
                             '<div class="resource-item">',
                             '<h4>Clinical Content</h4>',
-                            section.clinicalText ? '<p>' + escapeHtml(section.clinicalText) + '</p>' : '<p>Clinical highlights and practical relevance for this section.</p>',
+                            section.clinicalText ? '<p>' + escapeHtml(section.clinicalText) + '</p>' : '<p>Clinical highlights and practical relevance for this module.</p>',
                             renderLinkList(section.clinicalResources, 'No clinical resources uploaded yet.'),
                             '</div>',
                             '</div>',
                             '</div>'
                         ].join('');
                     }).join('');
-                    
+
+                    window.__currentBlockKey = block.blockKey || '';
+                    window.__currentSectionName = '';
                     return [
                         '<article class="block-card">',
                         '<span class="block-label">' + escapeHtml(block.blockTitle || block.blockKey) + '</span>',
-                        '<ul class="block-topic-list">',
-                        topics.map(function (topic) { return '<li>' + escapeHtml(topic) + '</li>'; }).join(''),
-                        '</ul>',
-                        '<div class="sections-container">',
+                        '<div class="sections-container module-folder-grid">',
                         sectionsHtml,
                         '</div>',
                         '</article>'
                     ].join('');
                 }
-                
-                // Fallback to old structure if no sections
+
                 return [
                     '<article class="block-card">',
                     '<span class="block-label">' + escapeHtml(block.blockTitle || block.blockKey) + '</span>',
-                    '<ul class="block-topic-list">',
-                    topics.map(function (topic) { return '<li>' + escapeHtml(topic) + '</li>'; }).join(''),
-                    '</ul>',
                     '<div class="resource-list">',
                     '<div class="resource-item">',
                     '<h4>YouTube Lecture Links</h4>',
@@ -371,7 +415,7 @@
                     '</div>',
                     '<div class="resource-item">',
                     '<h4>Preparation Notes</h4>',
-                    block.noteText ? '<p>' + escapeHtml(block.noteText) + '</p>' : '<p>Focused notes for: ' + escapeHtml(topicLine || 'this block') + '</p>',
+                    block.noteText ? '<p>' + escapeHtml(block.noteText) + '</p>' : '<p>Focused notes for this block.</p>',
                     renderLinkList(block.noteResources, 'No note files uploaded yet.'),
                     '</div>',
                     '<div class="resource-item">',
@@ -383,6 +427,49 @@
                     '</article>'
                 ].join('');
             }).join('');
+
+            blockContainer.querySelectorAll('.locked-pdf-link').forEach(function (link) {
+                link.addEventListener('click', async function (event) {
+                    event.preventDefault();
+                    var subjectKeyVal = String(link.getAttribute('data-subject-key') || subjectKey || '').trim();
+                    var blockKeyVal = String(link.getAttribute('data-block-key') || '').trim();
+                    var sectionNameVal = String(link.getAttribute('data-section-name') || '').trim();
+                    var resourceTitle = String(link.getAttribute('data-title') || 'Paid PDF').trim();
+
+                    var promptText = [
+                        'This PDF is paid content (PKR 300).',
+                        'Easypaisa Number: 03327939323',
+                        'Account Name: Muhammad Yousaf',
+                        'After payment, enter proof/reference below and submit request for admin approval.',
+                        '',
+                        'Resource: ' + resourceTitle,
+                        'Block: ' + blockKeyVal,
+                        'Module: ' + sectionNameVal,
+                        '',
+                        'Enter payment proof/reference ID:'
+                    ].join('\n');
+
+                    var paymentProof = window.prompt(promptText, 'EP Transaction ID / Screenshot note');
+                    if (paymentProof === null) {
+                        return;
+                    }
+
+                    try {
+                        await fetchJson('/pdf-access/request', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                subjectKey: subjectKeyVal,
+                                blockKey: blockKeyVal,
+                                sectionName: sectionNameVal,
+                                paymentProof: paymentProof
+                            })
+                        });
+                        window.alert('Payment request submitted. Admin will verify and approve access manually.');
+                    } catch (err) {
+                        window.alert((err && err.message) ? err.message : 'Unable to submit payment request right now.');
+                    }
+                });
+            });
         } catch (_err) {
             blockContainer.innerHTML = '<p class="muted-note">Unable to load this subject right now.</p>';
         }

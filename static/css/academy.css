@@ -203,6 +203,15 @@ body[data-page="subject"][data-subject-key="past-papers"] .subject-subtitle {
     margin-top: 1rem;
 }
 
+.module-folder-grid {
+    grid-template-columns: 1fr;
+}
+
+.module-folder-card {
+    box-shadow: 0 8px 18px rgba(24, 70, 140, 0.08);
+    border-left: 4px solid #7aa7de;
+}
+
 .block-section {
     background: #f8fbff;
     border: 1px solid #dce9f7;

@@ -655,6 +655,8 @@
                 const quizzes = quizzesData.quizzes || [];
                 const progressItems = progressData.items || [];
                 const reviews = reviewsData.reviews || [];
+                const freeLessonCount = lessons.filter((lesson) => (lesson.accessLevel || 'free') !== 'paid').length;
+                const paidLessonCount = lessons.filter((lesson) => (lesson.accessLevel || 'free') === 'paid').length;
                 const completedLessonIds = new Set(
                     progressItems
                         .filter((item) => item.itemType === "lesson" && item.completed)
@@ -681,6 +683,8 @@
                 courseSummary.innerHTML = `
                     ${course.category ? `<div class="summary-chip">${escapeHtml(course.category)}</div>` : ""}
                     <div class="summary-chip">${completedLessonIds.size}/${lessons.length} lessons completed</div>
+                    <div class="summary-chip">${freeLessonCount} free demo</div>
+                    <div class="summary-chip">${paidLessonCount} paid</div>
                     <div class="summary-chip">${quizzes.length} quizzes available</div>
                     <div class="summary-chip">${course.materialsCount || 0} study materials</div>
                     <div class="summary-chip">${course.caseStudiesCount || 0} case studies</div>
@@ -698,6 +702,8 @@
                 } else {
                     lessonsContainer.innerHTML = lessons.map((lesson) => {
                         const lessonComplete = completedLessonIds.has(lesson.id);
+                        const isPaid = (lesson.accessLevel || 'free') === 'paid';
+                        const isLocked = Boolean(lesson.isLocked);
                         const quiz = quizByLessonId[lesson.id];
                         const quizProgress = quiz ? quizProgressById[quiz.id] : null;
                         const mediaLabel = lesson.hasVideo
@@ -720,12 +726,19 @@
                                 <p class="lesson-meta">${escapeHtml(mediaLabel)}${quiz ? ` • Quiz ready${quizProgress ? ` • Best score ${quizProgress.score || 0}%` : ''}` : ''}</p>
                                 <p style="color: #4b5563; line-height: 1.6; margin-bottom: 0.85rem;">${escapeHtml(lesson.summary || 'This lesson includes linked teaching assets and progress tracking.')}</p>
                                 <div class="lesson-tags">
+                                    <span class="summary-chip" style="background: ${isPaid ? '#fef3c7' : '#ecfdf3'}; color: ${isPaid ? '#92400e' : '#166534'};">${isPaid ? 'Paid Content' : 'Free Demo'}</span>
                                     <span class="summary-chip">${lesson.audioItems?.length || 0} audio</span>
                                     <span class="summary-chip">${lesson.materials?.length || 0} materials</span>
                                     <span class="summary-chip">${lesson.caseStudies?.length || 0} cases</span>
                                     ${(lesson.curriculumTags || []).slice(0, 2).map((tag) => `<span class="summary-chip">${escapeHtml(tag)}</span>`).join('')}
                                 </div>
                                 <div class="lesson-actions" style="margin-top: 1rem;">
+                                    ${isLocked ? `
+                                    <a href="/checkout/" class="btn-primary" style="flex: 1; text-align: center; justify-content: center; min-width: 180px; background: #b45309;">
+                                        <i class="fas fa-lock"></i>
+                                        Unlock Paid Content
+                                    </a>
+                                    ` : `
                                     <a href="/video/?id=${encodeURIComponent(lesson.id)}" class="btn-primary" style="flex: 1; text-align: center; justify-content: center; min-width: 180px;">
                                         <i class="fas fa-play"></i>
                                         Open Lesson
@@ -739,6 +752,7 @@
                                         <i class="fas fa-clipboard-question"></i>
                                         ${quizProgress ? 'Retake Quiz' : 'Start Quiz'}
                                     </a>` : ''}
+                                    `}
                                 </div>
                             </div>
                         </div>

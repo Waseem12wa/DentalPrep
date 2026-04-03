@@ -95,17 +95,10 @@ document.addEventListener("DOMContentLoaded", () => {
           method: "POST",
           body: JSON.stringify({ name, email, password })
         });
-        
-        if (data.token) {
-          setToken(data.token);
-          showMessage(signupForm, "Account created successfully! Redirecting to learning...", "success");
-          setTimeout(() => {
-            window.location.href = "/learning/";
-          }, 800);
-        } else {
-          showMessage(signupForm, data.message || "Account created. Please check your email to verify.", "success");
-          signupForm.reset();
-        }
+
+        clearToken();
+        showMessage(signupForm, data.message || "Account created successfully. Please wait for admin approval before login.", "success");
+        signupForm.reset();
       } catch (err) {
         showMessage(signupForm, err.message || "Signup failed.");
       } finally {

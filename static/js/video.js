@@ -61,6 +61,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     completionLocked = Boolean(isCompleted);
   };
 
+  const splitByAccess = (items) => {
+    const normalized = Array.isArray(items) ? items : [];
+    return {
+      free: normalized.filter((item) => String(item?.accessLevel || "free") !== "paid"),
+      paid: normalized.filter((item) => String(item?.accessLevel || "free") === "paid")
+    };
+  };
+
   const markLessonComplete = async () => {
     if (!lesson || completionLocked) return;
     await api.apiFetch("/progress", {
@@ -135,15 +143,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    audioListEl.innerHTML = audioItems.map((audio) => `
+    const grouped = splitByAccess(audioItems);
+    const renderAudioGroup = (items, heading, locked) => {
+      if (!items.length) return "";
+      return `
+        <div style="margin-bottom: 1rem;">
+          <div style="font-weight: 700; margin-bottom: 0.6rem; color: ${locked ? '#92400e' : '#166534'};">${heading}</div>
+          ${items.map((audio) => `
       <div class="resource-item">
         <div style="font-weight: 700; color: #111827; margin-bottom: 0.5rem;">${escapeHtml(audio.title || audio.fileName || "Audio Lesson")}</div>
+        ${locked || !audio.fileUrl ? '<div style="color:#92400e; font-weight:600;"><i class="fas fa-lock"></i> Paid audio. Upgrade to access.</div>' : `
         <audio controls preload="metadata" data-autocomplete="lesson-audio" style="width: 100%;">
           <source src="${toAssetUrl(audio.fileUrl)}">
           Your browser does not support the audio element.
         </audio>
+        `}
       </div>
-    `).join("");
+    `).join("")}
+        </div>
+      `;
+    };
+
+    audioListEl.innerHTML = `${renderAudioGroup(grouped.free, "Free Demo", false)}${renderAudioGroup(grouped.paid, "Paid Content", true)}`;
 
     audioListEl.querySelectorAll("audio[data-autocomplete='lesson-audio']").forEach((audioEl) => {
       audioEl.addEventListener("ended", async () => {
@@ -163,16 +184,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    materialListEl.innerHTML = materials.map((material) => `
+    const grouped = splitByAccess(materials);
+    const renderMaterialGroup = (items, heading, locked) => {
+      if (!items.length) return "";
+      return `
+        <div style="margin-bottom: 1rem;">
+          <div style="font-weight: 700; margin-bottom: 0.6rem; color: ${locked ? '#92400e' : '#166534'};">${heading}</div>
+          ${items.map((material) => `
       <div class="resource-item">
         <div style="font-weight: 700; color: #111827;">${escapeHtml(material.title || material.fileName || "Material")}</div>
         <div style="color: #6b7280; font-size: 0.9rem; margin: 0.4rem 0 0.9rem;">${escapeHtml(material.fileName || material.mimeType || "Study file")}</div>
+        ${locked || material.isLocked || !material.fileUrl
+          ? '<div style="color:#92400e; font-weight:600;"><i class="fas fa-lock"></i> Paid material. Upgrade to access.</div>'
+          : `
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
           <a class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center;" href="${toAssetUrl(material.fileUrl)}" target="_blank" rel="noopener noreferrer">Open</a>
           <a class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center;" href="${toAssetUrl(material.fileUrl)}" download>Download</a>
         </div>
+        `}
       </div>
-    `).join("");
+    `).join("")}
+        </div>
+      `;
+    };
+
+    materialListEl.innerHTML = `${renderMaterialGroup(grouped.free, "Free Demo", false)}${renderMaterialGroup(grouped.paid, "Paid Content", true)}`;
   };
 
   const renderCaseStudies = (caseStudies) => {
@@ -278,6 +314,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     ]);
 
     lesson = video;
+
+    if (lesson.isLocked) {
+      if (titleEl) titleEl.textContent = `${lesson.title || "Lesson"} (Paid Content)`;
+      if (metaEl) {
+        metaEl.innerHTML = '<span><i class="fas fa-lock"></i> Paid lesson</span><span><i class="fas fa-crown"></i> Upgrade required</span>';
+      }
+      if (summaryEl) {
+        summaryEl.textContent = "This lesson is part of paid content. Upgrade your plan to unlock the full lesson, audio, and materials.";
+      }
+      if (player) {
+        player.innerHTML = '<div style="padding: 2rem; text-align:center; color: white;"><i class="fas fa-lock" style="font-size:2rem; margin-bottom:1rem;"></i><p>This is paid content. Upgrade to continue.</p><a href="/checkout/" class="btn-primary" style="margin-top:0.8rem; text-decoration:none;">Upgrade Now</a></div>';
+      }
+      if (completeBtn) {
+        completeBtn.disabled = true;
+        completeBtn.textContent = "Locked";
+      }
+    }
+
     if (titleEl) titleEl.textContent = lesson.title || "Lesson Viewer";
     if (backLink && lesson.courseId) {
       backLink.href = `/course-player/?id=${encodeURIComponent(lesson.courseId)}`;
@@ -289,6 +343,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (quizLink && lesson.quiz) {
       quizLink.href = `/quiz/?id=${encodeURIComponent(lesson.quiz.id)}`;
       quizLink.style.display = "inline-flex";
+      if (lesson.isLocked) {
+        quizLink.style.display = "none";
+      }
     }
 
     const completedItems = new Set(
@@ -301,7 +358,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (metaEl) {
       metaEl.innerHTML = `
         <span><i class="fas fa-book"></i> ${escapeHtml(lesson.courseTitle || lesson.courseId)}</span>
-        <span><i class="fas fa-play"></i> ${lesson.videoUrl ? (lesson.videoType === "upload" ? "Uploaded video" : "YouTube lesson") : "No video attached"}</span>
+        <span><i class="fas ${lesson.isLocked ? "fa-lock" : "fa-play"}"></i> ${lesson.isLocked ? "Paid content (locked)" : (lesson.videoUrl ? (lesson.videoType === "upload" ? "Uploaded video" : "YouTube lesson") : "No video attached")}</span>
         <span><i class="fas fa-file-audio"></i> ${lesson.audioItems.length} audio</span>
         <span><i class="fas fa-folder-open"></i> ${lesson.materials.length} materials</span>
       `;
@@ -324,7 +381,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderAudioItems(lesson.audioItems || []);
     renderMaterials(lesson.materials || []);
     renderCaseStudies(lesson.caseStudies || []);
-    await renderPlayer();
+    if (!lesson.isLocked) {
+      await renderPlayer();
+    }
     await loadAssistantHistory();
 
     if (completeBtn) {

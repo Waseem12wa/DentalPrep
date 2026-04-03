@@ -256,10 +256,37 @@ async function submitQuiz(quizId, courseId, questions) {
   });
   
   try {
-    const result = await api.fetch('/progress/quiz-submit', {
+    const result = await api.apiFetch('/progress/quiz-submit', {
       method: 'POST',
       body: JSON.stringify({ quizId, courseId, answers })
     });
+
+    // Some backends may return only aggregate score fields. Build a detailed
+    // per-question review client-side so bulk-uploaded quizzes still show
+    // correct/wrong and correct answers.
+    if (!Array.isArray(result.results) || result.results.length === 0) {
+      const fallbackResults = (questions || []).map((q) => {
+        const studentAnswer = answers[q.id];
+        const correctAnswer = q.correctAnswer;
+        const isCorrect = studentAnswer === correctAnswer;
+        return {
+          questionId: q.id,
+          question: q.question,
+          studentAnswer,
+          correctAnswer,
+          isCorrect,
+          options: q.options || []
+        };
+      });
+
+      const fallbackCorrect = fallbackResults.filter((r) => r.isCorrect).length;
+      result.results = fallbackResults;
+      result.correctCount = Number.isFinite(result.correctCount) ? result.correctCount : fallbackCorrect;
+      result.totalCount = Number.isFinite(result.totalCount) ? result.totalCount : fallbackResults.length;
+      result.score = Number.isFinite(result.score)
+        ? result.score
+        : (result.totalCount ? Math.round((result.correctCount / result.totalCount) * 100) : 0);
+    }
     
     displayQuizResults(result, quizId);
   } catch (err) {
@@ -290,11 +317,14 @@ function displayQuizResults(result, quizId) {
   result.results.forEach((r, idx) => {
     const bgColor = r.isCorrect ? '#d1fae5' : '#fee2e2';
     const textColor = r.isCorrect ? '#065f46' : '#991b1b';
+    const statusText = r.isCorrect ? 'Correct' : 'Wrong';
+    const studentAnswerText = r.studentAnswer ? r.studentAnswer : 'Not answered';
     
     html += `
       <div style="background: ${bgColor}; border-left: 4px solid ${r.isCorrect ? '#10b981' : '#ef4444'}; padding: 1rem; margin-bottom: 1rem; border-radius: var(--border-radius-md);">
         <p style="margin: 0 0 0.5rem; font-weight: 700; color: ${textColor};">Q${idx + 1}. ${r.question}</p>
-        <p style="margin: 0 0 0.25rem; color: ${textColor};"><strong>Your answer:</strong> ${r.studentAnswer}</p>
+        <p style="margin: 0 0 0.25rem; color: ${textColor};"><strong>Status:</strong> ${statusText}</p>
+        <p style="margin: 0 0 0.25rem; color: ${textColor};"><strong>Your answer:</strong> ${studentAnswerText}</p>
         ${!r.isCorrect ? `<p style="margin: 0; color: ${textColor};"><strong>Correct answer:</strong> ${r.correctAnswer}</p>` : ''}
       </div>
     `;

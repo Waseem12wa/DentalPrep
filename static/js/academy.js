@@ -110,12 +110,15 @@
             return '<p class="muted-note">' + escapeHtml(emptyText) + '</p>';
         }
 
-        var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free') !== 'paid'; });
-        var paidLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free') === 'paid'; });
+        var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() !== 'paid'; });
+        var paidLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() === 'paid'; });
 
         var renderCards = function (list, isPaid) {
             return list.map(function (item, index) {
             var title = item && item.title ? item.title : ('Video ' + (index + 1));
+            var displayTitle = /^video\s+\d+/i.test(String(title || '').trim())
+                ? String(title || '').trim()
+                : ('Video ' + (index + 1) + ' - ' + title);
             var url = resolveResourceUrl(item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#');
             var parsedYoutube = parseYouTubeUrl(url);
             var playlistId = parsedYoutube.playlistId;
@@ -125,8 +128,22 @@
             if (isLocked) {
                 return [
                     '<div class="video-embed-card">',
-                    '<h5>' + escapeHtml(title) + '</h5>',
-                    '<div class="muted-note"><i class="fas fa-lock"></i> Paid content. Upgrade to access.</div>',
+                    '<h5>' + escapeHtml(displayTitle) + '</h5>',
+                    '<a href="#" class="locked-pdf-link locked-access-link" data-kind="video" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> Paid content (click to request access)</a>',
+                    '</div>'
+                ].join('');
+            }
+
+            if (videoId) {
+                var videoWithPlaylist = playlistId
+                    ? ('?list=' + encodeURIComponent(playlistId) + '&rel=0')
+                    : '?rel=0';
+                return [
+                    '<div class="video-embed-card">',
+                    '<h5>' + escapeHtml(displayTitle) + '</h5>',
+                    '<div class="video-frame-wrap">',
+                    '<iframe src="https://www.youtube.com/embed/' + escapeHtml(videoId) + videoWithPlaylist + '" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
+                    '</div>',
                     '</div>'
                 ].join('');
             }
@@ -134,20 +151,9 @@
             if (playlistId) {
                 return [
                     '<div class="video-embed-card">',
-                    '<h5>' + escapeHtml(title) + ' (Playlist)</h5>',
+                    '<h5>' + escapeHtml(displayTitle) + ' (Playlist)</h5>',
                     '<div class="video-frame-wrap">',
                     '<iframe src="https://www.youtube.com/embed/videoseries?list=' + escapeHtml(playlistId) + '&rel=0" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
-                    '</div>',
-                    '</div>'
-                ].join('');
-            }
-
-            if (videoId) {
-                return [
-                    '<div class="video-embed-card">',
-                    '<h5>' + escapeHtml(title) + '</h5>',
-                    '<div class="video-frame-wrap">',
-                    '<iframe src="https://www.youtube.com/embed/' + escapeHtml(videoId) + '" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
                     '</div>',
                     '</div>'
                 ].join('');
@@ -156,7 +162,7 @@
             if (isLikelyVideoFile(url)) {
                 return [
                     '<div class="video-embed-card">',
-                    '<h5>' + escapeHtml(title) + '</h5>',
+                    '<h5>' + escapeHtml(displayTitle) + '</h5>',
                     '<div class="video-frame-wrap">',
                     '<video controls preload="metadata" src="' + escapeHtml(url) + '"></video>',
                     '</div>',
@@ -164,9 +170,24 @@
                 ].join('');
             }
 
+            // Fallback: if it looks like a YouTube/external URL but wasn't extracted, still render as link
+            if (isValidResourceUrl(url) && /youtube|youtu\.be|vimeo/i.test(url)) {
+                return [
+                    '<div class="video-embed-card">',
+                    '<h5>' + escapeHtml(displayTitle) + '</h5>',
+                    '<div class="video-frame-wrap" style="background:#000; display:flex; align-items:center; justify-content:center; min-height:300px; border-radius:0.5rem;">',
+                    '<div style="text-align:center; color:#fff;">',
+                    '<p style="margin-bottom:1rem;"><i class="fas fa-play-circle" style="font-size:3rem;"></i></p>',
+                    '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" class="btn-primary" style="text-decoration:none; display:inline-flex; align-items:center; gap:0.5rem;">Watch on Platform</a>',
+                    '</div>',
+                    '</div>',
+                    '</div>'
+                ].join('');
+            }
+
             return [
                 '<div class="video-embed-card">',
-                '<h5>' + escapeHtml(title) + '</h5>',
+                '<h5>' + escapeHtml(displayTitle) + '</h5>',
                 '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">Open resource</a>',
                 '</div>'
             ].join('');
@@ -190,8 +211,8 @@
             return '<p class="muted-note">' + escapeHtml(emptyText) + '</p>';
         }
 
-        var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free') !== 'paid'; });
-        var paidLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free') === 'paid'; });
+        var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() !== 'paid'; });
+        var paidLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() === 'paid'; });
 
         var renderRows = function (list, isPaid) {
             return list.map(function (item, index) {
@@ -199,10 +220,11 @@
             var url = resolveResourceUrl(item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#');
             var isLocked = Boolean(item && item.isLocked) || (isPaid && !isValidResourceUrl(url));
             if (isLocked) {
-                return '<a href="#" class="locked-pdf-link" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> ' + escapeHtml(title) + ' (Paid content)</a>';
+                return '<a href="#" class="locked-pdf-link locked-access-link" data-kind="file" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> ' + escapeHtml(title) + ' (Paid content)</a>';
             }
             if (!isValidResourceUrl(url)) {
-                return '<span class="muted-note">' + escapeHtml(title) + ' (file link unavailable)</span>';
+                console.warn('Invalid resource URL for', title, ':', url);
+                return '<span class="muted-note">' + escapeHtml(title) + ' (file link unavailable - check upload)</span>';
             }
             return '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(title) + '</a>';
             }).join('');
@@ -252,11 +274,179 @@
         }).join('') + '</div>';
     }
 
-    async function fetchJson(path) {
+    async function fetchJson(path, options) {
         if (!window.DentalPrepApi || !window.DentalPrepApi.apiFetch) {
             throw new Error('API helper is unavailable');
         }
-        return window.DentalPrepApi.apiFetch(path, { method: 'GET' });
+
+        var requestOptions = options && typeof options === 'object'
+            ? Object.assign({}, options)
+            : { method: 'GET' };
+
+        if (!requestOptions.method) {
+            requestOptions.method = 'GET';
+        }
+
+        return window.DentalPrepApi.apiFetch(path, requestOptions);
+    }
+
+    function renderPdfRequestList(requests) {
+        var container = document.getElementById('overview-requests');
+        if (!container) {
+            return;
+        }
+
+        var list = Array.isArray(requests) ? requests : [];
+        if (!list.length) {
+            container.innerHTML = '<p class="muted-note">No PDF requests submitted yet.</p>';
+            return;
+        }
+
+        container.innerHTML = '<div class="request-list">' + list.map(function (request) {
+            var status = String(request.status || 'pending').toLowerCase();
+            var statusLabel = status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : 'Pending';
+            var statusColor = status === 'approved' ? '#166534' : status === 'rejected' ? '#991b1b' : '#92400e';
+            var detailText = [request.subjectKey, request.blockKey, request.sectionName].filter(Boolean).join(' • ');
+            var actionText = status === 'approved'
+                ? '<div style="margin-top:0.5rem;"><strong>Access granted.</strong> Open the Premium Notes section above.</div>'
+                : status === 'rejected'
+                    ? '<div style="margin-top:0.5rem;">Request was rejected. You can submit a new reference if needed.</div>'
+                    : '<div style="margin-top:0.5rem;">Waiting for admin review.</div>';
+
+            return [
+                '<div class="request-item" style="padding:0.6rem 0;border-bottom:1px solid rgba(0,0,0,0.06);">',
+                '<div style="font-weight:700;color:' + statusColor + ';">' + escapeHtml(statusLabel) + '</div>',
+                '<div style="margin-top:0.2rem;">' + escapeHtml(detailText || 'Premium notes request') + '</div>',
+                '<div style="margin-top:0.2rem;color:#6b7280;">Reference: ' + escapeHtml(String(request.paymentProof || '')) + '</div>',
+                actionText,
+                '</div>'
+            ].join('');
+        }).join('') + '</div>';
+    }
+
+    function bindPremiumNoteRequestHandlers() {
+        var premiumContainer = document.getElementById('overview-premium');
+        if (!premiumContainer) {
+            return;
+        }
+
+        premiumContainer.querySelectorAll('.locked-pdf-link').forEach(function (link) {
+            link.addEventListener('click', async function (event) {
+                event.preventDefault();
+                var resourceTitle = String(link.getAttribute('data-title') || 'Premium Note').trim();
+                var promptText = [
+                    'This Premium Note is paid content (PKR 500).',
+                    'Easypaisa Number: 03327939323',
+                    'Account Name: Muhammad Yousaf',
+                    'After payment, enter proof/reference below and submit request for admin approval.',
+                    '',
+                    'Resource: ' + resourceTitle,
+                    '',
+                    'Enter payment proof/reference ID:'
+                ].join('\n');
+
+                var paymentProof = window.prompt(promptText, 'EP Transaction ID / Screenshot note');
+                if (paymentProof === null) {
+                    return;
+                }
+
+                try {
+                    await fetchJson('/pdf-access/request', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            subjectKey: 'general-overview',
+                            blockKey: 'premium-notes',
+                            sectionName: 'premium-notes',
+                            paymentProof: paymentProof
+                        })
+                    });
+                    window.alert('Payment request submitted. Admin will verify and approve access manually.');
+                    await syncPdfRequestApproval();
+                } catch (err) {
+                    console.error('Premium note payment request submit failed:', err);
+                    window.alert((err && err.message) ? err.message : 'Unable to submit payment request right now.');
+                }
+            });
+        });
+    }
+
+    async function syncPdfRequestApproval() {
+        if (document.body.dataset.page !== 'general-overview') {
+            return;
+        }
+
+        try {
+            var requestData = await fetchJson('/pdf-access/my-requests');
+            var requests = Array.isArray(requestData && requestData.requests) ? requestData.requests : [];
+            renderPdfRequestList(requests);
+
+            var hasApprovedPremiumNotes = requests.some(function (request) {
+                return String(request.subjectKey || '').trim() === 'general-overview' &&
+                    String(request.blockKey || '').trim() === 'premium-notes' &&
+                    String(request.sectionName || '').trim() === 'premium-notes' &&
+                    String(request.status || '').trim().toLowerCase() === 'approved';
+            });
+
+            if (hasApprovedPremiumNotes) {
+                var data = await fetchJson('/academy/content');
+                var overview = data && data.profile ? (data.profile.generalOverview || {}) : {};
+                var hasActiveSubscription = Boolean(data && data.hasActiveSubscription);
+                var premiumPaidOnly = normalizeLinks(overview.premiumNotes).map(function (item) {
+                    var next = Object.assign({}, item || {});
+                    next.accessLevel = 'paid';
+                    if (!hasActiveSubscription) {
+                        // Approved request should immediately unlock premium notes for this user.
+                        next.isLocked = false;
+                    }
+                    return next;
+                });
+                document.getElementById('overview-premium').innerHTML = renderLinkList(premiumPaidOnly, 'No premium notes added yet.');
+
+                var premiumContainer = document.getElementById('overview-premium');
+                if (premiumContainer) {
+                    premiumContainer.querySelectorAll('.locked-pdf-link').forEach(function (link) {
+                        link.addEventListener('click', async function (event) {
+                            event.preventDefault();
+                            var resourceTitle = String(link.getAttribute('data-title') || 'Premium Note').trim();
+                            var promptText = [
+                                'This Premium Note is paid content (PKR 500).',
+                                'Easypaisa Number: 03327939323',
+                                'Account Name: Muhammad Yousaf',
+                                'After payment, enter proof/reference below and submit request for admin approval.',
+                                '',
+                                'Resource: ' + resourceTitle,
+                                '',
+                                'Enter payment proof/reference ID:'
+                            ].join('\n');
+
+                            var paymentProof = window.prompt(promptText, 'EP Transaction ID / Screenshot note');
+                            if (paymentProof === null) {
+                                return;
+                            }
+
+                            try {
+                                await fetchJson('/pdf-access/request', {
+                                    method: 'POST',
+                                    body: JSON.stringify({
+                                        subjectKey: 'general-overview',
+                                        blockKey: 'premium-notes',
+                                        sectionName: 'premium-notes',
+                                        paymentProof: paymentProof
+                                    })
+                                });
+                                window.alert('Payment request submitted. Admin will verify and approve access manually.');
+                                await syncPdfRequestApproval();
+                            } catch (err) {
+                                console.error('Premium note payment request submit failed:', err);
+                                window.alert((err && err.message) ? err.message : 'Unable to submit payment request right now.');
+                            }
+                        });
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Failed to sync PDF requests:', err);
+        }
     }
 
     function bindLogout() {
@@ -333,6 +523,7 @@
             var params = new URLSearchParams(window.location.search);
             subjectKey = params.get('subject') || 'anatomy';
         }
+
         var titleEl = document.getElementById('subject-title');
         var introEl = document.getElementById('subject-intro');
         var blockContainer = document.getElementById('block-container');
@@ -346,9 +537,9 @@
 
         try {
             var data = await fetchJson('/subjects/' + encodeURIComponent(subjectKey) + '/content');
-            var subject = data.subject;
-            titleEl.textContent = subject.title;
-            introEl.textContent = subject.intro;
+            var subject = data.subject || {};
+            titleEl.textContent = subject.title || 'Subject';
+            introEl.textContent = subject.intro || '';
 
             blockContainer.innerHTML = (subject.blocks || []).map(function (block) {
                 var topics = Array.isArray(block.topics) ? block.topics : [];
@@ -428,16 +619,17 @@
                 ].join('');
             }).join('');
 
-            blockContainer.querySelectorAll('.locked-pdf-link').forEach(function (link) {
+            blockContainer.querySelectorAll('.locked-access-link').forEach(function (link) {
                 link.addEventListener('click', async function (event) {
                     event.preventDefault();
+                    var contentKind = String(link.getAttribute('data-kind') || 'content').trim();
                     var subjectKeyVal = String(link.getAttribute('data-subject-key') || subjectKey || '').trim();
                     var blockKeyVal = String(link.getAttribute('data-block-key') || '').trim();
                     var sectionNameVal = String(link.getAttribute('data-section-name') || '').trim();
                     var resourceTitle = String(link.getAttribute('data-title') || 'Paid PDF').trim();
 
                     var promptText = [
-                        'This PDF is paid content (PKR 300).',
+                        'This ' + contentKind + ' is paid content (PKR 500).',
                         'Easypaisa Number: 03327939323',
                         'Account Name: Muhammad Yousaf',
                         'After payment, enter proof/reference below and submit request for admin approval.',
@@ -466,6 +658,7 @@
                         });
                         window.alert('Payment request submitted. Admin will verify and approve access manually.');
                     } catch (err) {
+                        console.error('Payment request submit failed:', err);
                         window.alert((err && err.message) ? err.message : 'Unable to submit payment request right now.');
                     }
                 });
@@ -483,14 +676,35 @@
         try {
             var data = await fetchJson('/academy/content');
             var overview = data && data.profile ? (data.profile.generalOverview || {}) : {};
+            var hasActiveSubscription = Boolean(data && data.hasActiveSubscription);
+
+            // Debug logging
+            console.log('General Overview Data:', {
+                books: overview.books,
+                premiumNotes: overview.premiumNotes,
+                importantSlides: overview.importantSlides,
+                shortNotes: overview.shortNotes,
+                videos: overview.videos
+            });
+
+            var premiumPaidOnly = normalizeLinks(overview.premiumNotes).map(function (item) {
+                var next = Object.assign({}, item || {});
+                next.accessLevel = 'paid';
+                if (!hasActiveSubscription && typeof next.isLocked !== 'boolean') {
+                    next.isLocked = true;
+                }
+                return next;
+            });
 
             document.getElementById('overview-books').innerHTML = renderLinkList(overview.books, 'No books added yet.');
-            document.getElementById('overview-premium').innerHTML = renderLinkList(overview.premiumNotes, 'No premium notes added yet.');
+            document.getElementById('overview-premium').innerHTML = renderLinkList(premiumPaidOnly, 'No premium notes added yet.');
             document.getElementById('overview-slides').innerHTML = renderLinkList(overview.importantSlides, 'No important slides added yet.');
             document.getElementById('overview-short').innerHTML = renderLinkList(overview.shortNotes, 'No short notes added yet.');
             document.getElementById('overview-videos').innerHTML = renderSimpleVideoList(overview.videos, 'No overview videos added yet.');
+            await syncPdfRequestApproval();
         } catch (_err) {
             // Keep static fallback labels if fetch fails.
+            console.error('Failed to render general overview:', _err);
         }
     }
 

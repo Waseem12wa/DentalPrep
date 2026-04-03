@@ -409,7 +409,10 @@ Scenario: ..."></textarea>
             </div>
 
             <div class="admin-card" style="margin-top: 1rem;">
-                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">PDF Access Payment Requests</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                    <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color); margin-bottom: 0;">PDF Access Payment Requests</h3>
+                    <button type="button" class="cta-btn cta-secondary" style="padding:0.45rem 0.9rem;" onclick="loadStudents()">Refresh Requests</button>
+                </div>
                 <p class="text-sm text-gray-500 mb-4;">Approve or reject Easypaisa payment requests for paid PDFs (beyond first 3 free per module).</p>
                 <div id="pdf-access-requests-list" class="grid gap-3">
                     <div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">Loading payment requests...</div>
@@ -442,50 +445,41 @@ Scenario: ..."></textarea>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Topics</label>
-                            <input type="text" id="academy-topics" name="topics" class="form-input" placeholder="Foundation, Blood">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Upload Target</label>
-                            <select id="academy-section-select" name="sectionName" class="form-select">
-                                <option value="__block__">Whole Block (legacy)</option>
+                            <label class="form-label">Topic</label>
+                            <select id="academy-topic-select" name="topicName" class="form-select" required>
+                                <option value="">Select a topic</option>
                             </select>
-                            <small style="color: #6b7280;">Choose a module folder (e.g., Foundation, Blood) to upload separately.</small>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Content Type</label>
-                            <select name="contentAccessLevel" class="form-select">
-                                <option value="free">Free Demo</option>
-                                <option value="paid">Paid Content</option>
-                            </select>
-                            <small style="color: #6b7280;">For Past Papers and all subjects, uploads in this save will be tagged as Free Demo or Paid Content.</small>
+                            <small style="color: #6b7280;">Topics update automatically based on selected subject and block.</small>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Video/Playlist Links (Title|URL per line)</label>
-                            <textarea id="academy-video-links" name="videoLinks" class="form-input" rows="4" placeholder="Foundation Lecture|https://youtube.com/watch?v=...&#10;Full Playlist|https://www.youtube.com/playlist?list=..."></textarea>
+                            <label class="form-label">Playlist Link</label>
+                            <textarea id="academy-video-links" name="videoLinks" class="form-input" rows="3" placeholder="https://www.youtube.com/playlist?list=..."></textarea>
+                            <small style="color: #6b7280;">If playlist link is entered, video file upload is disabled.</small>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Or Upload Video File(s)</label>
-                            <input type="file" name="videoFiles" class="form-input" accept="video/*" multiple>
+                            <label class="form-label">Or Upload Video Files</label>
+                            <input type="file" id="academy-video-files-input" name="videoFiles" class="form-input" accept="video/*" multiple>
                             <small style="color: #6b7280;">You can upload many files at once for this block. New uploads are added to existing files.</small>
                             <div id="academy-video-files-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Preparation Notes Text</label>
+                            <label class="form-label">Preparation Notes</label>
                             <textarea id="academy-note-text" name="noteText" class="form-input" rows="3" placeholder="Enter note summary for this block."></textarea>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Upload Notes File(s)</label>
+                            <label class="form-label">Notes File</label>
                             <input type="file" name="noteFiles" class="form-input" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
                             <small style="color: #6b7280;">For Past Papers Block A/B/C, upload multiple PDFs together. Existing files are kept.</small>
                             <div id="academy-note-files-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Clinical Content Text</label>
+                            <label class="form-label">Clinical Context</label>
                             <textarea id="academy-clinical-text" name="clinicalText" class="form-input" rows="3" placeholder="Enter clinical focus for this block."></textarea>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Upload Clinical File(s)</label>
+                            <label class="form-label">Upload Content File</label>
                             <input type="file" name="clinicalFiles" class="form-input" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
                             <small style="color: #6b7280;">You can upload multiple PDFs/files in one save. Each save appends to this block.</small>
                             <div id="academy-clinical-files-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
@@ -626,12 +620,31 @@ Scenario: ..."></textarea>
         const loginForm = document.getElementById("login-form");
         const loginMsg = document.getElementById("login-msg");
         const generalMsg = document.getElementById("general-msg");
+        let adminAuthRecoveryTriggered = false;
+        let hasValidatedAdminSession = false;
         let studentsLoaded = false;
         let lessonsCache = [];
+        let blockFilesToDelete = {
+            videoItems: [],
+            noteResources: [],
+            clinicalResources: []
+        };
+        let lessonVideosToClear = [];
+
+        async function validateStoredAdminToken() {
+            if (!adminToken) return false;
+            try {
+                const res = await adminFetch("/admin/overview");
+                return res.ok;
+            } catch (_err) {
+                return false;
+            }
+        }
 
         // Initialize
-        function init() {
-            if (adminToken) {
+        async function init() {
+            const hasValidToken = await validateStoredAdminToken();
+            if (hasValidToken) {
                 showDashboard();
             } else {
                 showLogin();
@@ -659,6 +672,53 @@ Scenario: ..."></textarea>
             loadAcademyContent();
         }
 
+        function handleAdminUnauthorized() {
+            if (adminAuthRecoveryTriggered) return;
+            adminAuthRecoveryTriggered = true;
+            localStorage.removeItem("dentalprep_admin_token");
+            adminToken = null;
+            showLogin();
+            if (hasValidatedAdminSession) {
+                showMessage(loginMsg, "Session expired. Please log in again.", "error");
+                showMessage(generalMsg, "Admin session expired. Please log in again.", "error");
+            }
+            hasValidatedAdminSession = false;
+        }
+
+        async function adminFetch(path, options = {}) {
+            const pathMap = {
+                "/courses": "/admin/courses",
+                "/lessons": "/admin/lessons",
+                "/quizzes": "/admin/quizzes",
+                "/api/courses": "/admin/courses",
+                "/api/lessons": "/admin/lessons",
+                "/api/quizzes": "/admin/quizzes"
+            };
+            const normalizedPath = pathMap[String(path || "").trim()] || String(path || "").trim();
+            const headers = Object.assign({}, options.headers || {});
+            if (adminToken) {
+                headers.Authorization = `Bearer ${adminToken}`;
+            }
+
+            const response = await fetch(`${API_BASE}${normalizedPath}`, {
+                ...options,
+                headers
+            });
+
+            if (response.status === 401) {
+                handleAdminUnauthorized();
+                const authErr = new Error("Session expired. Please log in again.");
+                authErr.status = 401;
+                throw authErr;
+            }
+
+            if (response.ok && adminToken) {
+                hasValidatedAdminSession = true;
+            }
+
+            return response;
+        }
+
         // Login Handler
         loginForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -681,6 +741,8 @@ Scenario: ..."></textarea>
 
                 localStorage.setItem("dentalprep_admin_token", data.token);
                 adminToken = data.token;
+                adminAuthRecoveryTriggered = false;
+                hasValidatedAdminSession = true;
                 showDashboard();
             } catch (err) {
                 showMessage(loginMsg, err.message, "error");
@@ -693,6 +755,8 @@ Scenario: ..."></textarea>
         logoutBtn.addEventListener("click", () => {
             localStorage.removeItem("dentalprep_admin_token");
             adminToken = null;
+            adminAuthRecoveryTriggered = false;
+            hasValidatedAdminSession = false;
             showLogin();
         });
 
@@ -707,7 +771,7 @@ Scenario: ..."></textarea>
                 .replace(/'/g, "&#39;");
         }
 
-        function renderExistingFileList(containerId, items, emptyLabel) {
+        function renderExistingFileList(containerId, items, emptyLabel, deleteKey) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
@@ -719,7 +783,10 @@ Scenario: ..."></textarea>
                         const rawTitle = item && (item.title || item.fileName) ? String(item.title || item.fileName).trim() : `File ${idx + 1}`;
                         const title = escapeHtml(rawTitle || `File ${idx + 1}`);
                         const href = escapeHtml(rawUrl);
-                        return `<div style="padding: 0.25rem 0; color: #059669;"><strong>${idx + 1}.</strong> <a href="${href}" target="_blank" rel="noopener noreferrer">${title}</a></div>`;
+                        const deleteButton = deleteKey
+                            ? `<button type="button" class="block-file-delete" data-delete-key="${escapeHtml(deleteKey)}" data-index="${idx}" style="background:#dc2626; color:white; border:none; padding:0.25rem 0.5rem; border-radius:0.25rem; cursor:pointer; font-size:0.75rem;">Delete</button>`
+                            : "";
+                        return `<div class="file-row" data-index="${idx}" style="padding: 0.25rem 0.5rem; display:flex; justify-content:space-between; align-items:center; gap:0.75rem; color:#059669;"><div><strong>${idx + 1}.</strong> <a href="${href}" target="_blank" rel="noopener noreferrer">${title}</a></div>${deleteButton}</div>`;
                     })
                     .filter(Boolean)
                 : [];
@@ -771,6 +838,8 @@ Scenario: ..."></textarea>
             const lessonTitleInput = document.querySelector('#lesson-form input[name="title"]');
             if (!container || !courseSelect || !lessonTitleInput) return;
 
+            lessonVideosToClear = [];
+
             const courseId = String(courseSelect.value || "").trim();
             const enteredTitle = String(lessonTitleInput.value || "").trim();
             if (!courseId || !enteredTitle) {
@@ -793,20 +862,26 @@ Scenario: ..."></textarea>
             }
 
             const videos = matchedLessons
-                .map((lesson) => ({ title: lesson.title || 'Video', url: lesson.videoUrl || '' }))
+                .map((lesson) => ({ lessonId: lesson.id || lesson.lessonId, title: lesson.title || 'Video', url: lesson.videoUrl || '' }))
                 .filter((item) => item.url && item.url !== '#');
             const audios = matchedLessons.flatMap((lesson) => collectAssetLinks(lesson.audioItems, 'Audio'));
             const materials = matchedLessons.flatMap((lesson) => collectAssetLinks(lesson.materials, 'Material'));
 
-            const renderLinks = (items) => {
+            const renderLinks = (items, deleteableType) => {
                 if (!items.length) return '<span style="color:#9ca3af;">none</span>';
-                return items.slice(0, 6).map((item, idx) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title || `File ${idx + 1}`)}</a>`).join(', ') + (items.length > 6 ? ' ...' : '');
+                return items.slice(0, 6).map((item, idx) => {
+                    const link = `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title || `File ${idx + 1}`)}</a>`;
+                    if (deleteableType !== 'video') {
+                        return link;
+                    }
+                    return `<span style="display:inline-flex;align-items:center;gap:0.5rem;margin-right:0.75rem;">${link}<button type="button" class="lesson-video-delete" data-lesson-id="${escapeHtml(item.lessonId || '')}" style="background:#dc2626;color:#fff;border:none;padding:0.2rem 0.45rem;border-radius:0.25rem;cursor:pointer;font-size:0.75rem;">Delete</button></span>`;
+                }).join(', ') + (items.length > 6 ? ' ...' : '');
             };
 
             container.innerHTML = `
                 <div style="padding: 0.6rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.375rem;">
                     <div style="font-weight: 600; color: #166534; margin-bottom: 0.35rem;">Existing uploads for this lesson title</div>
-                    <div style="margin-bottom: 0.25rem;"><strong>Videos:</strong> ${renderLinks(videos)}</div>
+                    <div style="margin-bottom: 0.25rem;"><strong>Videos:</strong> ${renderLinks(videos, 'video')}</div>
                     <div style="margin-bottom: 0.25rem;"><strong>Audio:</strong> ${renderLinks(audios)}</div>
                     <div><strong>Materials:</strong> ${renderLinks(materials)}</div>
                 </div>
@@ -852,9 +927,7 @@ Scenario: ..."></textarea>
             const select = document.getElementById("lesson-course-select");
 
             try {
-                const res = await fetch(`${API_BASE}/courses`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
+                const res = await adminFetch("/admin/courses");
 
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
@@ -892,6 +965,9 @@ Scenario: ..."></textarea>
                     select.appendChild(option);
                 });
             } catch (err) {
+                if (err && err.status === 401) {
+                    return;
+                }
                 console.error("Failed to load courses:", err);
                 list.innerHTML = '<div class="p-3 bg-white border border-red-200 rounded shadow-sm text-red-600">Unable to load courses.</div>';
                 select.innerHTML = '<option value="">Unable to load courses</option>';
@@ -923,9 +999,7 @@ Scenario: ..."></textarea>
 
         async function loadLessons() {
             try {
-                const res = await fetch(`${API_BASE}/lessons`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
+                const res = await adminFetch("/admin/lessons");
                    if (!res.ok) {
                        console.error("Failed to load lessons:", res.status, res.statusText);
                        throw new Error(`HTTP ${res.status}`);
@@ -1006,6 +1080,9 @@ Scenario: ..."></textarea>
                    select.appendChild(errorOption);
                }
            } catch (err) {
+               if (err && err.status === 401) {
+                   return;
+               }
                console.error("Failed to load lessons:", err);
                const select = document.getElementById("quiz-lesson-select");
                select.innerHTML = '<option value="">Error loading lessons</option>';
@@ -1023,12 +1100,8 @@ Scenario: ..."></textarea>
 
             try {
                 const [quizzesRes, lessonsRes] = await Promise.all([
-                    fetch(`${API_BASE}/quizzes`, {
-                        headers: { Authorization: `Bearer ${adminToken}` }
-                    }),
-                    fetch(`${API_BASE}/lessons`, {
-                        headers: { Authorization: `Bearer ${adminToken}` }
-                    })
+                    adminFetch("/admin/quizzes"),
+                    adminFetch("/admin/lessons")
                 ]);
 
                 if (!quizzesRes.ok) {
@@ -1062,6 +1135,9 @@ Scenario: ..."></textarea>
                     list.appendChild(quizCard);
                 });
             } catch (err) {
+                if (err && err.status === 401) {
+                    return;
+                }
                 console.error("Failed to load quizzes:", err);
                 list.innerHTML = '<div class="p-3 bg-white border border-red-200 rounded shadow-sm text-red-600">Unable to load quizzes.</div>';
             }
@@ -1094,6 +1170,9 @@ Scenario: ..."></textarea>
                 formData.append("summary", e.target.summary.value || "");
                 formData.append("videoUrl", e.target.videoUrl.value || "");
                 formData.append("caseStudies", e.target.caseStudies.value || "");
+                if (lessonVideosToClear.length) {
+                    formData.append("lessonVideosToClear", JSON.stringify(lessonVideosToClear));
+                }
 
                 Array.from(e.target.querySelector('input[name="videoFiles"]').files || []).forEach((file) => {
                     formData.append("videoFiles", file);
@@ -1208,11 +1287,10 @@ Scenario: ..."></textarea>
             showMessage(generalMsg, "", null);
 
             try {
-                const res = await fetch(`${API_BASE}${url}`, {
+                const res = await adminFetch(url, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${adminToken}`
+                        "Content-Type": "application/json"
                     },
                     body: JSON.stringify(body)
                 });
@@ -1232,9 +1310,7 @@ Scenario: ..."></textarea>
             if (!container) return;
 
             try {
-                const res = await fetch(`${API_BASE}/admin/student-analytics`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
+                const res = await adminFetch("/admin/student-analytics");
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
                 const data = await res.json();
@@ -1268,9 +1344,7 @@ Scenario: ..."></textarea>
             if (!container) return;
 
             try {
-                const res = await fetch(`${API_BASE}/admin/users`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
+                const res = await adminFetch("/admin/users");
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
                 const data = await res.json();
@@ -1305,9 +1379,7 @@ Scenario: ..."></textarea>
 
             if (requestsContainer) {
                 try {
-                    const res = await fetch(`${API_BASE}/admin/pdf-access-requests`, {
-                        headers: { Authorization: `Bearer ${adminToken}` }
-                    });
+                    const res = await adminFetch("/admin/pdf-access-requests");
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.message || 'Failed to load requests');
                     const requests = data.requests || [];
@@ -1456,11 +1528,14 @@ Scenario: ..."></textarea>
                 const aboutText = document.getElementById("academy-about-text");
                 if (aboutText) aboutText.value = profile.aboutAcademyText || "";
 
+                // Store academy data for file removal
+                window.academyProfileData = { overview, about };
+
                 const booksInput = document.getElementById("overview-books-files");
                 if (booksInput && !booksInput.files.length) {
                     const booksList = document.getElementById("overview-books-list");
                     if (booksList && overview.books && overview.books.length) {
-                        const fileList = overview.books.map((f, i) => `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div>`).join("");
+                        const fileList = overview.books.map((f, i) => `<div style="padding: 0.25rem 0.5rem; display: flex; justify-content: space-between; align-items: center; color: #059669;"><div><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div><button type="button" class="overview-file-delete" data-section="books" data-index="${i}" style="background:#dc2626; color:white; border:none; padding:0.25rem 0.5rem; border-radius:0.25rem; cursor:pointer; font-size:0.75rem;"><i class="fas fa-trash-alt"></i></button></div>`).join("");
                         booksList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current files:<br>${fileList}</div>`;
                     }
                 }
@@ -1468,7 +1543,7 @@ Scenario: ..."></textarea>
                 if (premiumInput && !premiumInput.files.length) {
                     const premiumList = document.getElementById("overview-premium-list");
                     if (premiumList && overview.premiumNotes && overview.premiumNotes.length) {
-                        const fileList = overview.premiumNotes.map((f, i) => `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div>`).join("");
+                        const fileList = overview.premiumNotes.map((f, i) => `<div style="padding: 0.25rem 0.5rem; display: flex; justify-content: space-between; align-items: center; color: #059669;"><div><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div><button type="button" class="overview-file-delete" data-section="premiumNotes" data-index="${i}" style="background:#dc2626; color:white; border:none; padding:0.25rem 0.5rem; border-radius:0.25rem; cursor:pointer; font-size:0.75rem;"><i class="fas fa-trash-alt"></i></button></div>`).join("");
                         premiumList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current files:<br>${fileList}</div>`;
                     }
                 }
@@ -1476,7 +1551,7 @@ Scenario: ..."></textarea>
                 if (slidesInput && !slidesInput.files.length) {
                     const slidesList = document.getElementById("overview-slides-list");
                     if (slidesList && overview.importantSlides && overview.importantSlides.length) {
-                        const fileList = overview.importantSlides.map((f, i) => `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div>`).join("");
+                        const fileList = overview.importantSlides.map((f, i) => `<div style="padding: 0.25rem 0.5rem; display: flex; justify-content: space-between; align-items: center; color: #059669;"><div><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div><button type="button" class="overview-file-delete" data-section="importantSlides" data-index="${i}" style="background:#dc2626; color:white; border:none; padding:0.25rem 0.5rem; border-radius:0.25rem; cursor:pointer; font-size:0.75rem;"><i class="fas fa-trash-alt"></i></button></div>`).join("");
                         slidesList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current files:<br>${fileList}</div>`;
                     }
                 }
@@ -1484,7 +1559,7 @@ Scenario: ..."></textarea>
                 if (shortInput && !shortInput.files.length) {
                     const shortList = document.getElementById("overview-short-list");
                     if (shortList && overview.shortNotes && overview.shortNotes.length) {
-                        const fileList = overview.shortNotes.map((f, i) => `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div>`).join("");
+                        const fileList = overview.shortNotes.map((f, i) => `<div style="padding: 0.25rem 0.5rem; display: flex; justify-content: space-between; align-items: center; color: #059669;"><div><strong>${i + 1}.</strong> <a href="${f.url || f.fileUrl}" target="_blank">${f.title || f.fileName}</a></div><button type="button" class="overview-file-delete" data-section="shortNotes" data-index="${i}" style="background:#dc2626; color:white; border:none; padding:0.25rem 0.5rem; border-radius:0.25rem; cursor:pointer; font-size:0.75rem;"><i class="fas fa-trash-alt"></i></button></div>`).join("");
                         shortList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current files:<br>${fileList}</div>`;
                     }
                 }
@@ -1497,7 +1572,7 @@ Scenario: ..."></textarea>
                         const listHtml = overview.videos.map((v, i) => {
                             const url = v.url || v.fileUrl || "#";
                             const title = v.title || `Video ${i + 1}`;
-                            return `<div style="padding: 0.25rem 0; color: #059669;"><strong>${i + 1}.</strong> <a href="${url}" target="_blank">${title}</a></div>`;
+                            return `<div style="padding: 0.25rem 0.5rem; display: flex; justify-content: space-between; align-items: center; color: #059669;"><div><strong>${i + 1}.</strong> <a href="${url}" target="_blank">${title}</a></div><button type="button" class="overview-file-delete" data-section="videos" data-index="${i}" style="background:#dc2626; color:white; border:none; padding:0.25rem 0.5rem; border-radius:0.25rem; cursor:pointer; font-size:0.75rem;"><i class="fas fa-trash-alt"></i></button></div>`;
                         }).join("");
                         overviewVideoList.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current videos:<br>${listHtml}</div>`;
                     }
@@ -1530,66 +1605,122 @@ Scenario: ..."></textarea>
             }
         }
 
-        function loadSelectedBlockContent() {
+        function syncAcademyVideoInputMode() {
+            const linksInput = document.getElementById("academy-video-links");
+            const filesInput = document.getElementById("academy-video-files-input");
+            if (!linksInput || !filesInput) {
+                return;
+            }
+
+            const hasLinks = String(linksInput.value || "").trim().length > 0;
+            const hasFiles = (filesInput.files || []).length > 0;
+            if (hasLinks) {
+                filesInput.disabled = true;
+                filesInput.title = "Clear playlist link to upload files.";
+            } else {
+                filesInput.disabled = false;
+                filesInput.title = "";
+            }
+
+            if (hasFiles) {
+                linksInput.disabled = true;
+                linksInput.placeholder = "Clear selected video files to enter playlist link";
+            } else {
+                linksInput.disabled = false;
+                if (!linksInput.value) {
+                    linksInput.placeholder = "https://www.youtube.com/playlist?list=...";
+                }
+            }
+        }
+
+        function loadSelectedBlockContent(options = {}) {
+            const resetMode = Boolean(options.resetMode);
             const subjectSelect = document.getElementById("academy-subject-select");
             const blockSelect = document.getElementById("academy-block-select");
-            const sectionSelect = document.getElementById("academy-section-select");
+            const topicSelect = document.getElementById("academy-topic-select");
             if (!subjectSelect || !blockSelect) {
                 return;
             }
 
+            blockFilesToDelete = {
+                videoItems: [],
+                noteResources: [],
+                clinicalResources: []
+            };
+
             const selected = academyBlocks.find((item) => item.subjectKey === subjectSelect.value && item.blockKey === blockSelect.value);
 
-            const topicsInput = document.getElementById("academy-topics");
-            if (topicsInput) topicsInput.value = selected && Array.isArray(selected.topics) ? selected.topics.join(", ") : "";
+            const getDefaultTopics = (subjectKey, blockKey) => {
+                const standard = {
+                    "block-a": ["Foundation", "Blood"],
+                    "block-b": ["Craniofacial"],
+                    "block-c": ["Cervicofacial", "GIT + UGS", "Cardiopulmonary"]
+                };
+                const biochemistry = {
+                    "block-a": ["Foundation"],
+                    "block-b": ["Craniofacial"],
+                    "block-c": ["Cervicofacial", "GIT + UGS", "Cardiopulmonary"]
+                };
+                return (subjectKey === "biochemistry" ? biochemistry : standard)[blockKey] || [];
+            };
 
-            if (sectionSelect) {
-                const currentSelection = sectionSelect.value || "__block__";
-                const topics = selected && Array.isArray(selected.topics) ? selected.topics : [];
-                const options = ['<option value="__block__">Whole Block (legacy)</option>']
-                    .concat(topics.map((topic) => `<option value="${topic}">${topic} Module</option>`));
-                sectionSelect.innerHTML = options.join("");
-                if (topics.includes(currentSelection)) {
-                    sectionSelect.value = currentSelection;
+            const topics = selected && Array.isArray(selected.topics) && selected.topics.length
+                ? selected.topics
+                : getDefaultTopics(subjectSelect.value, blockSelect.value);
+
+            if (topicSelect) {
+                const previous = topicSelect.value;
+                topicSelect.innerHTML = topics.length
+                    ? topics.map((topic) => `<option value="${topic}">${topic}</option>`).join("")
+                    : '<option value="">No topics available</option>';
+                if (topics.includes(previous)) {
+                    topicSelect.value = previous;
                 }
             }
 
-            const selectedSectionName = sectionSelect ? sectionSelect.value : "__block__";
-            const selectedSection = selectedSectionName && selectedSectionName !== "__block__"
-                ? ((selected && Array.isArray(selected.sections) ? selected.sections : []).find((section) => section.name === selectedSectionName) || null)
+            const selectedTopic = topicSelect ? String(topicSelect.value || "").trim() : "";
+            const selectedSection = selectedTopic
+                ? ((selected && Array.isArray(selected.sections) ? selected.sections : []).find((section) => String(section.name || "").trim() === selectedTopic) || null)
                 : null;
 
             const videoInput = document.getElementById("academy-video-links");
-            if (videoInput) videoInput.value = linksToText(selectedSection ? selectedSection.videoItems : (selected ? selected.videoItems : []));
-
             const noteText = document.getElementById("academy-note-text");
-            if (noteText) noteText.value = selectedSection ? (selectedSection.noteText || "") : (selected ? (selected.noteText || "") : "");
-
             const clinicalText = document.getElementById("academy-clinical-text");
-            if (clinicalText) clinicalText.value = selectedSection ? (selectedSection.clinicalText || "") : (selected ? (selected.clinicalText || "") : "");
 
-            const sourceData = selectedSection || selected || {};
+            if (!resetMode) {
+                if (videoInput) videoInput.value = linksToText(selectedSection ? selectedSection.videoItems : (selected ? selected.videoItems : []));
+                if (noteText) noteText.value = selectedSection ? (selectedSection.noteText || "") : (selected ? (selected.noteText || "") : "");
+                if (clinicalText) clinicalText.value = selectedSection ? (selectedSection.clinicalText || "") : (selected ? (selected.clinicalText || "") : "");
+            }
+
+            const sourceData = resetMode ? {} : (selectedSection || {});
             renderExistingFileList(
                 "academy-video-files-list",
                 Array.isArray(sourceData.videoItems) ? sourceData.videoItems : [],
-                "No uploaded videos in this module yet."
+                "No uploaded videos in this module yet.",
+                "videoItems"
             );
             renderExistingFileList(
                 "academy-note-files-list",
                 Array.isArray(sourceData.noteResources) ? sourceData.noteResources : [],
-                "No uploaded notes in this module yet."
+                "No uploaded notes in this module yet.",
+                "noteResources"
             );
             renderExistingFileList(
                 "academy-clinical-files-list",
                 Array.isArray(sourceData.clinicalResources) ? sourceData.clinicalResources : [],
-                "No uploaded clinical files in this module yet."
+                "No uploaded clinical files in this module yet.",
+                "clinicalResources"
             );
+
+            syncAcademyVideoInputMode();
         }
 
         document.getElementById("academy-subject-select").addEventListener("change", loadSelectedBlockContent);
         document.getElementById("academy-block-select").addEventListener("change", loadSelectedBlockContent);
-        document.getElementById("academy-section-select").addEventListener("change", loadSelectedBlockContent);
-        document.getElementById("academy-topics").addEventListener("change", loadSelectedBlockContent);
+        document.getElementById("academy-topic-select").addEventListener("change", loadSelectedBlockContent);
+        document.getElementById("academy-video-links").addEventListener("input", syncAcademyVideoInputMode);
+        document.getElementById("academy-video-files-input").addEventListener("change", syncAcademyVideoInputMode);
 
         document.getElementById("academy-block-form").addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -1603,9 +1734,27 @@ Scenario: ..."></textarea>
             formData.set("blockKey", blockKey);
             formData.set("blockTitle", blockTitle);
 
-            const sectionSelect = document.getElementById("academy-section-select");
-            if (sectionSelect && sectionSelect.value === "__block__") {
-                formData.delete("sectionName");
+            const topicSelect = document.getElementById("academy-topic-select");
+            const selectedTopic = String(topicSelect?.value || "").trim();
+            if (!selectedTopic) {
+                showMessage(generalMsg, "Please select a topic for the selected block.", "error");
+                return;
+            }
+
+            formData.set("topics", selectedTopic);
+            formData.set("sectionName", selectedTopic);
+
+            const linksInput = document.getElementById("academy-video-links");
+            const filesInput = document.getElementById("academy-video-files-input");
+            const hasPlaylistLink = String(linksInput?.value || "").trim().length > 0;
+            const hasVideoFiles = (filesInput?.files || []).length > 0;
+            if (hasPlaylistLink && hasVideoFiles) {
+                showMessage(generalMsg, "Use either Playlist Link or Upload Video Files, not both.", "error");
+                return;
+            }
+
+            if (Object.values(blockFilesToDelete).some((items) => Array.isArray(items) && items.length > 0)) {
+                formData.set("blockFilesToDelete", JSON.stringify(blockFilesToDelete));
             }
 
             setLoading(btn, true);
@@ -1619,6 +1768,16 @@ Scenario: ..."></textarea>
                 if (!res.ok) throw new Error(data.message || "Failed to save block content");
                 showMessage(generalMsg, "Block content saved successfully.", "success");
                 await loadAcademyContent();
+                e.target.reset();
+                blockFilesToDelete = {
+                    videoItems: [],
+                    noteResources: [],
+                    clinicalResources: []
+                };
+                renderExistingFileList("academy-video-files-list", [], "No uploaded videos in this module yet.", "videoItems");
+                renderExistingFileList("academy-note-files-list", [], "No uploaded notes in this module yet.", "noteResources");
+                renderExistingFileList("academy-clinical-files-list", [], "No uploaded clinical files in this module yet.", "clinicalResources");
+                loadSelectedBlockContent({ resetMode: true });
             } catch (err) {
                 showMessage(generalMsg, err.message, "error");
             } finally {
@@ -1649,11 +1808,99 @@ Scenario: ..."></textarea>
         setupFileInputListener("overview-short-files", "overview-short-list");
         setupFileInputListener("overview-video-files", "overview-video-list");
 
+        document.addEventListener("click", (event) => {
+            const deleteBtn = event.target.closest(".block-file-delete");
+            if (!deleteBtn) return;
+
+            const deleteKey = deleteBtn.getAttribute("data-delete-key");
+            const index = Number(deleteBtn.getAttribute("data-index"));
+            if (!deleteKey || !Number.isInteger(index)) return;
+
+            if (!blockFilesToDelete[deleteKey]) {
+                blockFilesToDelete[deleteKey] = [];
+            }
+
+            if (!blockFilesToDelete[deleteKey].includes(index)) {
+                blockFilesToDelete[deleteKey].push(index);
+            }
+
+            const row = deleteBtn.closest(".file-row");
+            if (row) {
+                row.style.opacity = "0.45";
+                deleteBtn.disabled = true;
+                deleteBtn.textContent = "Deleted";
+            }
+
+            showMessage(generalMsg, "File marked for deletion. Save the block content to apply the change.", "success");
+        });
+
+        document.addEventListener("click", (event) => {
+            const deleteBtn = event.target.closest(".lesson-video-delete");
+            if (!deleteBtn) return;
+
+            const lessonId = String(deleteBtn.getAttribute("data-lesson-id") || '').trim();
+            if (!lessonId) return;
+
+            if (!lessonVideosToClear.includes(lessonId)) {
+                lessonVideosToClear.push(lessonId);
+            }
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Deleted';
+            const wrapper = deleteBtn.closest('span');
+            if (wrapper) wrapper.style.opacity = '0.45';
+
+            showMessage(generalMsg, 'Lesson video marked for deletion. Save the lesson to apply the change.', 'success');
+        });
+
+        // Track files to delete from each section
+        const filesToDelete = {
+            books: [],
+            premiumNotes: [],
+            importantSlides: [],
+            shortNotes: [],
+            videos: []
+        };
+
+        // Add delete button handlers
+        document.addEventListener("click", (e) => {
+            if (e.target.closest(".overview-file-delete")) {
+                e.preventDefault();
+                const btn = e.target.closest(".overview-file-delete");
+                const section = btn.getAttribute("data-section");
+                const index = parseInt(btn.getAttribute("data-index"), 10);
+                
+                if (confirm(`Delete this file from ${section}?`)) {
+                    // Track deletion
+                    if (!filesToDelete[section].includes(index)) {
+                        filesToDelete[section].push(index);
+                    }
+                    
+                    // Update UI - mark row as deleted
+                    btn.closest("div").style.opacity = "0.5";
+                    btn.disabled = true;
+                    btn.textContent = "Deleted";
+                    
+                    showMessage(generalMsg, `File marked for deletion. Click "Save Academy Profile" to confirm.`, "success");
+                }
+            }
+        });
+
         document.getElementById("academy-profile-form").addEventListener("submit", async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector("button");
             
             const formData = new FormData(e.target);
+
+            const aboutVideoInput = document.getElementById("about-video-input");
+            if (aboutVideoInput && !String(aboutVideoInput.value || "").trim()) {
+                formData.set("introVideoUrl", "");
+            }
+            
+            // Add files to delete info
+            if (Object.values(filesToDelete).some(arr => arr.length > 0)) {
+                formData.set("filesToDelete", JSON.stringify(filesToDelete));
+            }
             
             setLoading(btn, true);
             try {
@@ -1666,6 +1913,10 @@ Scenario: ..."></textarea>
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || "Failed to save academy profile");
+                
+                // Reset deletion tracker
+                Object.keys(filesToDelete).forEach(key => filesToDelete[key] = []);
+                
                 showMessage(generalMsg, "Academy profile saved successfully.", "success");
                 await loadAcademyContent();
             } catch (err) {
@@ -1689,7 +1940,7 @@ Scenario: ..."></textarea>
             if (tabName === 'students') btns[5].classList.add('active');
             if (tabName === 'academy') btns[6].classList.add('active');
 
-            if (tabName === 'students' && !studentsLoaded) {
+            if (tabName === 'students') {
                 loadStudents();
             }
         }

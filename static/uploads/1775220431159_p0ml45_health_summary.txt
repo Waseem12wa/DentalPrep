@@ -1,0 +1,6 @@
+Medical Record Summary
+
+My name is Osim Zahid and I'm a full-stack developer with over six years of experience working on high performance web applications. I am a lead full-stack developer with over six years of experience specialising in high performance web applications.
+
+Key Medical Entities:
+

@@ -214,6 +214,50 @@ function mergeUniqueStrings(existingValues, incomingValues) {
   return merged;
 }
 
+function normalizeBiochemistryTopics(blockKey, topics) {
+  const requiredByBlock = {
+    "block-a": 1,
+    "block-b": 1,
+    "block-c": 3
+  };
+
+  const normalizedBlockKey = String(blockKey || "").trim().toLowerCase();
+  const required = requiredByBlock[normalizedBlockKey];
+
+  const rawTopics = Array.isArray(topics) ? topics : [];
+  const expanded = rawTopics.flatMap((topic) => {
+    const value = String(topic || "").trim();
+    if (!value) {
+      return [];
+    }
+
+    if (normalizedBlockKey !== "block-c") {
+      return [value];
+    }
+
+    // Support legacy combined formats like "1.Cervicofacial|2.GIT+UGS|3.Cardiopulmonary".
+    return value
+      .split(/[|\n,]+/)
+      .map((part) => part.replace(/^\s*\d+[.)\-:\s]*/, "").trim())
+      .filter(Boolean);
+  });
+
+  const normalized = mergeUniqueStrings([], expanded);
+  if (!required) {
+    return normalized;
+  }
+
+  if (normalized.length >= required) {
+    return normalized.slice(0, required);
+  }
+
+  const filled = [...normalized];
+  for (let index = filled.length; index < required; index += 1) {
+    filled.push(`Topic ${index + 1}`);
+  }
+  return filled;
+}
+
 function mergeUniqueLinks(existingItems, incomingItems) {
   const seen = new Set();
   const merged = [];
@@ -548,7 +592,7 @@ router.delete("/admin/course/:courseId", adminAuth, async (req, res) => {
 });
 
 // GET /api/courses - Get all courses for admin dropdown (requires admin auth)
-router.get("/courses", adminAuth, async (_req, res) => {
+router.get("/admin/courses", adminAuth, async (_req, res) => {
   try {
     const courses = await Course.find({}).sort({ title: 1 });
     const allLessons = await Lesson.find({});
@@ -576,7 +620,7 @@ router.get("/courses", adminAuth, async (_req, res) => {
 });
 
 // GET /api/lessons - Get all lessons for admin panel (requires admin auth)
-router.get("/lessons", adminAuth, async (_req, res) => {
+router.get("/admin/lessons", adminAuth, async (_req, res) => {
   try {
     const lessons = await Lesson.find({}).sort({ title: 1 });
     const data = lessons.map((lesson) => ({
@@ -593,7 +637,7 @@ router.get("/lessons", adminAuth, async (_req, res) => {
 });
 
 // GET /api/quizzes - Get all quizzes for admin panel (requires admin auth)
-router.get("/quizzes", adminAuth, async (_req, res) => {
+router.get("/admin/quizzes", adminAuth, async (_req, res) => {
   try {
     const quizzes = await Quiz.find({}).sort({ title: 1 });
     const data = quizzes.map((quiz) => ({
@@ -941,7 +985,7 @@ router.get("/admin/pdf-access-requests", adminAuth, async (_req, res) => {
           subjectKey: request.subjectKey,
           blockKey: request.blockKey,
           sectionName: request.sectionName,
-          amount: Number(request.amount || 300),
+          amount: Number(request.amount || 500),
           paymentMethod: request.paymentMethod || "easypaisa",
           easypaisaNumber: request.easypaisaNumber || "03327939323",
           easypaisaAccountName: request.easypaisaAccountName || "Muhammad Yousaf",
@@ -1015,7 +1059,33 @@ router.post("/admin/pdf-access-requests/:requestId/reject", adminAuth, async (re
 router.get("/admin/academy/content", adminAuth, async (_req, res) => {
   try {
     const profile = await ensureAcademyProfile();
-    const blocks = await SubjectContent.find({});
+    const blocksRaw = await SubjectContent.find({});
+    const blocks = blocksRaw.map((row) => {
+      const doc = row && typeof row.toObject === "function" ? row.toObject() : row;
+      const subjectKey = String(doc?.subjectKey || "").trim().toLowerCase();
+      if (subjectKey !== "biochemistry") {
+        return doc;
+      }
+
+      const normalizedTopics = normalizeBiochemistryTopics(doc?.blockKey, doc?.topics || []);
+      const normalizedSections = normalizedTopics.map((topicName) => {
+        const existing = (Array.isArray(doc?.sections) ? doc.sections : []).find((section) => String(section?.name || "").trim().toLowerCase() === String(topicName || "").trim().toLowerCase());
+        return existing || {
+          name: topicName,
+          videoItems: [],
+          noteText: "",
+          noteResources: [],
+          clinicalText: "",
+          clinicalResources: []
+        };
+      });
+
+      return {
+        ...doc,
+        topics: normalizedTopics,
+        sections: normalizedSections
+      };
+    });
 
     return res.json({
       profile,
@@ -1052,6 +1122,35 @@ router.post(
       const clinicalText = String(req.body?.clinicalText || "").trim();
       const videoItems = parseLineLinks(req.body?.videoLinks, contentAccessLevel);
 
+      let blockFilesToDelete = {};
+      try {
+        const deleteParam = String(req.body?.blockFilesToDelete || "").trim();
+        if (deleteParam) {
+          blockFilesToDelete = JSON.parse(deleteParam);
+        }
+      } catch (_err) {
+        blockFilesToDelete = {};
+      }
+
+      const removeByIndices = (arr, indices) => {
+        if (!Array.isArray(arr) || !Array.isArray(indices) || !indices.length) {
+          return Array.isArray(arr) ? [...arr] : [];
+        }
+
+        const result = [...arr];
+        [...new Set(indices)]
+          .map((index) => Number(index))
+          .filter((index) => Number.isInteger(index) && index >= 0)
+          .sort((left, right) => right - left)
+          .forEach((index) => {
+            if (index < result.length) {
+              result.splice(index, 1);
+            }
+          });
+
+        return result;
+      };
+
       const uploadedVideos = (req.files?.videoFiles || []).map((file, index) => ({
         title: path.basename(file.originalname || `Video ${index + 1}`, path.extname(file.originalname || "")),
         url: `/static/uploads/${file.filename}`,
@@ -1084,11 +1183,11 @@ router.post(
         const currentSection = existingSections.find((section) => String(section.name || "").toLowerCase() === lower) || {};
         const updatedSection = {
           name: sectionName,
-          videoItems: sanitizeLinks(mergeUniqueLinks(currentSection.videoItems, [...videoItems, ...uploadedVideos])),
+          videoItems: sanitizeLinks(mergeUniqueLinks(removeByIndices(currentSection.videoItems, blockFilesToDelete.videoItems || []), [...videoItems, ...uploadedVideos])),
           noteText: noteText || currentSection.noteText || "",
-          noteResources: mergeUniqueLinks(currentSection.noteResources, noteResources),
+          noteResources: mergeUniqueLinks(removeByIndices(currentSection.noteResources, blockFilesToDelete.noteResources || []), noteResources),
           clinicalText: clinicalText || currentSection.clinicalText || "",
-          clinicalResources: mergeUniqueLinks(currentSection.clinicalResources, clinicalResources)
+          clinicalResources: mergeUniqueLinks(removeByIndices(currentSection.clinicalResources, blockFilesToDelete.clinicalResources || []), clinicalResources)
         };
 
         nextSections = [
@@ -1099,27 +1198,47 @@ router.post(
 
       const next = await SubjectContent.findOneAndUpdate(
         { id },
-        {
+        (() => {
+          const mergedTopics = sectionName
+            ? mergeUniqueStrings(existing?.topics, [...topics, sectionName])
+            : mergeUniqueStrings(existing?.topics, topics);
+          const nextTopics = subjectKey === "biochemistry"
+            ? normalizeBiochemistryTopics(blockKey, mergedTopics)
+            : mergedTopics;
+          const nextNormalizedSections = subjectKey === "biochemistry"
+            ? nextTopics.map((topicName) => {
+                const existingSection = nextSections.find((section) => String(section?.name || "").trim().toLowerCase() === String(topicName || "").trim().toLowerCase());
+                return existingSection || {
+                  name: topicName,
+                  videoItems: [],
+                  noteText: "",
+                  noteResources: [],
+                  clinicalText: "",
+                  clinicalResources: []
+                };
+              })
+            : nextSections;
+
+          return {
           id,
           subjectKey,
           blockKey,
           blockTitle: String(req.body?.blockTitle || existing?.blockTitle || blockKey).trim(),
-          topics: sectionName
-            ? mergeUniqueStrings(existing?.topics, [...topics, sectionName])
-            : mergeUniqueStrings(existing?.topics, topics),
-          sections: nextSections,
+          topics: nextTopics,
+          sections: nextNormalizedSections,
           videoItems: sectionName
             ? sanitizeLinks(existing?.videoItems || [])
-            : sanitizeLinks(mergeUniqueLinks(existing?.videoItems, [...videoItems, ...uploadedVideos])),
+            : sanitizeLinks(mergeUniqueLinks(removeByIndices(existing?.videoItems || [], blockFilesToDelete.videoItems || []), [...videoItems, ...uploadedVideos])),
           noteText: sectionName ? (existing?.noteText || "") : (noteText || existing?.noteText || ""),
           clinicalText: sectionName ? (existing?.clinicalText || "") : (clinicalText || existing?.clinicalText || ""),
           noteResources: sectionName
-            ? mergeUniqueLinks([], existing?.noteResources || [])
-            : mergeUniqueLinks(existing?.noteResources, noteResources),
+            ? mergeUniqueLinks([], removeByIndices(existing?.noteResources || [], blockFilesToDelete.noteResources || []))
+            : mergeUniqueLinks(removeByIndices(existing?.noteResources || [], blockFilesToDelete.noteResources || []), noteResources),
           clinicalResources: sectionName
-            ? mergeUniqueLinks([], existing?.clinicalResources || [])
-            : mergeUniqueLinks(existing?.clinicalResources, clinicalResources)
-        },
+            ? mergeUniqueLinks([], removeByIndices(existing?.clinicalResources || [], blockFilesToDelete.clinicalResources || []))
+            : mergeUniqueLinks(removeByIndices(existing?.clinicalResources || [], blockFilesToDelete.clinicalResources || []), clinicalResources)
+          };
+        })(),
         { new: true, upsert: true }
       );
 
@@ -1147,10 +1266,42 @@ router.post(
 
       const aboutAcademyText = String(body.aboutAcademyText || profile.aboutAcademyText || "").trim();
       const contactNumbers = splitValues(body.contactNumbers);
+      const hasIntroVideoField = Object.prototype.hasOwnProperty.call(body, "introVideoUrl");
+
+      // Handle file deletions if specified
+      let filesToDelete = {};
+      try {
+        const deleteParam = String(req.body?.filesToDelete || "").trim();
+        if (deleteParam) {
+          filesToDelete = JSON.parse(deleteParam);
+        }
+      } catch (_err) {
+        // Ignore parse errors
+      }
+
+      // Helper to remove items by index
+      const removeByIndices = (arr, indices) => {
+        if (!Array.isArray(indices) || !indices.length) return arr;
+        const sorted = [...new Set(indices)].sort((a, b) => b - a);
+        const result = Array.isArray(arr) ? [...arr] : [];
+        sorted.forEach(idx => {
+          if (idx >= 0 && idx < result.length) {
+            result.splice(idx, 1);
+          }
+        });
+        return result;
+      };
+
+      // Apply deletions to existing files
+      let books = removeByIndices(profile.generalOverview?.books || [], filesToDelete.books || []);
+      let premiumNotes = removeByIndices(profile.generalOverview?.premiumNotes || [], filesToDelete.premiumNotes || []);
+      let importantSlides = removeByIndices(profile.generalOverview?.importantSlides || [], filesToDelete.importantSlides || []);
+      let shortNotes = removeByIndices(profile.generalOverview?.shortNotes || [], filesToDelete.shortNotes || []);
+      let videos = removeByIndices(profile.generalOverview?.videos || [], filesToDelete.videos || []);
 
       // Handle file uploads for overview sections
       const overviewBooksFiles = (req.files?.overviewBooksFiles || []).map((file, index) => createAssetRecord(file, "book", index));
-      const overviewPremiumFiles = (req.files?.overviewPremiumFiles || []).map((file, index) => createAssetRecord(file, "premium_notes", index));
+      const overviewPremiumFiles = (req.files?.overviewPremiumFiles || []).map((file, index) => createAssetRecord(file, "premium_notes", index, "paid"));
       const overviewSlidesFiles = (req.files?.overviewSlidesFiles || []).map((file, index) => createAssetRecord(file, "slides", index));
       const overviewShortFiles = (req.files?.overviewShortFiles || []).map((file, index) => createAssetRecord(file, "short_notes", index));
       const overviewVideoFiles = (req.files?.overviewVideoFiles || []).map((file, index) => {
@@ -1161,15 +1312,18 @@ router.post(
         };
       });
 
-      // Always merge with existing files so future uploads append instead of replacing prior content.
-      const books = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.books, overviewBooksFiles));
-      const premiumNotes = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.premiumNotes, overviewPremiumFiles));
-      const importantSlides = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.importantSlides, overviewSlidesFiles));
-      const shortNotes = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.shortNotes, overviewShortFiles));
+      // Merge new uploads with remaining files (after deletions)
+      books = sanitizeLinks(mergeUniqueLinks(books, overviewBooksFiles));
+      premiumNotes = sanitizeLinks(mergeUniqueLinks(premiumNotes, overviewPremiumFiles));
+      importantSlides = sanitizeLinks(mergeUniqueLinks(importantSlides, overviewSlidesFiles));
+      shortNotes = sanitizeLinks(mergeUniqueLinks(shortNotes, overviewShortFiles));
       const manualVideos = String(body.overviewVideos || "").trim() ? parseLineLinks(body.overviewVideos) : [];
-      const videos = sanitizeLinks(mergeUniqueLinks(profile.generalOverview?.videos, [...manualVideos, ...overviewVideoFiles]));
+      videos = sanitizeLinks(mergeUniqueLinks(videos, [...manualVideos, ...overviewVideoFiles]));
       const aboutNotes = sanitizeLinks(mergeUniqueLinks(profile.aboutUs?.notes, String(body.aboutNotes || "").trim() ? parseLineLinks(body.aboutNotes) : []));
       const aboutPdfResources = sanitizeLinks(mergeUniqueLinks(profile.aboutUs?.pdfResources, String(body.aboutPdfResources || "").trim() ? parseLineLinks(body.aboutPdfResources) : []));
+      const introVideoUrl = hasIntroVideoField
+        ? String(body.introVideoUrl || "").trim()
+        : String(profile.aboutUs?.introVideoUrl || "").trim();
 
       const updated = await AcademyProfile.findOneAndUpdate(
         { id: "academy_profile" },
@@ -1185,7 +1339,7 @@ router.post(
           },
           aboutUs: {
             profileImageUrl: String(body.profileImageUrl || profile.aboutUs?.profileImageUrl || "/static/images/favicon.png").trim(),
-            introVideoUrl: String(body.introVideoUrl || profile.aboutUs?.introVideoUrl || "").trim(),
+            introVideoUrl,
             notes: aboutNotes,
             pdfResources: aboutPdfResources,
             contactEmail: String(body.contactEmail || profile.aboutUs?.contactEmail || "").trim(),
@@ -1233,6 +1387,15 @@ router.post(
       const uploadedVideos = (req.files?.videoFiles || []).map((file, index) => createAssetRecord(file, "video", index, contentAccessLevel));
       const uploadedAudios = (req.files?.audioFiles || []).map((file, index) => createAssetRecord(file, "audio", index, contentAccessLevel));
       const uploadedMaterials = (req.files?.materialFiles || []).map((file, index) => createAssetRecord(file, "material", index, contentAccessLevel));
+      let lessonVideosToClear = [];
+      try {
+        const clearParam = String(req.body?.lessonVideosToClear || "").trim();
+        if (clearParam) {
+          lessonVideosToClear = JSON.parse(clearParam);
+        }
+      } catch (_err) {
+        lessonVideosToClear = [];
+      }
       const parsedCaseStudies = parseCaseStudies(caseStudies);
       const summaryText = String(summary || "").trim();
 
@@ -1241,7 +1404,7 @@ router.post(
         ...uploadedVideos.map((asset) => ({ videoUrl: asset.fileUrl, videoType: "upload", videoAsset: asset }))
       ];
 
-      const hasContent = sources.length || uploadedAudios.length || uploadedMaterials.length || parsedCaseStudies.length || summaryText;
+      const hasContent = sources.length || uploadedAudios.length || uploadedMaterials.length || parsedCaseStudies.length || summaryText || lessonVideosToClear.length;
       if (!hasContent) {
         return res.status(400).json({ message: "Add at least one video, audio file, material, case study, or summary" });
       }
@@ -1295,7 +1458,8 @@ router.post(
         const audioItems = mergeUniqueLinks(existingLesson?.audioItems, uploadedAudios);
         const materials = mergeUniqueLinks(existingLesson?.materials, uploadedMaterials);
         const caseStudyItems = parsedCaseStudies.length ? parsedCaseStudies : Array.isArray(existingLesson?.caseStudies) ? existingLesson.caseStudies : [];
-        const videoValue = currentSource.videoUrl || existingLesson?.videoUrl || "";
+        const shouldClearVideo = lessonVideosToClear.includes(currentLessonId);
+        const videoValue = shouldClearVideo ? "" : (currentSource.videoUrl || existingLesson?.videoUrl || "");
 
         const lesson = await Lesson.findOneAndUpdate(
           { lessonId: currentLessonId },

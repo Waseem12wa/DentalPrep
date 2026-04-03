@@ -28,6 +28,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+const authMiddleware = require("./middleware/auth");
 
 // Reliable file delivery for uploaded resources (documents/videos).
 app.get("/api/files/:name", (req, res) => {
@@ -75,6 +76,10 @@ app.use(express.static(path.join(__dirname, "../../"), {
       res.setHeader('Content-Type', 'application/javascript');
     } else if (filePath.endsWith('.html')) {
       res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
     }
   }
 }));
@@ -113,6 +118,96 @@ async function startServer() {
   const contactRoutes = require("./routes/contact");
   const learningRoutes = require("./routes/learning");
   const adminRoutes = require("./routes/admin");
+  const { PdfAccessRequest, generateId } = require("./db");
+
+  app.get("/api/pdf-access/my-requests", authMiddleware, async (req, res) => {
+    try {
+      const requests = await PdfAccessRequest.find({ userId: req.user.id });
+      return res.json({
+        requests: requests
+          .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
+          .map((request) => ({
+            id: request._id,
+            subjectKey: request.subjectKey,
+            blockKey: request.blockKey,
+            sectionName: request.sectionName,
+            amount: Number(request.amount || 500),
+            paymentMethod: request.paymentMethod || "easypaisa",
+            easypaisaNumber: request.easypaisaNumber || "03327939323",
+            easypaisaAccountName: request.easypaisaAccountName || "Muhammad Yousaf",
+            paymentProof: request.paymentProof || "",
+            status: request.status || "pending",
+            adminNote: request.adminNote || "",
+            reviewedAt: request.reviewedAt || null,
+            createdAt: request.createdAt || null
+          }))
+      });
+    } catch (err) {
+      return res.status(500).json({ message: err.message || "Server error" });
+    }
+  });
+
+  app.post("/api/pdf-access/request", authMiddleware, async (req, res) => {
+    try {
+      const subjectKey = String(req.body?.subjectKey || "").trim();
+      const blockKey = String(req.body?.blockKey || "").trim();
+      const sectionName = String(req.body?.sectionName || "").trim() || "__block__";
+      const paymentProof = String(req.body?.paymentProof || "").trim();
+
+      if (!subjectKey || !blockKey) {
+        return res.status(400).json({ message: "subjectKey and blockKey are required" });
+      }
+
+      if (!paymentProof) {
+        return res.status(400).json({ message: "Payment reference/proof is required" });
+      }
+
+      const existingPending = await PdfAccessRequest.findOne({
+        userId: req.user.id,
+        subjectKey,
+        blockKey,
+        sectionName,
+        status: "pending"
+      });
+
+      if (existingPending) {
+        return res.status(409).json({ message: "A pending request already exists for this module" });
+      }
+
+      const request = await PdfAccessRequest.create({
+        _id: `pdf_req_${generateId()}`,
+        userId: req.user.id,
+        subjectKey,
+        blockKey,
+        sectionName,
+        amount: 500,
+        paymentMethod: "easypaisa",
+        easypaisaNumber: "03327939323",
+        easypaisaAccountName: "Muhammad Yousaf",
+        paymentProof,
+        status: "pending",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      return res.status(201).json({
+        message: "Payment request submitted. Admin will verify and approve.",
+        request: {
+          id: request._id,
+          subjectKey: request.subjectKey,
+          blockKey: request.blockKey,
+          sectionName: request.sectionName,
+          amount: request.amount,
+          paymentMethod: request.paymentMethod,
+          easypaisaNumber: request.easypaisaNumber,
+          easypaisaAccountName: request.easypaisaAccountName,
+          status: request.status
+        }
+      });
+    } catch (err) {
+      return res.status(500).json({ message: err.message || "Server error" });
+    }
+  });
 
   app.use("/api", authRoutes);
   app.use("/api", progressRoutes);

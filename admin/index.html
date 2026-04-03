@@ -294,15 +294,18 @@ https://youtube.com/another-video"></textarea>
                         <label class="form-label">Or Upload Video File(s)</label>
                         <input type="file" name="videoFiles" class="form-input" accept="video/*" multiple>
                         <small style="color: #6b7280;">You can upload one or more video files instead of YouTube links.</small>
+                        <div id="lesson-video-files-preview" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Upload Audio Lesson File(s)</label>
                         <input type="file" name="audioFiles" class="form-input" accept="audio/*" multiple>
+                        <div id="lesson-audio-files-preview" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Upload Study Materials</label>
                         <input type="file" name="materialFiles" class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple>
                         <small style="color: #6b7280;">Upload one or many PDFs/files. New uploads are added to existing lesson materials (not replaced).</small>
+                        <div id="lesson-material-files-preview" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Clinical Case Studies</label>
@@ -316,6 +319,7 @@ Title: Another Case
 Scenario: ..."></textarea>
                         <small style="color: #6b7280;">Separate multiple cases with a line containing only ---</small>
                     </div>
+                    <div id="lesson-existing-assets-list" style="margin-bottom: 1rem; font-size: 0.875rem; color: #666;"></div>
                     <button type="submit" class="cta-btn cta-primary">Save Lesson</button>
                 </form>
             </div>
@@ -464,6 +468,7 @@ Scenario: ..."></textarea>
                             <label class="form-label">Or Upload Video File(s)</label>
                             <input type="file" name="videoFiles" class="form-input" accept="video/*" multiple>
                             <small style="color: #6b7280;">You can upload many files at once for this block. New uploads are added to existing files.</small>
+                            <div id="academy-video-files-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Preparation Notes Text</label>
@@ -473,6 +478,7 @@ Scenario: ..."></textarea>
                             <label class="form-label">Upload Notes File(s)</label>
                             <input type="file" name="noteFiles" class="form-input" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
                             <small style="color: #6b7280;">For Past Papers Block A/B/C, upload multiple PDFs together. Existing files are kept.</small>
+                            <div id="academy-note-files-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Clinical Content Text</label>
@@ -482,6 +488,7 @@ Scenario: ..."></textarea>
                             <label class="form-label">Upload Clinical File(s)</label>
                             <input type="file" name="clinicalFiles" class="form-input" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
                             <small style="color: #6b7280;">You can upload multiple PDFs/files in one save. Each save appends to this block.</small>
+                            <div id="academy-clinical-files-list" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
                         </div>
                         <button type="submit" class="cta-btn cta-primary">Save Block Content</button>
                     </form>
@@ -620,6 +627,7 @@ Scenario: ..."></textarea>
         const loginMsg = document.getElementById("login-msg");
         const generalMsg = document.getElementById("general-msg");
         let studentsLoaded = false;
+        let lessonsCache = [];
 
         // Initialize
         function init() {
@@ -689,6 +697,153 @@ Scenario: ..."></textarea>
         });
 
         // --- Data Loading ---
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function renderExistingFileList(containerId, items, emptyLabel) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const rows = Array.isArray(items)
+                ? items
+                    .map((item, idx) => {
+                        const rawUrl = item && (item.url || item.fileUrl) ? String(item.url || item.fileUrl).trim() : "";
+                        if (!rawUrl || rawUrl === "#") return "";
+                        const rawTitle = item && (item.title || item.fileName) ? String(item.title || item.fileName).trim() : `File ${idx + 1}`;
+                        const title = escapeHtml(rawTitle || `File ${idx + 1}`);
+                        const href = escapeHtml(rawUrl);
+                        return `<div style="padding: 0.25rem 0; color: #059669;"><strong>${idx + 1}.</strong> <a href="${href}" target="_blank" rel="noopener noreferrer">${title}</a></div>`;
+                    })
+                    .filter(Boolean)
+                : [];
+
+            if (!rows.length) {
+                container.innerHTML = `<div style="padding: 0.35rem 0; color: #9ca3af;">${escapeHtml(emptyLabel || "No files uploaded yet.")}</div>`;
+                return;
+            }
+
+            container.innerHTML = `<div style="padding: 0.5rem; background: #f0fdf4; border-radius: 0.375rem;">Current files:<br>${rows.join("")}</div>`;
+        }
+
+        function renderSelectedFilesPreview(inputElement, containerId, emptyLabel) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const files = Array.from(inputElement?.files || []);
+            if (!files.length) {
+                container.innerHTML = `<div style="padding: 0.35rem 0; color: #9ca3af;">${escapeHtml(emptyLabel || "No files selected.")}</div>`;
+                return;
+            }
+
+            const rows = files.map((file, index) => {
+                const kb = Math.max(1, Math.round((Number(file.size) || 0) / 1024));
+                return `<div style="padding: 0.2rem 0;"><strong>${index + 1}.</strong> ${escapeHtml(file.name)} <span style="color:#6b7280;">(${kb} KB)</span></div>`;
+            });
+
+            container.innerHTML = `<div style="padding: 0.5rem; background: #f8fafc; border-radius: 0.375rem; border: 1px solid #e2e8f0;">Selected files:<br>${rows.join("")}</div>`;
+        }
+
+        function normalizeLessonBaseTitle(value) {
+            return String(value || "").trim().replace(/\s+\d+$/, "").toLowerCase();
+        }
+
+        function collectAssetLinks(items, fallbackLabel) {
+            return (Array.isArray(items) ? items : [])
+                .map((item, index) => {
+                    const rawUrl = item && (item.fileUrl || item.url) ? String(item.fileUrl || item.url).trim() : "";
+                    if (!rawUrl || rawUrl === "#") return null;
+                    const rawTitle = item && (item.title || item.fileName) ? String(item.title || item.fileName).trim() : `${fallbackLabel} ${index + 1}`;
+                    return { title: rawTitle || `${fallbackLabel} ${index + 1}`, url: rawUrl };
+                })
+                .filter(Boolean);
+        }
+
+        function renderExistingLessonAssets() {
+            const container = document.getElementById("lesson-existing-assets-list");
+            const courseSelect = document.getElementById("lesson-course-select");
+            const lessonTitleInput = document.querySelector('#lesson-form input[name="title"]');
+            if (!container || !courseSelect || !lessonTitleInput) return;
+
+            const courseId = String(courseSelect.value || "").trim();
+            const enteredTitle = String(lessonTitleInput.value || "").trim();
+            if (!courseId || !enteredTitle) {
+                container.innerHTML = '<div style="padding: 0.35rem 0; color: #9ca3af;">Type a lesson title and select a course to view existing uploaded files.</div>';
+                return;
+            }
+
+            const enteredBase = normalizeLessonBaseTitle(enteredTitle);
+            const matchedLessons = lessonsCache.filter((lesson) => {
+                const sameCourse = String(lesson.courseId || "").trim() === courseId;
+                if (!sameCourse) return false;
+                const lessonTitle = String(lesson.title || "").trim().toLowerCase();
+                const lessonBase = normalizeLessonBaseTitle(lesson.title || "");
+                return lessonTitle === enteredTitle.toLowerCase() || lessonBase === enteredBase;
+            });
+
+            if (!matchedLessons.length) {
+                container.innerHTML = '<div style="padding: 0.35rem 0; color: #9ca3af;">No existing files found for this lesson title in the selected course yet.</div>';
+                return;
+            }
+
+            const videos = matchedLessons
+                .map((lesson) => ({ title: lesson.title || 'Video', url: lesson.videoUrl || '' }))
+                .filter((item) => item.url && item.url !== '#');
+            const audios = matchedLessons.flatMap((lesson) => collectAssetLinks(lesson.audioItems, 'Audio'));
+            const materials = matchedLessons.flatMap((lesson) => collectAssetLinks(lesson.materials, 'Material'));
+
+            const renderLinks = (items) => {
+                if (!items.length) return '<span style="color:#9ca3af;">none</span>';
+                return items.slice(0, 6).map((item, idx) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title || `File ${idx + 1}`)}</a>`).join(', ') + (items.length > 6 ? ' ...' : '');
+            };
+
+            container.innerHTML = `
+                <div style="padding: 0.6rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.375rem;">
+                    <div style="font-weight: 600; color: #166534; margin-bottom: 0.35rem;">Existing uploads for this lesson title</div>
+                    <div style="margin-bottom: 0.25rem;"><strong>Videos:</strong> ${renderLinks(videos)}</div>
+                    <div style="margin-bottom: 0.25rem;"><strong>Audio:</strong> ${renderLinks(audios)}</div>
+                    <div><strong>Materials:</strong> ${renderLinks(materials)}</div>
+                </div>
+            `;
+        }
+
+        function setupLessonUploadPreviews() {
+            const lessonForm = document.getElementById('lesson-form');
+            if (!lessonForm) return;
+
+            const videoInput = lessonForm.querySelector('input[name="videoFiles"]');
+            const audioInput = lessonForm.querySelector('input[name="audioFiles"]');
+            const materialInput = lessonForm.querySelector('input[name="materialFiles"]');
+            const titleInput = lessonForm.querySelector('input[name="title"]');
+            const courseSelect = document.getElementById('lesson-course-select');
+
+            if (videoInput) {
+                videoInput.addEventListener('change', () => renderSelectedFilesPreview(videoInput, 'lesson-video-files-preview', 'No video files selected.'));
+            }
+            if (audioInput) {
+                audioInput.addEventListener('change', () => renderSelectedFilesPreview(audioInput, 'lesson-audio-files-preview', 'No audio files selected.'));
+            }
+            if (materialInput) {
+                materialInput.addEventListener('change', () => renderSelectedFilesPreview(materialInput, 'lesson-material-files-preview', 'No material files selected.'));
+            }
+            if (titleInput) {
+                titleInput.addEventListener('input', renderExistingLessonAssets);
+            }
+            if (courseSelect) {
+                courseSelect.addEventListener('change', renderExistingLessonAssets);
+            }
+
+            renderSelectedFilesPreview(videoInput, 'lesson-video-files-preview', 'No video files selected.');
+            renderSelectedFilesPreview(audioInput, 'lesson-audio-files-preview', 'No audio files selected.');
+            renderSelectedFilesPreview(materialInput, 'lesson-material-files-preview', 'No material files selected.');
+            renderExistingLessonAssets();
+        }
 
 
 
@@ -779,6 +934,7 @@ Scenario: ..."></textarea>
                    const data = await res.json();
                 const select = document.getElementById("quiz-lesson-select");
                 const list = document.getElementById("lessons-list");
+                lessonsCache = Array.isArray(data.lessons) ? data.lessons : [];
 
                 select.innerHTML = '<option value="">Select a lesson</option>';
                 list.innerHTML = "";
@@ -799,17 +955,48 @@ Scenario: ..."></textarea>
 
                            const lessonCard = document.createElement("div");
                            lessonCard.className = "p-3 bg-white border border-gray-200 rounded shadow-sm flex justify-between items-center gap-4";
+                           const audioLinks = (l.audioItems || [])
+                               .map((item) => {
+                                   const url = item && (item.fileUrl || item.url) ? String(item.fileUrl || item.url).trim() : "";
+                                   if (!url || url === "#") return "";
+                                   const label = item && (item.title || item.fileName) ? String(item.title || item.fileName).trim() : "Audio";
+                                   return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+                               })
+                               .filter(Boolean)
+                               .slice(0, 3);
+                           const materialLinks = (l.materials || [])
+                               .map((item) => {
+                                   const url = item && (item.fileUrl || item.url) ? String(item.fileUrl || item.url).trim() : "";
+                                   if (!url || url === "#") return "";
+                                   const label = item && (item.title || item.fileName) ? String(item.title || item.fileName).trim() : "Material";
+                                   return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+                               })
+                               .filter(Boolean)
+                               .slice(0, 3);
+                           const videoPreview = l.videoUrl
+                               ? `<div class="text-sm text-gray-500" style="margin-top: 0.25rem;">Video: <a href="${escapeHtml(l.videoUrl)}" target="_blank" rel="noopener noreferrer">Open</a></div>`
+                               : "";
+                           const audioPreview = audioLinks.length
+                               ? `<div class="text-sm text-gray-500" style="margin-top: 0.25rem;">Audio files: ${audioLinks.join(", ")}${(l.audioItems || []).length > 3 ? " ..." : ""}</div>`
+                               : "";
+                           const materialPreview = materialLinks.length
+                               ? `<div class="text-sm text-gray-500" style="margin-top: 0.25rem;">Materials: ${materialLinks.join(", ")}${(l.materials || []).length > 3 ? " ..." : ""}</div>`
+                               : "";
                            lessonCard.innerHTML = `
                                 <div>
                                     <div class="font-semibold text-gray-800">${l.title || "Untitled Lesson"}</div>
                                     <div class="text-sm text-gray-500">${l.videoType === "upload" ? "Uploaded video" : l.videoType === "youtube" ? "YouTube video" : "Text / audio / material lesson"}</div>
                                     <div class="text-sm text-gray-500">${(l.audioItems || []).length} audio • ${(l.materials || []).length} materials • ${(l.caseStudies || []).length} case studies</div>
                                     ${l.summary ? `<div class="text-sm text-gray-600" style="margin-top: 0.25rem;">${l.summary}</div>` : ""}
+                                    ${videoPreview}
+                                    ${audioPreview}
+                                    ${materialPreview}
                                 </div>
                                 <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${l.id || l.lessonId}</span>
                            `;
                            list.appendChild(lessonCard);
                        });
+                       renderExistingLessonAssets();
                    }
                } else {
                    console.warn("Lessons data format unexpected:", data);
@@ -822,10 +1009,12 @@ Scenario: ..."></textarea>
                console.error("Failed to load lessons:", err);
                const select = document.getElementById("quiz-lesson-select");
                select.innerHTML = '<option value="">Error loading lessons</option>';
+               lessonsCache = [];
                const errOption = document.createElement("option");
                errOption.disabled = true;
                errOption.textContent = `Error: ${err.message}`;
                select.appendChild(errOption);
+               renderExistingLessonAssets();
             }
         }
 
@@ -932,6 +1121,7 @@ Scenario: ..."></textarea>
                 loadLessons();
                 loadStudentAnalytics();
                 e.target.reset();
+                setupLessonUploadPreviews();
             } catch (err) {
                 showMessage(generalMsg, err.message, "error");
             } finally {
@@ -1068,6 +1258,10 @@ Scenario: ..."></textarea>
             }
         }
 
+        function encodeOnclickArg(value) {
+            return JSON.stringify(value == null ? "" : String(value)).replace(/"/g, "&quot;");
+        }
+
         async function loadStudents() {
             const container = document.getElementById("students-control-list");
             const requestsContainer = document.getElementById("pdf-access-requests-list");
@@ -1094,12 +1288,12 @@ Scenario: ..."></textarea>
                                     <div class="text-sm text-gray-600" style="margin-top: 0.5rem;">Completed lessons: ${student.completedLessons} • Quiz attempts: ${student.quizAttempts} • Avg score: ${student.avgScore}% • Completion: ${student.completionRate}%</div>
                                 </div>
                                 <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: #2563eb; color: white;" onclick="studentAction('approve', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Approve</button>
-                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: #b45309; color: white;" onclick="studentAction('reject', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Reject</button>
-                                    <button type="button" class="cta-btn cta-secondary" style="padding: 0.45rem 0.8rem;" onclick="studentAction('impersonate', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Open as Student</button>
-                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: ${student.accountStatus === 'blocked' ? '#059669' : '#dc2626'}; color: white;" onclick="studentAction('${student.accountStatus === 'blocked' ? 'unblock' : 'block'}', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">${student.accountStatus === 'blocked' ? 'Unblock' : 'Block'}</button>
-                                    <button type="button" class="cta-btn cta-secondary" style="padding: 0.45rem 0.8rem;" onclick="studentAction('reset-password', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Reset Password</button>
-                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: #7c2d12; color: white;" onclick="studentAction('delete', ${JSON.stringify(student.userId)}, ${JSON.stringify(student.name)})">Delete</button>
+                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: #2563eb; color: white;" onclick="studentAction('approve', ${encodeOnclickArg(student.userId)}, ${encodeOnclickArg(student.name)})">Approve</button>
+                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: #b45309; color: white;" onclick="studentAction('reject', ${encodeOnclickArg(student.userId)}, ${encodeOnclickArg(student.name)})">Reject</button>
+                                    <button type="button" class="cta-btn cta-secondary" style="padding: 0.45rem 0.8rem;" onclick="studentAction('impersonate', ${encodeOnclickArg(student.userId)}, ${encodeOnclickArg(student.name)})">Open as Student</button>
+                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: ${student.accountStatus === 'blocked' ? '#059669' : '#dc2626'}; color: white;" onclick="studentAction('${student.accountStatus === 'blocked' ? 'unblock' : 'block'}', ${encodeOnclickArg(student.userId)}, ${encodeOnclickArg(student.name)})">${student.accountStatus === 'blocked' ? 'Unblock' : 'Block'}</button>
+                                    <button type="button" class="cta-btn cta-secondary" style="padding: 0.45rem 0.8rem;" onclick="studentAction('reset-password', ${encodeOnclickArg(student.userId)}, ${encodeOnclickArg(student.name)})">Reset Password</button>
+                                    <button type="button" class="cta-btn" style="padding: 0.45rem 0.8rem; background: #7c2d12; color: white;" onclick="studentAction('delete', ${encodeOnclickArg(student.userId)}, ${encodeOnclickArg(student.name)})">Delete</button>
                                 </div>
                             </div>
                         </div>
@@ -1130,8 +1324,8 @@ Scenario: ..."></textarea>
                                     </div>
                                     <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:flex-start;">
                                         ${request.status === 'pending' ? `
-                                            <button type="button" class="cta-btn" style="padding:0.45rem 0.8rem; background:#059669; color:white;" onclick="pdfRequestAction('approve', ${JSON.stringify(request.id)})">Approve</button>
-                                            <button type="button" class="cta-btn" style="padding:0.45rem 0.8rem; background:#dc2626; color:white;" onclick="pdfRequestAction('reject', ${JSON.stringify(request.id)})">Reject</button>
+                                            <button type="button" class="cta-btn" style="padding:0.45rem 0.8rem; background:#059669; color:white;" onclick="pdfRequestAction('approve', ${encodeOnclickArg(request.id)})">Approve</button>
+                                            <button type="button" class="cta-btn" style="padding:0.45rem 0.8rem; background:#dc2626; color:white;" onclick="pdfRequestAction('reject', ${encodeOnclickArg(request.id)})">Reject</button>
                                         ` : '<span class="text-sm text-gray-500">Reviewed</span>'}
                                     </div>
                                 </div>
@@ -1373,6 +1567,23 @@ Scenario: ..."></textarea>
 
             const clinicalText = document.getElementById("academy-clinical-text");
             if (clinicalText) clinicalText.value = selectedSection ? (selectedSection.clinicalText || "") : (selected ? (selected.clinicalText || "") : "");
+
+            const sourceData = selectedSection || selected || {};
+            renderExistingFileList(
+                "academy-video-files-list",
+                Array.isArray(sourceData.videoItems) ? sourceData.videoItems : [],
+                "No uploaded videos in this module yet."
+            );
+            renderExistingFileList(
+                "academy-note-files-list",
+                Array.isArray(sourceData.noteResources) ? sourceData.noteResources : [],
+                "No uploaded notes in this module yet."
+            );
+            renderExistingFileList(
+                "academy-clinical-files-list",
+                Array.isArray(sourceData.clinicalResources) ? sourceData.clinicalResources : [],
+                "No uploaded clinical files in this module yet."
+            );
         }
 
         document.getElementById("academy-subject-select").addEventListener("change", loadSelectedBlockContent);
@@ -1546,6 +1757,8 @@ Scenario: ..."></textarea>
                 overlay.classList.remove('show');
             });
         }
+
+        setupLessonUploadPreviews();
 
         init();
     </script>

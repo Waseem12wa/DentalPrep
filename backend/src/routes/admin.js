@@ -20,7 +20,8 @@ const contentUpload = multer({
     filename: (_req, file, callback) => {
       const ext = path.extname(file.originalname) || "";
       const base = normalizeId(path.basename(file.originalname, ext)) || "asset";
-      callback(null, `${Date.now()}_${base}${ext}`);
+      const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      callback(null, `${unique}_${base}${ext}`);
     }
   })
 });
@@ -1249,14 +1250,48 @@ router.post(
         sources.push({ videoUrl: "", videoType: null });
       }
 
+      const baseLessonId = `lesson_${normalizeId(title)}`;
+      const relatedLessons = await Lesson.find({
+        courseId,
+        lessonId: { $regex: `^${baseLessonId}(?:_[0-9]+)?$` }
+      }).sort({ createdAt: 1 });
+
+      const usedIndexes = new Set();
+      relatedLessons.forEach((item) => {
+        const id = String(item.lessonId || "").trim();
+        if (id === baseLessonId) {
+          usedIndexes.add(1);
+          return;
+        }
+        const suffixMatch = id.match(new RegExp(`^${baseLessonId}_(\\d+)$`));
+        if (suffixMatch) {
+          usedIndexes.add(Number(suffixMatch[1]));
+        }
+      });
+
+      const nextAvailableIndex = () => {
+        let idx = 1;
+        while (usedIndexes.has(idx)) {
+          idx += 1;
+        }
+        usedIndexes.add(idx);
+        return idx;
+      };
+
       const lessons = [];
+      const hasIncomingVideoSources = videoUrls.length > 0 || uploadedVideos.length > 0;
       for (let index = 0; index < sources.length; index += 1) {
         const currentSource = sources[index];
-        const currentLessonId = sources.length === 1
-          ? (lessonId || `lesson_${normalizeId(title)}`)
-          : `lesson_${normalizeId(title)}_${index + 1}`;
+        const resolvedIndex = lessonId
+          ? null
+          : (hasIncomingVideoSources ? nextAvailableIndex() : 1);
+        const currentLessonId = lessonId
+          ? lessonId
+          : (resolvedIndex === 1 ? baseLessonId : `${baseLessonId}_${resolvedIndex}`);
         const existingLesson = await Lesson.findOne({ lessonId: currentLessonId });
-        const currentTitle = sources.length === 1 ? title : `${title} ${index + 1}`;
+        const currentTitle = lessonId
+          ? title
+          : (resolvedIndex && resolvedIndex > 1 ? `${title} ${resolvedIndex}` : title);
         const audioItems = mergeUniqueLinks(existingLesson?.audioItems, uploadedAudios);
         const materials = mergeUniqueLinks(existingLesson?.materials, uploadedMaterials);
         const caseStudyItems = parsedCaseStudies.length ? parsedCaseStudies : Array.isArray(existingLesson?.caseStudies) ? existingLesson.caseStudies : [];

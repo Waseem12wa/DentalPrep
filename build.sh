@@ -5,4 +5,7 @@ echo "Installing backend dependencies..."
 cd backend
 npm install
 
+echo "Migrating specific static files to GridFS..."
+npm run migrate-files
+
 echo "Build complete!"

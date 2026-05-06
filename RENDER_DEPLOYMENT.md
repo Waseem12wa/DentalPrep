@@ -20,6 +20,7 @@ cd backend && npm start
 
 ```
 PORT=4000
+MONGO_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/dentalprep?retryWrites=true&w=majority
 JWT_SECRET=your_secure_random_32_char_string
 CORS_ORIGIN=*
 ADMIN_EMAIL=admin@dentalprep.com
@@ -35,16 +36,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 Copy the output and use it as your `JWT_SECRET`.
-
-### Important Notes:
-
-1. **NO MongoDB Required!** 
-   - The app uses JSON file storage
-   - Data stored in `backend/data/` directory
-   - No external database setup needed
-
-2. **Admin User Auto-Created**
-   - On first startup, an admin user is automatically created
+On first startup, an admin user is automatically created
    - Email: Value from `ADMIN_EMAIL` env var
    - Password: Value from `ADMIN_PASSWORD` env var
    - **IMPORTANT:** Change `ADMIN_PASSWORD` from default!
@@ -75,7 +67,8 @@ Copy the output and use it as your `JWT_SECRET`.
 
 4. **Add Environment Variables**
    - Click "Environment" tab
-   - Add all variables listed above
+   - AdCRITICAL: Set MONGO_URI with your MongodB Atlas c anection string**
+   - **Donll variables listed above
    - **Don't forget to set JWT_SECRET and ADMIN_PASSWORD!**
 
 5. **Deploy**
@@ -113,6 +106,24 @@ Copy the output and use it as your `JWT_SECRET`.
 2. Verify `ADMIN_EMAIL` and `ADMIN_PASSWORD` match what you're entering
 3. Check Render logs for backend errors
 
+- Render's free tier may reset files on restart
+- For production, upgrade to paid plan with persistent disk
+- Or migrate to a proper database (MongoDB, PostgreSQL, etc.)
+
+### Performance Notes:
+
+- First request may be slow (cold start on free tier)
+- Render free tier sl
+- All data (including uploaded files) is stored in MongoDB GridFS
+- Data persists across Render restarts because it's in MongoDB, not local disk
+- No need for persistent disk on Render - MongoDB Atlas handles persistence
+
+### Performance Notes:
+
+- First request may be slow (cold start on free tier)
+- Render free tier sleeps after 15 minutes of inactivity
+- Consider upgrading for production useeeps after 15 minutes of inactivity
+- Consider upgrading for production use
 **Data Persistence:**
 - Render's free tier may reset files on restart
 - For production, upgrade to paid plan with persistent disk

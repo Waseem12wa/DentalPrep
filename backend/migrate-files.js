@@ -19,7 +19,7 @@ async function migrateFilesToGridFS() {
     });
     console.log("✓ GridFS bucket 'uploads' initialized");
 
-    const uploadsDir = path.resolve(__dirname, "../../static/uploads");
+    const uploadsDir = path.resolve(__dirname, "../static/uploads");
     if (!fs.existsSync(uploadsDir)) {
       console.log("⚠️  No uploads directory found");
       return;

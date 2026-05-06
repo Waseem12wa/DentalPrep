@@ -15,6 +15,28 @@ mongoose.connect(MONGO_URI)
     process.exit(1);
 });
 
+// ===== GridFS Bucket for File Storage =====
+// Files are stored in MongoDB so they persist across Render restarts.
+let filesBucket = null;
+
+mongoose.connection.once("open", () => {
+    filesBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+        bucketName: "uploads"
+    });
+    console.log("✓ GridFS bucket 'uploads' initialized");
+});
+
+function getFilesBucket() {
+    if (!filesBucket) {
+        throw new Error("GridFS bucket not ready yet. MongoDB connection may still be initializing.");
+    }
+    return filesBucket;
+}
+
+function isFilesBucketReady() {
+    return Boolean(filesBucket);
+}
+
 // ===== SCHEMAS =====
 
 // User Schema
@@ -270,5 +292,7 @@ module.exports = {
     writeData,
     generateId,
     mongoose,
-    MONGO_URI
+    MONGO_URI,
+    getFilesBucket,
+    isFilesBucketReady
 };

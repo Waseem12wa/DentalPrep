@@ -4,10 +4,12 @@ const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
-const { Course, Lesson, Quiz, Progress, Review, User, Subscription, AiChat, SubjectContent, AcademyProfile, PdfAccessRequest, generateId } = require("../db");
+const { Course, Lesson, Quiz, Progress, Review, User, Subscription, AiChat, SubjectContent, AcademyProfile, PdfAccessRequest, generateId, getFilesBucket } = require("../db");
 
 const router = express.Router();
 
+// Local uploads dir kept only for legacy/dev. New uploads go to MongoDB GridFS so
+// they persist across Render restarts.
 const uploadsDir = path.resolve(__dirname, "../../../static/uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -15,16 +17,51 @@ if (!fs.existsSync(uploadsDir)) {
 
 const quizUpload = multer({ storage: multer.memoryStorage() });
 const contentUpload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, callback) => callback(null, uploadsDir),
-    filename: (_req, file, callback) => {
-      const ext = path.extname(file.originalname) || "";
-      const base = normalizeId(path.basename(file.originalname, ext)) || "asset";
-      const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      callback(null, `${unique}_${base}${ext}`);
-    }
-  })
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB per file
 });
+
+// Middleware: stream every uploaded buffer to GridFS, then expose the assigned
+// filename on each file object so downstream code (createAssetRecord etc.) keeps
+// working without changes.
+async function uploadFilesToGridFS(req, _res, next) {
+  if (!req.files) {
+    return next();
+  }
+
+  try {
+    const bucket = getFilesBucket();
+    for (const fieldName of Object.keys(req.files)) {
+      const files = req.files[fieldName];
+      if (!Array.isArray(files)) continue;
+
+      for (const file of files) {
+        if (!file || !file.buffer) continue;
+
+        const ext = path.extname(file.originalname || "") || "";
+        const base = normalizeId(path.basename(file.originalname || "", ext)) || "asset";
+        const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const filename = `${unique}_${base}${ext}`;
+
+        await new Promise((resolve, reject) => {
+          const uploadStream = bucket.openUploadStream(filename, {
+            contentType: file.mimetype || "application/octet-stream",
+            metadata: { originalName: file.originalname || filename }
+          });
+          uploadStream.on("error", reject);
+          uploadStream.on("finish", resolve);
+          uploadStream.end(file.buffer);
+        });
+
+        file.filename = filename;
+      }
+    }
+    return next();
+  } catch (err) {
+    console.error("GridFS upload failed:", err);
+    return next(err);
+  }
+}
 
 function normalizeId(value) {
   return String(value || "")
@@ -1104,6 +1141,7 @@ router.post(
     { name: "noteFiles", maxCount: 100 },
     { name: "clinicalFiles", maxCount: 100 }
   ]),
+  uploadFilesToGridFS,
   async (req, res) => {
     try {
       const subjectKey = String(req.body?.subjectKey || "").trim().toLowerCase();
@@ -1259,6 +1297,7 @@ router.post(
     { name: "overviewShortFiles", maxCount: 50 },
     { name: "overviewVideoFiles", maxCount: 50 }
   ]),
+  uploadFilesToGridFS,
   async (req, res) => {
     try {
       const profile = await ensureAcademyProfile();
@@ -1370,6 +1409,7 @@ router.post(
     { name: "audioFiles", maxCount: 100 },
     { name: "materialFiles", maxCount: 100 }
   ]),
+  uploadFilesToGridFS,
   async (req, res) => {
     try {
       const { title, courseId, videoUrl, lessonId, summary, caseStudies } = req.body || {};

@@ -31,53 +31,112 @@ app.use(express.json());
 const authMiddleware = require("./middleware/auth");
 
 // Reliable file delivery for uploaded resources (documents/videos).
-app.get("/api/files/:name", (req, res) => {
+// Files uploaded via admin are stored in MongoDB GridFS so they survive Render
+// restarts. We fall back to legacy disk uploads if a file isn't in GridFS.
+const MIME_MAP = {
+  ".pdf": "application/pdf",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".ogg": "video/ogg",
+  ".mov": "video/quicktime",
+  ".m4v": "video/x-m4v",
+  ".doc": "application/msword",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".ppt": "application/vnd.ms-powerpoint",
+  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".txt": "text/plain"
+};
+const INLINE_EXTS = new Set([".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".webm", ".ogg", ".txt"]);
+
+app.get("/api/files/:name", async (req, res) => {
   let rawName = String(req.params.name || "");
-  // Decode URI component if it's encoded
   try {
     rawName = decodeURIComponent(rawName);
   } catch (_err) {
     // If decode fails, use the raw name
   }
-  
+
   const safeName = path.basename(rawName);
   if (!safeName) {
     return res.status(400).json({ message: "Invalid file name" });
   }
 
+  const ext = path.extname(safeName).toLowerCase();
+  const dispositionType = INLINE_EXTS.has(ext) ? "inline" : "attachment";
+
+  // 1) Try MongoDB GridFS first (this is where new uploads live).
+  try {
+    const { getFilesBucket, isFilesBucketReady } = require("./db");
+    if (isFilesBucketReady()) {
+      const bucket = getFilesBucket();
+      const files = await bucket.find({ filename: safeName }).limit(1).toArray();
+
+      if (files.length > 0) {
+        const fileDoc = files[0];
+        const totalSize = fileDoc.length;
+        const contentType = fileDoc.contentType || MIME_MAP[ext] || "application/octet-stream";
+
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Accept-Ranges", "bytes");
+        res.setHeader("Content-Disposition", `${dispositionType}; filename="${safeName}"`);
+
+        // Honor HTTP Range requests so PDFs/videos can stream/seek.
+        const rangeHeader = req.headers.range;
+        if (rangeHeader) {
+          const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader);
+          if (match) {
+            const start = match[1] ? parseInt(match[1], 10) : 0;
+            const end = match[2] ? parseInt(match[2], 10) : totalSize - 1;
+            if (start >= totalSize || end >= totalSize || start > end) {
+              res.setHeader("Content-Range", `bytes */${totalSize}`);
+              return res.status(416).end();
+            }
+            res.status(206);
+            res.setHeader("Content-Range", `bytes ${start}-${end}/${totalSize}`);
+            res.setHeader("Content-Length", end - start + 1);
+            const stream = bucket.openDownloadStreamByName(safeName, { start, end: end + 1 });
+            stream.on("error", () => {
+              if (!res.headersSent) res.status(500).end();
+            });
+            return stream.pipe(res);
+          }
+        }
+
+        res.setHeader("Content-Length", totalSize);
+        const stream = bucket.openDownloadStreamByName(safeName);
+        stream.on("error", () => {
+          if (!res.headersSent) res.status(500).end();
+        });
+        return stream.pipe(res);
+      }
+    }
+  } catch (err) {
+    console.warn("GridFS lookup failed, falling back to disk:", err.message);
+  }
+
+  // 2) Fall back to local disk (legacy/dev only).
   const uploadsDir = path.join(__dirname, "../../static/uploads");
   const filePath = path.join(uploadsDir, safeName);
-  
-  // Prevent path traversal attacks
+
   if (!filePath.startsWith(uploadsDir)) {
     return res.status(400).json({ message: "Invalid file path" });
   }
-  
+
   if (!fs.existsSync(filePath)) {
     console.warn(`File not found: ${filePath}`);
     return res.status(404).json({ message: "File not found" });
   }
 
-  const ext = path.extname(safeName).toLowerCase();
-  const inlineExts = new Set([".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".webm", ".ogg", ".txt"]);
-  const mimeMap = {
-    ".pdf": "application/pdf",
-    ".mp4": "video/mp4",
-    ".webm": "video/webm",
-    ".ogg": "video/ogg",
-    ".mov": "video/quicktime",
-    ".m4v": "video/x-m4v",
-    ".doc": "application/msword",
-    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ".ppt": "application/vnd.ms-powerpoint",
-    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-  };
-
-  if (mimeMap[ext]) {
-    res.type(mimeMap[ext]);
+  if (MIME_MAP[ext]) {
+    res.type(MIME_MAP[ext]);
   }
   res.setHeader("Accept-Ranges", "bytes");
-  res.setHeader("Content-Disposition", `${inlineExts.has(ext) ? "inline" : "attachment"}; filename=\"${safeName}\"`);
+  res.setHeader("Content-Disposition", `${dispositionType}; filename="${safeName}"`);
   return res.sendFile(filePath);
 });
 

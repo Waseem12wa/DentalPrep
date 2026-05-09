@@ -283,6 +283,56 @@
             </div>
         </div>
 
+        <!-- Quizzes Tab -->
+        <div id="tab-quizzes" class="tab-content hidden">
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Add Quiz (Manual)</h3>
+                <form id="quiz-form">
+                    <div class="form-group">
+                        <label class="form-label">Select Lesson</label>
+                        <select name="lessonId" id="quiz-lesson-select" class="form-select" required>
+                            <option value="">Loading lessons...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quiz Title</label>
+                        <input type="text" name="title" class="form-input" placeholder="e.g., Dental Anatomy Quiz 1" required>
+                    </div>
+                    <div id="questions-container" class="grid gap-3" style="margin-bottom: 1rem;"></div>
+                    <button type="button" class="cta-btn cta-secondary" style="margin-bottom: 1rem;" onclick="addQuestionField()">+ Add Question</button>
+                    <br>
+                    <button type="submit" class="cta-btn cta-primary">Save Quiz</button>
+                </form>
+            </div>
+            <div style="margin-top: 2rem;">
+                <h3 class="text-xl font-bold mb-4">Existing Quizzes</h3>
+                <div id="quizzes-list" class="grid gap-2"></div>
+            </div>
+        </div>
+
+        <!-- Bulk Upload Tab -->
+        <div id="tab-upload" class="tab-content hidden">
+            <div class="admin-card">
+                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Bulk Upload Quiz</h3>
+                <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">Upload a .txt or .csv file to bulk-import quiz questions to a selected lesson.</p>
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label class="form-label">Select Lesson</label>
+                        <select name="lessonId" id="upload-lesson-select" class="form-select" required>
+                            <option value="">Loading lessons...</option>
+                        </select>
+                        <small style="color: #6b7280;">Select the lesson to attach this bulk upload quiz to.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quiz File (.txt or .csv)</label>
+                        <input type="file" name="file" class="form-input" accept=".txt,.csv" required>
+                        <small style="color: #6b7280;">TXT: Q: / A: B: C: D: / Answer: | CSV: Question,OptA,OptB,OptC,OptD,Answer</small>
+                    </div>
+                    <button type="submit" class="cta-btn cta-primary">Upload Quiz</button>
+                </form>
+            </div>
+        </div>
+
         <div id="tab-analytics" class="tab-content hidden">
             <div class="admin-card">
                 <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Student Progress Analytics</h3>

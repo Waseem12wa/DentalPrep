@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -6,87 +7,516 @@
     <link rel="icon" type="image/png" sizes="32x32" href="../static/images/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="../static/images/favicon-16x16.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Log in to DentalPrep — Pakistan's leading dental education platform for BDS students.">
 
     <title>Login | DentalPrep</title>
     <link rel="stylesheet" href="../static/css/DAstyles.css">
     <link rel="stylesheet" href="../static/css/user_management/signup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        .auth-container {
+        .login-wrapper {
+            display: flex;
             min-height: 100vh;
-            background-color: var(--light-gray);
         }
 
-        .logo-container img {
-            height: 60px;
-            width: auto;
+        /* Branded Side Panel */
+        .login-sidebar {
+            flex: 1;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 3rem;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .login-sidebar::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -20%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .login-sidebar::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            left: -15%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .sidebar-brand-icon {
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(20px);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.15);
+            position: relative;
+            z-index: 2;
+            animation: floatIcon 4s ease-in-out infinite;
+        }
+
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .sidebar-brand-icon i {
+            font-size: 3rem;
+            color: white;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+        }
+
+        .sidebar-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.03em;
+            position: relative;
+            z-index: 2;
+        }
+
+        .sidebar-subtitle {
+            color: rgba(255,255,255,0.85);
+            font-size: 1.1rem;
+            line-height: 1.7;
+            max-width: 340px;
+            margin-bottom: 3rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .sidebar-features {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .sidebar-feature {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: rgba(255,255,255,0.9);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .sidebar-feature-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .sidebar-feature-icon i {
+            font-size: 0.85rem;
+            color: white;
+        }
+
+        /* Form Side */
+        .login-form-side {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem;
+            background: #f0f4ff;
+            position: relative;
+        }
+
+        .login-form-side::before {
+            content: '';
+            position: absolute;
+            top: 15%;
+            right: 10%;
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.04) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            background: white;
+            border-radius: 20px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 20px 60px -15px rgba(30, 58, 138, 0.12), 0 8px 20px -8px rgba(30, 58, 138, 0.08);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-logo-inner {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .login-logo-inner i {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-logo-text {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.75rem;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .login-title {
+            text-align: center;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #1a1a2e;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .login-divider {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .login-form .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #1a1a2e;
+        }
+
+        .login-form .input-wrap {
+            position: relative;
+        }
+
+        .login-form .input-wrap i.field-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.9rem;
+            pointer-events: none;
+            transition: all 0.3s;
+        }
+
+        .login-form .form-control {
+            width: 100%;
+            padding: 0.875rem 1rem 0.875rem 2.75rem;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Inter', sans-serif;
+            color: #1a1a2e;
+        }
+
+        .login-form .form-control:focus {
+            outline: none;
+            border-color: #2563eb;
+            background: white;
+            box-shadow: 0 0 0 4px #dbeafe;
+        }
+
+        .login-form .form-control:focus ~ i.field-icon {
+            color: #2563eb;
+        }
+
+        .login-form .toggle-password {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+            z-index: 2;
+        }
+
+        .login-form .toggle-password:hover {
+            color: #2563eb;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.75rem;
+            font-size: 0.875rem;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #64748b;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #2563eb;
+            cursor: pointer;
+        }
+
+        .forgot-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .forgot-link:hover {
+            color: #1e3a8a;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 0.95rem 2rem;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 15px rgba(30, 58, 138, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .login-btn:hover::before {
+            opacity: 1;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(30, 58, 138, 0.35);
+        }
+
+        .login-btn span {
+            position: relative;
+            z-index: 2;
+        }
+
+        .login-btn i {
+            position: relative;
+            z-index: 2;
+        }
+
+        .login-footer {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .login-footer p {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-footer a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 700;
+            transition: color 0.2s;
+        }
+
+        .login-footer a:hover {
+            color: #1e3a8a;
+            text-decoration: underline;
+        }
+
+        .admin-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #94a3b8 !important;
+            font-weight: 500 !important;
+            font-size: 0.85rem !important;
+        }
+
+        .admin-link:hover {
+            color: #2563eb !important;
+        }
+
+        /* Mobile */
+        @media (max-width: 900px) {
+            .login-sidebar {
+                display: none;
+            }
+
+            .login-form-side {
+                padding: 2rem 1rem;
+            }
+
+            .login-card {
+                padding: 2rem 1.5rem;
+                border-radius: 16px;
+            }
         }
     </style>
 </head>
 
-<body class="">
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-image-container" style="display: none;">
-                <!-- Hidden as per new design or missing assets -->
-                <div class="auth-overlay"></div>
-                <div class="auth-content">
-                    <h2>Welcome Back</h2>
-                    <p>Login to access your account and continue your journey with DentalPrep.</p>
+<body>
+    <div class="login-wrapper">
+        <!-- Branded Sidebar -->
+        <div class="login-sidebar">
+            <div class="sidebar-brand-icon">
+                <i class="fas fa-tooth"></i>
+            </div>
+            <h2 class="sidebar-title">Welcome Back!</h2>
+            <p class="sidebar-subtitle">Log in to continue your dental education journey with DentalPrep Academy.</p>
+
+            <div class="sidebar-features">
+                <div class="sidebar-feature">
+                    <div class="sidebar-feature-icon"><i class="fas fa-video"></i></div>
+                    <span>HD Video Lectures & Audio Lessons</span>
+                </div>
+                <div class="sidebar-feature">
+                    <div class="sidebar-feature-icon"><i class="fas fa-database"></i></div>
+                    <span>10,000+ Expert-Verified MCQs</span>
+                </div>
+                <div class="sidebar-feature">
+                    <div class="sidebar-feature-icon"><i class="fas fa-chart-line"></i></div>
+                    <span>Real-Time Progress Analytics</span>
+                </div>
+                <div class="sidebar-feature">
+                    <div class="sidebar-feature-icon"><i class="fas fa-file-pdf"></i></div>
+                    <span>Comprehensive Study Materials</span>
                 </div>
             </div>
+        </div>
 
-            <div class="auth-form-container" style="width: 100%; max-width: 480px; margin: 0 auto;">
-                <div class="logo-container" style="text-align: center; margin-bottom: 2rem;">
-                    <div style="display: inline-flex; align-items: center; gap: 0.5rem;">
-                        <i class="fas fa-tooth" style="font-size: 2.5rem; color: var(--arterial-red);"></i>
-                        <div
-                            style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 2rem; color: var(--venous-blue);">
-                            Dental<span style="color: var(--arterial-red);">Prep</span>
-                        </div>
-                    </div>
+        <!-- Login Form -->
+        <div class="login-form-side">
+            <div class="login-card">
+                <div class="login-logo">
+                    <a href="/" class="login-logo-inner">
+                        <i class="fas fa-tooth"></i>
+                        <span class="login-logo-text">DentalPrep</span>
+                    </a>
                 </div>
 
-                <h1 style="text-align: center; margin-bottom: 1.5rem;">Login</h1>
+                <h1 class="login-title">Sign In</h1>
+                <p class="login-subtitle">Enter your credentials to access your account</p>
+                <hr class="login-divider">
 
-                <form class="auth-form" method="get" action="../dashboard/" data-auth="login">
+                <form class="login-form" method="get" action="../dashboard/" data-auth="login">
                     <div class="form-group">
                         <label class="form-label" for="email">Email Address</label>
-                        <div class="input-with-icon" style="position: relative;">
-                            <i class="fas fa-envelope"
-                                style="position: absolute; left: 1rem; top: 1rem; color: var(--text-muted);"></i>
-                            <input type="email" id="email" name="email" class="form-input"
-                                placeholder="Enter your email" required="">
+                        <div class="input-wrap">
+                            <i class="fas fa-envelope field-icon"></i>
+                            <input type="email" id="email" name="email" class="form-control"
+                                placeholder="you@example.com" required>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="password">Password</label>
-                        <div class="input-with-icon" style="position: relative;">
-                            <i class="fas fa-lock"
-                                style="position: absolute; left: 1rem; top: 1rem; color: var(--text-muted);"></i>
-                            <input type="password" id="password" name="password" class="form-input"
-                                placeholder="Enter your password" required="">
-                            <i class="fas fa-eye-slash toggle-password"
-                                style="position: absolute; right: 1rem; top: 1rem; cursor: pointer; color: var(--text-muted);"></i>
+                        <div class="input-wrap">
+                            <i class="fas fa-lock field-icon"></i>
+                            <input type="password" id="password" name="password" class="form-control"
+                                placeholder="Enter your password" required>
+                            <i class="fas fa-eye-slash toggle-password"></i>
                         </div>
                     </div>
 
-                    <div class="form-options"
-                        style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
-                        <div class="remember-me">
+                    <div class="form-options">
+                        <label class="remember-me">
                             <input type="checkbox" id="remember" name="remember">
-                            <label for="remember">Remember me</label>
-                        </div>
+                            <span>Remember me</span>
+                        </label>
+                        <a href="/forgot-password/" class="forgot-link">Forgot password?</a>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                    <button type="submit" class="login-btn">
+                        <span>Sign In</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
                 </form>
 
-                <div class="auth-footer">
-                    <p>Don't have an account? <a href="/signup/">Sign up</a></p>
-                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
-                        Admin? <a href="/admin/">Go to Admin Login</a>
+                <div class="login-footer">
+                    <p>Don't have an account? <a href="/signup/">Create Account</a></p>
+                    <p style="margin-top: 0.75rem;">
+                        <a href="/admin/" class="admin-link">
+                            <i class="fas fa-shield-alt"></i> Admin Portal
+                        </a>
                     </p>
                 </div>
             </div>

@@ -1,17 +1,17 @@
-/* Modern Signup Flow Styles */
+/* Modern Signup Flow Styles — DentalPrep Brand Refresh */
 :root {
-    --primary: #82272e;
-    --primary-dark: #6d1e24;
-    --primary-light: #f1d7dc;
-    --secondary: #13406a;
-    --accent: #48bb78;
-    --text-main: #2d3748;
-    --text-muted: #718096;
-    --bg-page: #f7fafc;
+    --primary: #1e3a8a;
+    --primary-dark: #172e6e;
+    --primary-light: #dbeafe;
+    --secondary: #2563eb;
+    --accent: #10b981;
+    --text-main: #1a1a2e;
+    --text-muted: #64748b;
+    --bg-page: #f0f4ff;
     --bg-card: #ffffff;
     --border: #e2e8f0;
-    --radius: 12px;
-    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --radius: 16px;
+    --shadow: 0 20px 60px -15px rgba(30, 58, 138, 0.15), 0 8px 20px -8px rgba(30, 58, 138, 0.1);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -23,7 +23,7 @@
 
 body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: var(--bg-page);
+    background: var(--bg-page);
     color: var(--text-main);
     line-height: 1.5;
     min-height: 100vh;
@@ -37,7 +37,7 @@ body {
 
 .auth-sidebar {
     flex: 1;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 40%, #3b82f6 100%);
     padding: 60px;
     display: flex;
     flex-direction: column;
@@ -45,6 +45,30 @@ body {
     color: white;
     position: relative;
     overflow: hidden;
+}
+
+.auth-sidebar::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.auth-sidebar::after {
+    content: '';
+    position: absolute;
+    bottom: -20%;
+    left: -20%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 @media (max-width: 1024px) {
@@ -75,12 +99,14 @@ body {
     font-weight: 800;
     line-height: 1.1;
     margin-bottom: 24px;
+    letter-spacing: -0.03em;
 }
 
 .sidebar-subtext {
     font-size: 1.25rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.85);
     max-width: 480px;
+    line-height: 1.7;
 }
 
 .sidebar-benefits {
@@ -95,17 +121,20 @@ body {
     align-items: center;
     gap: 16px;
     font-size: 1.1rem;
+    font-weight: 500;
 }
 
 .benefit-icon {
-    width: 32px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 .auth-container {
@@ -114,7 +143,20 @@ body {
     align-items: center;
     justify-content: center;
     padding: 40px;
-    background-color: var(--bg-page);
+    background: var(--bg-page);
+    position: relative;
+}
+
+.auth-container::before {
+    content: '';
+    position: absolute;
+    top: 10%;
+    right: 5%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.06) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .auth-card {
@@ -124,6 +166,9 @@ body {
     border-radius: var(--radius);
     padding: 48px;
     box-shadow: var(--shadow);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    position: relative;
+    z-index: 1;
 }
 
 /* Step Indicator */
@@ -156,8 +201,8 @@ body {
 }
 
 .step-number {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background: var(--bg-card);
     border: 2px solid var(--border);
@@ -167,19 +212,22 @@ body {
     font-weight: 700;
     color: var(--text-muted);
     transition: var(--transition);
+    font-size: 0.95rem;
 }
 
 .step-label {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .step.active .step-number {
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     border-color: var(--primary);
     color: white;
-    box-shadow: 0 0 0 4px var(--primary-light);
+    box-shadow: 0 0 0 4px var(--primary-light), 0 4px 12px rgba(30, 58, 138, 0.25);
 }
 
 .step.active .step-label {
@@ -187,9 +235,10 @@ body {
 }
 
 .step.completed .step-number {
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent), #059669);
     border-color: var(--accent);
     color: white;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
 
 /* Form Styles */
@@ -200,13 +249,16 @@ body {
 
 .form-header h2 {
     font-size: 2rem;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-main);
     margin-bottom: 8px;
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.02em;
 }
 
 .form-header p {
     color: var(--text-muted);
+    font-size: 1rem;
 }
 
 .form-grid {
@@ -222,7 +274,7 @@ body {
 }
 
 .form-group {
-    margin-bottom: 24px;
+    margin-bottom: 22px;
 }
 
 .form-group.full-width {
@@ -239,7 +291,7 @@ body {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: var(--text-main);
 }
 
@@ -253,22 +305,23 @@ body {
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .form-input {
     width: 100%;
     padding: 14px 16px;
     background: #f8fafc;
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
     font-size: 1rem;
     transition: var(--transition);
+    font-family: inherit;
 }
 
 .form-input:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--secondary);
     background: white;
     box-shadow: 0 0 0 4px var(--primary-light);
 }
@@ -277,19 +330,20 @@ body {
 .form-select {
     width: 100%;
     padding: 14px 16px;
-    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 16px center;
+    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 16px center;
     background-size: 18px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
     font-size: 1rem;
     appearance: none;
     cursor: pointer;
     transition: var(--transition);
+    font-family: inherit;
 }
 
 .form-select:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--secondary);
     background-color: white;
     box-shadow: 0 0 0 4px var(--primary-light);
 }
@@ -305,21 +359,25 @@ body {
 .degree-card {
     border: 2px solid var(--border);
     border-radius: var(--radius);
-    padding: 24px;
+    padding: 28px;
     text-align: center;
     cursor: pointer;
     transition: var(--transition);
     position: relative;
+    background: #fafbff;
 }
 
 .degree-card:hover {
     border-color: var(--primary-light);
-    background: #fffcfd;
+    background: #f0f4ff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30, 58, 138, 0.08);
 }
 
 .degree-card.selected {
     border-color: var(--primary);
     background: var(--primary-light);
+    box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1);
 }
 
 .degree-card i {
@@ -331,6 +389,7 @@ body {
 .degree-card h4 {
     font-size: 1.25rem;
     margin-bottom: 4px;
+    font-weight: 700;
 }
 
 .degree-card p {
@@ -342,15 +401,16 @@ body {
     position: absolute;
     top: 12px;
     right: 12px;
-    width: 24px;
-    height: 24px;
-    background: var(--primary);
+    width: 26px;
+    height: 26px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: white;
     border-radius: 50%;
     display: none;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    box-shadow: 0 2px 8px rgba(30, 58, 138, 0.3);
 }
 
 .degree-card.selected .selected-badge {
@@ -365,22 +425,24 @@ body {
     text-align: center;
     cursor: pointer;
     transition: var(--transition);
-    background: #f8fafc;
+    background: #fafbff;
 }
 
 .id-upload-area:hover {
-    border-color: var(--primary);
+    border-color: var(--secondary);
     background: white;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.06);
 }
 
 .upload-icon {
     font-size: 3rem;
-    color: var(--primary);
+    color: var(--secondary);
     margin-bottom: 16px;
 }
 
 .upload-text h4 {
     margin-bottom: 4px;
+    font-weight: 700;
 }
 
 .upload-text p {
@@ -392,7 +454,7 @@ body {
     margin-top: 16px;
     padding: 12px;
     background: var(--primary-light);
-    border-radius: 8px;
+    border-radius: 10px;
     display: none;
     align-items: center;
     justify-content: space-between;
@@ -403,13 +465,13 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 40px;
+    margin-top: 36px;
     gap: 16px;
 }
 
 .btn {
     padding: 14px 28px;
-    border-radius: 8px;
+    border-radius: 10px;
     font-weight: 700;
     cursor: pointer;
     transition: var(--transition);
@@ -419,29 +481,32 @@ body {
     align-items: center;
     justify-content: center;
     gap: 8px;
+    font-family: inherit;
 }
 
 .btn-primary {
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     color: white;
     flex: 1;
+    box-shadow: 0 4px 15px rgba(30, 58, 138, 0.25);
 }
 
 .btn-primary:hover {
-    background: var(--primary-dark);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(130, 39, 46, 0.2);
+    box-shadow: 0 8px 25px rgba(30, 58, 138, 0.35);
+    filter: brightness(1.05);
 }
 
 .btn-outline {
     background: transparent;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     color: var(--text-main);
 }
 
 .btn-outline:hover {
-    background: #f8fafc;
-    border-color: var(--text-muted);
+    background: #f0f4ff;
+    border-color: var(--secondary);
+    color: var(--secondary);
 }
 
 .hidden {
@@ -449,7 +514,7 @@ body {
 }
 
 .auth-footer {
-    margin-top: 32px;
+    margin-top: 28px;
     text-align: center;
     font-size: 0.95rem;
     color: var(--text-muted);
@@ -459,6 +524,12 @@ body {
     color: var(--primary);
     font-weight: 700;
     text-decoration: none;
+    transition: var(--transition);
+}
+
+.auth-footer a:hover {
+    color: var(--secondary);
+    text-decoration: underline;
 }
 
 /* Password rules */
@@ -491,7 +562,6 @@ body {
         opacity: 0;
         transform: translateY(20px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -500,4 +570,25 @@ body {
 
 .form-step {
     animation: slideIn 0.4s ease-out forwards;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .auth-container {
+        padding: 20px;
+    }
+    
+    .auth-card {
+        padding: 28px 20px;
+        border-radius: 12px;
+    }
+    
+    .degree-selection {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .form-header h2 {
+        font-size: 1.5rem;
+    }
 }

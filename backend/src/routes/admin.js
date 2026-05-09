@@ -1689,7 +1689,7 @@ router.post("/admin/quiz/upload", adminAuth, quizUpload.single("file"), async (r
     const quizId = lesson.quizId || `quiz_${normalizeId(lesson.lessonId)}`;
     const quiz = await Quiz.findOneAndUpdate(
       { quizId },
-      { quizId, courseId: lesson.courseId, lessonId: lesson.lessonId, title: lessonTitle, questions },
+      { quizId, courseId: lesson.courseId, lessonId: lesson.lessonId, title: parsed.lessonTitle || `${lesson.title} Quiz`, questions },
       { new: true, upsert: true }
     );
 

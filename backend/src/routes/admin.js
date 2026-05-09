@@ -1672,48 +1672,20 @@ router.post("/admin/quiz/upload", adminAuth, quizUpload.single("file"), async (r
       parsed = parseQuizCsv(text);
     }
 
-    let { lessonTitle, questions } = parsed;
-    if (req.body.lessonTitle) {
-      lessonTitle = req.body.lessonTitle;
-    }
-
-    if (!lessonTitle) {
-      return res.status(400).json({ message: "Lesson title is missing" });
+    let { questions } = parsed;
+    const lessonId = req.body.lessonId;
+    if (!lessonId) {
+      return res.status(400).json({ message: "Lesson selection is required" });
     }
     if (!questions.length) {
       return res.status(400).json({ message: "No questions found" });
     }
 
-    let lesson = await Lesson.findOne({ title: lessonTitle });
+    let lesson = await Lesson.findOne({ lessonId: lessonId });
     if (!lesson) {
-      const courseId = "course_general";
-      if (!await Course.findOne({ courseId })) {
-        await Course.findOneAndUpdate(
-          { courseId },
-          { courseId, title: "General Course", description: "General lesson and quiz bank", category: "General", curriculumTags: ["General"] },
-          { new: true, upsert: true }
-        );
-      }
-
-      const newLessonId = `lesson_${normalizeId(lessonTitle)}`;
-      lesson = await Lesson.findOneAndUpdate(
-        { lessonId: newLessonId },
-        {
-          lessonId: newLessonId,
-          courseId,
-          title: lessonTitle,
-          summary: "Quiz-only lesson created from bulk upload.",
-          videoUrl: "",
-          videoType: null,
-          audioItems: [],
-          materials: [],
-          caseStudies: [],
-          quizId: `quiz_${normalizeId(newLessonId)}`
-        },
-        { new: true, upsert: true }
-      );
+      return res.status(404).json({ message: "Selected lesson not found" });
     }
-
+    
     const quizId = lesson.quizId || `quiz_${normalizeId(lesson.lessonId)}`;
     const quiz = await Quiz.findOneAndUpdate(
       { quizId },

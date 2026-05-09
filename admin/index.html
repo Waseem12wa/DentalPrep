@@ -268,117 +268,11 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Lesson Title</label>
-                        <input type="text" name="title" class="form-input" placeholder="e.g., Tooth Morphology"
-                            required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Lesson Summary</label>
-                        <textarea name="summary" class="form-input" rows="3" placeholder="Add the core explanation, objectives, or notes students should read before opening the lesson."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Content Type</label>
-                        <select name="contentAccessLevel" class="form-select">
-                            <option value="free">Free Demo</option>
-                            <option value="paid">Paid Content</option>
-                        </select>
-                        <small style="color: #6b7280;">Use this to separate demo lessons/files from premium paid lessons/files.</small>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">YouTube URL(s)</label>
-                        <textarea name="videoUrl" class="form-input" rows="4" placeholder="https://youtube.com/...
-https://youtube.com/another-video"></textarea>
-                        <small style="color: #6b7280;">Add one YouTube URL per line to create multiple lessons at once.</small>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Or Upload Video File(s)</label>
-                        <input type="file" name="videoFiles" class="form-input" accept="video/*" multiple>
-                        <small style="color: #6b7280;">You can upload one or more video files instead of YouTube links.</small>
-                        <div id="lesson-video-files-preview" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Upload Audio Lesson File(s)</label>
-                        <input type="file" name="audioFiles" class="form-input" accept="audio/*" multiple>
-                        <div id="lesson-audio-files-preview" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Upload Study Materials</label>
-                        <input type="file" name="materialFiles" class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple>
-                        <small style="color: #6b7280;">Upload one or many PDFs/files. New uploads are added to existing lesson materials (not replaced).</small>
-                        <div id="lesson-material-files-preview" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;"></div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Clinical Case Studies</label>
-                        <textarea name="caseStudies" class="form-input" rows="8" placeholder="Title: Acute Pulpitis Scenario
-Scenario: Patient reports spontaneous pain and sensitivity.
-Diagnosis: Symptomatic irreversible pulpitis.
-Discussion: Explain diagnosis, treatment planning, and clinical reasoning.
-Relevance: PMDC restorative module.
----
-Title: Another Case
-Scenario: ..."></textarea>
-                        <small style="color: #6b7280;">Separate multiple cases with a line containing only ---</small>
-                    </div>
-                    <div id="lesson-existing-assets-list" style="margin-bottom: 1rem; font-size: 0.875rem; color: #666;"></div>
-                    <button type="submit" class="cta-btn cta-primary">Save Lesson</button>
-                </form>
-            </div>
-
-            <div class="mt-8">
-                <h3 class="text-xl font-bold mb-4">Existing Lessons</h3>
-                <div id="lessons-list" class="grid gap-2">
-                    <div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">Loading lessons...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Add Quiz Tab -->
-        <div id="tab-quizzes" class="tab-content hidden">
-            <div class="admin-card">
-                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Add Quiz (Manual)</h3>
-                <form id="quiz-form">
-                    <div class="form-group">
                         <label class="form-label">Select Lesson</label>
-                        <select name="lessonId" id="quiz-lesson-select" class="form-select" required>
-                            <option value="">Loading lessons...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Quiz Title</label>
-                        <input type="text" name="title" class="form-input" placeholder="Quiz Title" required>
-                    </div>
-
-                    <div id="questions-container" class="space-y-4 mb-4">
-                        <!-- Questions injected here -->
-                    </div>
-
-                    <button type="button" onclick="addQuestionField()" class="cta-btn cta-secondary mb-4"
-                        style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">+ Add Question</button>
-                    <br>
-                    <button type="submit" class="cta-btn cta-primary">Save Quiz</button>
-                </form>
-            </div>
-
-            <div class="mt-8">
-                <h3 class="text-xl font-bold mb-4">Existing Quizzes</h3>
-                <div id="quizzes-list" class="grid gap-2">
-                    <div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">Loading quizzes...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Upload Tab -->
-        <div id="tab-upload" class="tab-content hidden">
-            <div class="admin-card">
-                <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Bulk Upload Quiz</h3>
-                <p class="mb-4 text-sm text-gray-500">Upload a .txt or .csv file containing quiz questions in the format:<br>
-                <code style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">Q: Question text<br>A: Option A<br>B: Option B<br>C: Option C<br>D: Option D<br>Answer: A</code></p>
-                <form id="upload-form">
-                    <div class="form-group">
-                        <label class="form-label">Lesson Title</label>
-                        <input type="text" name="lessonTitle" class="form-input"
-                            placeholder="e.g., Dental Materials Basics" required>
-                        <small style="color: #6b7280;">If lesson doesn't exist, it will be created automatically</small>
+                          <select id="upload-lesson-select" name="lessonId" class="form-select" required>
+                              <option value="">Loading lessons...</option>
+                          </select>
+                          <small style="color: #6b7280;">Select the lesson to attach this bulk upload quiz to</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Quiz File</label>
@@ -963,6 +857,7 @@ Scenario: ..."></textarea>
                     option.value = course.id;
                     option.textContent = course.title;
                     select.appendChild(option);
+                           if (uploadSelect) uploadSelect.appendChild(option.cloneNode(true));
                 });
             } catch (err) {
                 if (err && err.status === 401) {
@@ -1007,10 +902,12 @@ Scenario: ..."></textarea>
                
                    const data = await res.json();
                 const select = document.getElementById("quiz-lesson-select");
+                const uploadSelect = document.getElementById("upload-lesson-select");
                 const list = document.getElementById("lessons-list");
                 lessonsCache = Array.isArray(data.lessons) ? data.lessons : [];
 
                 select.innerHTML = '<option value="">Select a lesson</option>';
+                if (uploadSelect) uploadSelect.innerHTML = '<option value="">Select a lesson</option>';
                 list.innerHTML = "";
 
                 if (data.lessons && Array.isArray(data.lessons)) {
@@ -1019,6 +916,7 @@ Scenario: ..."></textarea>
                        noOption.disabled = true;
                        noOption.textContent = "No lessons available - Create one first";
                        select.appendChild(noOption);
+                       if (uploadSelect) uploadSelect.appendChild(noOption.cloneNode(true));
                        list.innerHTML = '<div class="p-3 bg-white border border-gray-200 rounded shadow-sm text-gray-500">No lessons available yet.</div>';
                    } else {
                    data.lessons.forEach(l => {
@@ -1026,6 +924,7 @@ Scenario: ..."></textarea>
                            option.value = l.id || l.lessonId;
                            option.textContent = l.title || "Untitled Lesson";
                            select.appendChild(option);
+                           if (uploadSelect) uploadSelect.appendChild(option.cloneNode(true));
 
                            const lessonCard = document.createElement("div");
                            lessonCard.className = "p-3 bg-white border border-gray-200 rounded shadow-sm flex justify-between items-center gap-4";
@@ -1741,8 +1640,12 @@ Scenario: ..."></textarea>
                 return;
             }
 
-            formData.set("topics", selectedTopic);
-            formData.set("sectionName", selectedTopic);
+            // Fix dropdown freezing: Keep all options
+              const allTopics = Array.from(topicSelect.options)
+                  .map(opt => opt.value)
+                  .filter(val => val.trim() !== "");
+              formData.set("topics", allTopics.join(","));
+              formData.set("sectionName", selectedTopic);
 
             const linksInput = document.getElementById("academy-video-links");
             const filesInput = document.getElementById("academy-video-files-input");

@@ -554,7 +554,7 @@
 
         const { getApiBase } = window.DentalPrepApi || {};
         const API_BASE = getApiBase ? getApiBase() : "http://localhost:4000/api";
-        let adminToken = localStorage.getItem("dentalprep_admin_token");
+        let adminToken = sessionStorage.getItem("dentalprep_admin_token");
         let academyBlocks = [];
 
         // UI References
@@ -619,7 +619,7 @@
         function handleAdminUnauthorized() {
             if (adminAuthRecoveryTriggered) return;
             adminAuthRecoveryTriggered = true;
-            localStorage.removeItem("dentalprep_admin_token");
+            sessionStorage.removeItem("dentalprep_admin_token");
             adminToken = null;
             showLogin();
             if (hasValidatedAdminSession) {
@@ -683,7 +683,7 @@
 
                 if (!res.ok) throw new Error(data.message || "Login failed");
 
-                localStorage.setItem("dentalprep_admin_token", data.token);
+                sessionStorage.setItem("dentalprep_admin_token", data.token);
                 adminToken = data.token;
                 adminAuthRecoveryTriggered = false;
                 hasValidatedAdminSession = true;
@@ -697,7 +697,7 @@
 
         // Logout Handler
         logoutBtn.addEventListener("click", () => {
-            localStorage.removeItem("dentalprep_admin_token");
+            sessionStorage.removeItem("dentalprep_admin_token");
             adminToken = null;
             adminAuthRecoveryTriggered = false;
             hasValidatedAdminSession = false;

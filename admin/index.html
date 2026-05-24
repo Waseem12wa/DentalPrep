@@ -586,7 +586,7 @@ Scenario: ..."></textarea>
                     </span>
                 </div>
                 <span style="color: rgba(255,255,255,0.3);">|</span>
-                <span style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Admin Console v2.2</span>
+                <span style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Admin Console v2.3</span>
             </div>
 
             <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
@@ -1260,16 +1260,21 @@ Scenario: ..."></textarea>
         document.getElementById("upload-form").addEventListener("submit", async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector("button");
-            const lessonTitle = e.target.lessonTitle.value;
+            const lessonId = e.target.lessonId ? String(e.target.lessonId.value || "").trim() : "";
             const fileInput = e.target.querySelector("input[type='file']");
-            
+
+            if (!lessonId) {
+                showMessage(generalMsg, "Please select a lesson", "error");
+                return;
+            }
+
             if (!fileInput.files.length) {
                 showMessage(generalMsg, "Please select a file", "error");
                 return;
             }
 
             const formData = new FormData();
-            formData.append("lessonTitle", lessonTitle);
+            formData.append("lessonId", lessonId);
             formData.append("file", fileInput.files[0]);
 
             setLoading(btn, true);

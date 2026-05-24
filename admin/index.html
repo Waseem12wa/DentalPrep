@@ -586,7 +586,7 @@ Scenario: ..."></textarea>
                     </span>
                 </div>
                 <span style="color: rgba(255,255,255,0.3);">|</span>
-                <span style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Admin Console v2.1</span>
+                <span style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Admin Console v2.2</span>
             </div>
 
             <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
@@ -602,7 +602,21 @@ Scenario: ..."></textarea>
         // --- Admin Application Logic ---
 
         const { getApiBase } = window.DentalPrepApi || {};
-        const API_BASE = getApiBase ? getApiBase() : "http://localhost:4000/api";
+
+        function getAdminApiBase() {
+            const isLocalhost = window.location.hostname === "localhost" ||
+                window.location.hostname === "127.0.0.1";
+
+            if (isLocalhost) {
+                return getApiBase ? getApiBase() : "http://localhost:4000/api";
+            }
+
+            // On Render/production always use same-origin API (ignore stale localhost overrides in localStorage).
+            return `${window.location.origin.replace(/\/$/, "")}/api`;
+        }
+
+        const API_BASE = getAdminApiBase();
+        console.log("[admin] Using API base:", API_BASE);
         let adminToken = sessionStorage.getItem("dentalprep_admin_token");
         let academyBlocks = [];
 

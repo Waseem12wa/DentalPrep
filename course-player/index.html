@@ -671,8 +671,10 @@
                         }
                         return acc;
                     }, {});
-                const quizByLessonId = quizzes.reduce((acc, quiz) => {
-                    acc[quiz.lessonId] = quiz;
+                const quizzesByLessonId = quizzes.reduce((acc, quiz) => {
+                    const lid = quiz.lessonId;
+                    if (!acc[lid]) acc[lid] = [];
+                    acc[lid].push(quiz);
                     return acc;
                 }, {});
 
@@ -704,7 +706,8 @@
                         const lessonComplete = completedLessonIds.has(lesson.id);
                         const isPaid = (lesson.accessLevel || 'free') === 'paid';
                         const isLocked = Boolean(lesson.isLocked);
-                        const quiz = quizByLessonId[lesson.id];
+                        const lessonQuizzes = quizzesByLessonId[lesson.id] || [];
+                        const quiz = lessonQuizzes[0] || null;
                         const quizProgress = quiz ? quizProgressById[quiz.id] : null;
                         const mediaLabel = lesson.hasVideo
                             ? (lesson.videoType === "upload" ? "Uploaded lesson video" : "YouTube lesson")
@@ -723,7 +726,7 @@
                                 </span>
                             </div>
                             <div class="lesson-body">
-                                <p class="lesson-meta">${escapeHtml(mediaLabel)}${quiz ? ` • Quiz ready${quizProgress ? ` • Best score ${quizProgress.score || 0}%` : ''}` : ''}</p>
+                                <p class="lesson-meta">${escapeHtml(mediaLabel)}${lessonQuizzes.length > 0 ? ` • ${lessonQuizzes.length} quiz${lessonQuizzes.length > 1 ? 'zes' : ''} ready${quizProgress ? ` • Best score ${quizProgress.score || 0}%` : ''}` : ''}</p>
                                 <p style="color: #4b5563; line-height: 1.6; margin-bottom: 0.85rem;">${escapeHtml(lesson.summary || 'This lesson includes linked teaching assets and progress tracking.')}</p>
                                 <div class="lesson-tags">
                                     <span class="summary-chip" style="background: ${isPaid ? '#fef3c7' : '#ecfdf3'}; color: ${isPaid ? '#92400e' : '#166534'};">${isPaid ? 'Paid Content' : 'Free Demo'}</span>
@@ -747,11 +750,11 @@
                                         <i class="fas fa-folder-open"></i>
                                         Materials
                                     </a>
-                                    ${quiz ? `
-                                    <a href="/quiz/?id=${encodeURIComponent(quiz.id)}" class="btn-secondary" style="flex: 1; text-align: center; justify-content: center; min-width: 180px;">
-                                        <i class="fas fa-clipboard-question"></i>
-                                        ${quizProgress ? 'Retake Quiz' : 'Start Quiz'}
-                                    </a>` : ''}
+                                    ${lessonQuizzes.map((q, idx) => {
+                                        const qProgress = quizProgressById[q.id];
+                                        const label = lessonQuizzes.length > 1 ? `${qProgress ? 'Retake' : 'Start'} Quiz ${idx + 1}` : (qProgress ? 'Retake Quiz' : 'Start Quiz');
+                                        return `<a href="/quiz/?id=${encodeURIComponent(q.id)}" class="btn-secondary" style="flex: 1; text-align: center; justify-content: center; min-width: 180px;"><i class="fas fa-clipboard-question"></i> ${label}</a>`;
+                                    }).join('')}
                                     `}
                                 </div>
                             </div>

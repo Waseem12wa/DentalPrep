@@ -586,7 +586,7 @@ Scenario: ..."></textarea>
                     </span>
                 </div>
                 <span style="color: rgba(255,255,255,0.3);">|</span>
-                <span style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Admin Console v2.3</span>
+                <span style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">Admin Console v2.4</span>
             </div>
 
             <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
@@ -1668,7 +1668,9 @@ Scenario: ..."></textarea>
                 clinicalResources: []
             };
 
-            const selected = academyBlocks.find((item) => item.subjectKey === subjectSelect.value && item.blockKey === blockSelect.value);
+            const expectedId = `${subjectSelect.value}_${blockSelect.value}`;
+            const selected = academyBlocks.find((item) => item.id === expectedId)
+                || academyBlocks.find((item) => item.subjectKey === subjectSelect.value && item.blockKey === blockSelect.value);
 
             const getDefaultTopics = (subjectKey, blockKey) => {
                 const standard = {
@@ -1684,9 +1686,10 @@ Scenario: ..."></textarea>
                 return (subjectKey === "biochemistry" ? biochemistry : standard)[blockKey] || [];
             };
 
-            const topics = selected && Array.isArray(selected.topics) && selected.topics.length
-                ? selected.topics
-                : getDefaultTopics(subjectSelect.value, blockSelect.value);
+            const defaultTopics = getDefaultTopics(subjectSelect.value, blockSelect.value);
+            const savedTopics = selected && Array.isArray(selected.topics) ? selected.topics : [];
+            const topicSet = new Set([...defaultTopics, ...savedTopics]);
+            const topics = Array.from(topicSet);
 
             if (topicSelect) {
                 const previous = topicSelect.value;

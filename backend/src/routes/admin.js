@@ -1686,15 +1686,18 @@ router.post("/admin/quiz/upload", adminAuth, quizUpload.single("file"), async (r
       return res.status(404).json({ message: "Selected lesson not found" });
     }
     
-    const quizId = lesson.quizId || `quiz_${normalizeId(lesson.lessonId)}`;
-    const existing = await Quiz.findOne({ quizId });
-    const existingQuestions = existing && Array.isArray(existing.questions) ? existing.questions : [];
-    const allQuestions = [...existingQuestions, ...questions];
-    const quiz = await Quiz.findOneAndUpdate(
-      { quizId },
-      { quizId, courseId: lesson.courseId, lessonId: lesson.lessonId, title: parsed.lessonTitle || `${lesson.title} Quiz`, questions: allQuestions },
-      { new: true, upsert: true }
-    );
+    const baseQuizId = `quiz_${normalizeId(lesson.lessonId)}`;
+    const existingCount = await Quiz.countDocuments({ lessonId: lesson.lessonId });
+    const quizNumber = existingCount + 1;
+    const quizId = `${baseQuizId}_${quizNumber}`;
+    const quizTitle = parsed.lessonTitle || `${lesson.title} Quiz ${quizNumber}`;
+    const quiz = await Quiz.create({
+      quizId,
+      courseId: lesson.courseId,
+      lessonId: lesson.lessonId,
+      title: quizTitle,
+      questions
+    });
 
     return res.status(201).json({
       quiz: {

@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       `;
     };
 
-    audioListEl.innerHTML = `${renderAudioGroup(grouped.free, "Free Demo", false)}${renderAudioGroup(grouped.paid, "Paid Content", true)}`;
+    audioListEl.innerHTML = `${renderAudioGroup(grouped.free, "Audio Lessons", false)}${renderAudioGroup(grouped.paid, "", true)}`;
 
     audioListEl.querySelectorAll("audio[data-autocomplete='lesson-audio']").forEach((audioEl) => {
       audioEl.addEventListener("ended", async () => {
@@ -208,7 +208,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       `;
     };
 
-    materialListEl.innerHTML = `${renderMaterialGroup(grouped.free, "Free Demo", false)}${renderMaterialGroup(grouped.paid, "Paid Content", true)}`;
+    materialListEl.innerHTML = `${renderMaterialGroup(grouped.free, "Study Materials", false)}${renderMaterialGroup(grouped.paid, "", true)}`;
   };
 
   const renderCaseStudies = (caseStudies) => {
@@ -316,15 +316,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     lesson = video;
 
     if (lesson.isLocked) {
-      if (titleEl) titleEl.textContent = `${lesson.title || "Lesson"} (Paid Content)`;
+      if (titleEl) titleEl.textContent = `${lesson.title || "Lesson"}`;
       if (metaEl) {
         metaEl.innerHTML = '<span><i class="fas fa-lock"></i> Paid lesson</span><span><i class="fas fa-crown"></i> Upgrade required</span>';
       }
       if (summaryEl) {
-        summaryEl.textContent = "This lesson is part of paid content. Upgrade your plan to unlock the full lesson, audio, and materials.";
-      }
-      if (player) {
-        player.innerHTML = '<div style="padding: 2rem; text-align:center; color: white;"><i class="fas fa-lock" style="font-size:2rem; margin-bottom:1rem;"></i><p>This is paid content. Upgrade to continue.</p><a href="/checkout/" class="btn-primary" style="margin-top:0.8rem; text-decoration:none;">Upgrade Now</a></div>';
+        player.innerHTML = '<div style="padding: 2rem; text-align:center; color: white;"><p>Video content is unavailable.</p></div>';
       }
       if (completeBtn) {
         completeBtn.disabled = true;
@@ -358,7 +355,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (metaEl) {
       metaEl.innerHTML = `
         <span><i class="fas fa-book"></i> ${escapeHtml(lesson.courseTitle || lesson.courseId)}</span>
-        <span><i class="fas ${lesson.isLocked ? "fa-lock" : "fa-play"}"></i> ${lesson.isLocked ? "Paid content (locked)" : (lesson.videoUrl ? (lesson.videoType === "upload" ? "Uploaded video" : "YouTube lesson") : "No video attached")}</span>
+        <span><i class="fas ${lesson.videoUrl ? 'fa-play' : 'fa-file-alt'}"></i> ${lesson.videoUrl ? (lesson.videoType === "upload" ? "Uploaded video" : "YouTube lesson") : "No video attached"}</span>
         <span><i class="fas fa-file-audio"></i> ${lesson.audioItems.length} audio</span>
         <span><i class="fas fa-folder-open"></i> ${lesson.materials.length} materials</span>
       `;

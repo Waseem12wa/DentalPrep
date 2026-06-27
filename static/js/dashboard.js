@@ -383,12 +383,12 @@ async function loadAcademyContent() {
     
     // Premium Notes
     if (generalOverview.premiumNotes && generalOverview.premiumNotes.length > 0) {
-      html += '<h4 style="font-weight: 700; margin-bottom: 0.75rem; color: var(--text-dark);">âœ¨ Premium Notes</h4>';
+      html += '<h4 style="font-weight: 700; margin-bottom: 0.75rem; color: var(--text-dark);">✨ Extra Notes</h4>';
       html += '<div style="margin-bottom: 1.5rem;">';
       generalOverview.premiumNotes.forEach(note => {
         if (note.title) {
           html += `<div style="padding: 0.75rem; background: #fffbeb; border-radius: var(--border-radius-md); margin-bottom: 0.5rem;">
-            ${note.url && note.url !== '#' ? `<a href="${note.url}" target="_blank" style="color: #b45309; text-decoration: none; font-weight: 600;">âœï¸ ${note.title}</a>` : `<span style="color: var(--text-dark); font-weight: 600;">âœï¸ ${note.title}</span>`}
+            ${note.url && note.url !== '#' ? `<a href="${note.url}" target="_blank" style="color: #b45309; text-decoration: none; font-weight: 600;">âœ ï¸  ${note.title}</a>` : `<span style="color: var(--text-dark); font-weight: 600;">âœ ï¸  ${note.title}</span>`}
           </div>`;
         }
       });

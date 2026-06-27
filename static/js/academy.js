@@ -145,17 +145,11 @@
             var parsedYoutube = parseYouTubeUrl(url);
             var playlistId = parsedYoutube.playlistId;
             var videoId = parsedYoutube.videoId;
-            var isLocked = Boolean(item && item.isLocked) || (isPaid && !isValidResourceUrl(url));
+            var isLocked = false;
             var accessBadge = badgeHtml(index, isPaid);
 
             if (isLocked) {
-                return [
-                    '<div class="video-embed-card">',
-                    '<h5>' + escapeHtml(displayTitle) + '</h5>',
-                    accessBadge,
-                    '<a href="#" class="locked-pdf-link locked-access-link" data-kind="video" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> Paid content (click to request access)</a>',
-                    '</div>'
-                ].join('');
+                return ''; // Locks disabled, won't happen
             }
 
             if (playlistId) {
@@ -241,13 +235,13 @@
             var title = item && item.title ? item.title : ('Resource ' + (index + 1));
             var rawUrl = item && (item.fileUrl || item.url) ? (item.fileUrl || item.url) : '#';
             var url = resolveResourceUrl(rawUrl);
-            var isLocked = Boolean(item && item.isLocked) || (isPaid && !isValidResourceUrl(url));
+            var isLocked = false;
             var badge = badgeInline(index, isPaid);
             
             console.log('File resource: title=' + title + ', isPaid=' + isPaid + ', isLocked=' + isLocked + ', rawUrl=' + rawUrl + ', resolvedUrl=' + url);
             
             if (isLocked) {
-                return '<a href="#" class="locked-pdf-link locked-access-link" data-kind="file" data-title="' + escapeHtml(title) + '" data-subject-key="' + escapeHtml(String(window.__currentSubjectKey || '')) + '" data-block-key="' + escapeHtml(String(window.__currentBlockKey || '')) + '" data-section-name="' + escapeHtml(String(window.__currentSectionName || '')) + '"><i class="fas fa-lock"></i> ' + escapeHtml(title) + ' (Paid content)</a>' + badge;
+                return ''; // Locks disabled
             }
             if (!isValidResourceUrl(url)) {
                 console.warn('Invalid resource URL for ' + title + ', rawUrl: ' + rawUrl + ', resolvedUrl: ' + url);
@@ -419,7 +413,7 @@
                     }
                     return next;
                 });
-                document.getElementById('overview-premium').innerHTML = renderLinkList(premiumPaidOnly, 'No premium notes added yet.');
+                document.getElementById('overview-premium').innerHTML = renderLinkList(premiumPaidOnly, 'No extra notes added yet.');
 
                 var premiumContainer = document.getElementById('overview-premium');
                 if (premiumContainer) {
@@ -724,7 +718,7 @@
             });
 
             document.getElementById('overview-books').innerHTML = renderLinkList(overview.books, 'No books added yet.');
-            document.getElementById('overview-premium').innerHTML = renderLinkList(premiumPaidOnly, 'No premium notes added yet.');
+            document.getElementById('overview-premium').innerHTML = renderLinkList(premiumPaidOnly, 'No extra notes added yet.');
             document.getElementById('overview-slides').innerHTML = renderLinkList(overview.importantSlides, 'No important slides added yet.');
             document.getElementById('overview-short').innerHTML = renderLinkList(overview.shortNotes, 'No short notes added yet.');
             document.getElementById('overview-videos').innerHTML = renderSimpleVideoList(overview.videos, 'No overview videos added yet.');

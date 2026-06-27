@@ -729,19 +729,13 @@
                                 <p class="lesson-meta">${escapeHtml(mediaLabel)}${lessonQuizzes.length > 0 ? ` • ${lessonQuizzes.length} quiz${lessonQuizzes.length > 1 ? 'zes' : ''} ready${quizProgress ? ` • Best score ${quizProgress.score || 0}%` : ''}` : ''}</p>
                                 <p style="color: #4b5563; line-height: 1.6; margin-bottom: 0.85rem;">${escapeHtml(lesson.summary || 'This lesson includes linked teaching assets and progress tracking.')}</p>
                                 <div class="lesson-tags">
-                                    <span class="summary-chip" style="background: ${isPaid ? '#fef3c7' : '#ecfdf3'}; color: ${isPaid ? '#92400e' : '#166534'};">${isPaid ? 'Paid Content' : 'Free Demo'}</span>
+                                    <span class="summary-chip" style="display: none;"></span>
                                     <span class="summary-chip">${lesson.audioItems?.length || 0} audio</span>
                                     <span class="summary-chip">${lesson.materials?.length || 0} materials</span>
                                     <span class="summary-chip">${lesson.caseStudies?.length || 0} cases</span>
                                     ${(lesson.curriculumTags || []).slice(0, 2).map((tag) => `<span class="summary-chip">${escapeHtml(tag)}</span>`).join('')}
                                 </div>
                                 <div class="lesson-actions" style="margin-top: 1rem;">
-                                    ${isLocked ? `
-                                    <a href="/checkout/" class="btn-primary" style="flex: 1; text-align: center; justify-content: center; min-width: 180px; background: #b45309;">
-                                        <i class="fas fa-lock"></i>
-                                        Unlock Paid Content
-                                    </a>
-                                    ` : `
                                     <a href="/video/?id=${encodeURIComponent(lesson.id)}" class="btn-primary" style="flex: 1; text-align: center; justify-content: center; min-width: 180px;">
                                         <i class="fas fa-play"></i>
                                         Open Lesson

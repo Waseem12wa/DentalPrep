@@ -129,10 +129,7 @@
         }
 
         function badgeHtml(index, isPaid) {
-            if (isPaid) {
-                return '<span style="display:inline-block;margin-top:0.35rem;padding:0.12rem 0.5rem;border-radius:999px;font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;">Paid</span>';
-            }
-            return '<span style="display:inline-block;margin-top:0.35rem;padding:0.12rem 0.5rem;border-radius:999px;font-size:0.72rem;font-weight:700;background:#dcfce7;color:#166534;">Free ' + (index + 1) + '/3</span>';
+            return '';
         }
 
         var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() !== 'paid'; });
@@ -161,21 +158,6 @@
                 ].join('');
             }
 
-            if (videoId) {
-                var videoWithPlaylist = playlistId
-                    ? ('?list=' + encodeURIComponent(playlistId) + '&rel=0')
-                    : '?rel=0';
-                return [
-                    '<div class="video-embed-card">',
-                    '<h5>' + escapeHtml(displayTitle) + '</h5>',
-                    accessBadge,
-                    '<div class="video-frame-wrap">',
-                    '<iframe src="https://www.youtube.com/embed/' + escapeHtml(videoId) + videoWithPlaylist + '" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
-                    '</div>',
-                    '</div>'
-                ].join('');
-            }
-
             if (playlistId) {
                 return [
                     '<div class="video-embed-card">',
@@ -183,6 +165,18 @@
                     accessBadge,
                     '<div class="video-frame-wrap">',
                     '<iframe src="https://www.youtube.com/embed/videoseries?list=' + escapeHtml(playlistId) + '&rel=0" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
+                    '</div>',
+                    '</div>'
+                ].join('');
+            }
+
+            if (videoId) {
+                return [
+                    '<div class="video-embed-card">',
+                    '<h5>' + escapeHtml(displayTitle) + '</h5>',
+                    accessBadge,
+                    '<div class="video-frame-wrap">',
+                    '<iframe src="https://www.youtube.com/embed/' + escapeHtml(videoId) + '?rel=0" title="' + escapeHtml(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>',
                     '</div>',
                     '</div>'
                 ].join('');
@@ -226,15 +220,7 @@
             }).join('');
         };
 
-        var sections = [];
-        if (freeLinks.length) {
-            sections.push('<div style="font-weight:700;color:#166534;margin:0.6rem 0;">Free Demo</div><div class="video-embed-grid">' + renderCards(freeLinks, false) + '</div>');
-        }
-        if (paidLinks.length) {
-            sections.push('<div style="font-weight:700;color:#92400e;margin:0.9rem 0 0.6rem;">Paid Content</div><div class="video-embed-grid">' + renderCards(paidLinks, true) + '</div>');
-        }
-
-        return sections.join('');
+        return '<div class="video-embed-grid">' + renderCards(links, false) + '</div>';
     }
 
     function renderLinkList(items, emptyText) {
@@ -244,10 +230,7 @@
         }
 
         function badgeInline(index, isPaid) {
-            if (isPaid) {
-                return ' <span style="display:inline-block;padding:0.05rem 0.45rem;border-radius:999px;font-size:0.68rem;font-weight:700;background:#fef3c7;color:#92400e;vertical-align:middle;">Paid</span>';
-            }
-            return ' <span style="display:inline-block;padding:0.05rem 0.45rem;border-radius:999px;font-size:0.68rem;font-weight:700;background:#dcfce7;color:#166534;vertical-align:middle;">Free ' + (index + 1) + '/3</span>';
+            return '';
         }
 
         var freeLinks = links.filter(function (item) { return String((item && item.accessLevel) || 'free').trim().toLowerCase() !== 'paid'; });
@@ -274,15 +257,7 @@
             }).join('');
         };
 
-        var sections = [];
-        if (freeLinks.length) {
-            sections.push('<div style="font-weight:700;color:#166534;margin:0.6rem 0;">Free Demo</div><div class="video-list">' + renderRows(freeLinks, false) + '</div>');
-        }
-        if (paidLinks.length) {
-            sections.push('<div style="font-weight:700;color:#92400e;margin:0.9rem 0 0.6rem;">Paid Content</div><div class="video-list">' + renderRows(paidLinks, true) + '</div>');
-        }
-
-        return sections.join('');
+        return '<div class="video-list">' + renderRows(links, false) + '</div>';
     }
 
     function renderSimpleVideoList(items, emptyText) {

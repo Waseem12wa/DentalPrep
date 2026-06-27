@@ -41,12 +41,15 @@
 
             <a href="/" class="logo" aria-label="DentalPrep - Home"
                 style="text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
-                <div class="logo-icon" style="font-size: 2rem; color: var(--arterial-red);">
-                    <i class="fas fa-tooth"></i>
-                </div>
-                <div class="logo-text"
-                    style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
-                    Dental<span style="color: var(--arterial-red);">Prep</span>
+                <img src="static/images/logo.png" alt="DentalPrep Logo" class="site-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="logo-fallback" style="display: none; align-items: center; gap: 0.5rem;">
+                    <div class="logo-icon" style="font-size: 2rem; color: var(--arterial-red);">
+                        <i class="fas fa-tooth"></i>
+                    </div>
+                    <div class="logo-text"
+                        style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--venous-blue);">
+                        Dental<span style="color: var(--arterial-red);">Prep</span>
+                    </div>
                 </div>
             </a>
 
@@ -261,29 +264,6 @@
 
             <!-- Simple Pricing Cards -->
             <div class="pricing-cards">
-                <!-- Free Trial Plan -->
-                <div class="pricing-card free-trial">
-                    <div class="pricing-card-header">
-                        <h3 class="plan-name">Free Trial</h3>
-                        <div class="plan-price">Rs. 0</div>
-                        <div class="plan-period">Forever free</div>
-                    </div>
-                    <div class="pricing-card-body">
-                        <ul class="plan-features-list">
-                            <li><i class="fas fa-check"></i> Basic Question Bank</li>
-                            <li><i class="fas fa-check"></i> 1 Free Mock Test</li>
-                            <li><i class="fas fa-check"></i> Up to 10 Notes</li>
-                            <li><i class="fas fa-check"></i> Degree-Based Access</li>
-                            <li class="disabled"><i class="fas fa-times"></i> Full Question Bank</li>
-                            <li class="disabled"><i class="fas fa-times"></i> Progress Tracking</li>
-                        </ul>
-                        <a href="/signup/" class="pricing-cta-btn pricing-cta-outline" data-auth-route>
-                            <span>Start Free Trial</span>
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
-
                 <!-- Annual Plan -->
                 <div class="pricing-card featured">
                     <div class="pricing-card-header">
@@ -308,67 +288,7 @@
                 </div>
             </div>
 
-            <!-- Feature Comparison Table -->
-            <div class="feature-comparison">
-                <div class="comparison-header">
-                    <h3>Feature Comparison</h3>
-                    <p>Compare all plans and choose what works best for your medical education journey</p>
-                </div>
 
-                <div class="comparison-table-wrapper">
-                    <table class="comparison-table">
-                        <thead>
-                            <tr>
-                                <th>Feature</th>
-                                <th class="plan-column-free">Free Trial</th>
-                                <th class="plan-column-annual">Annual</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Degree/Year Based Access</td>
-                                <td><span class="feature-check">✓</span></td>
-                                <td><span class="feature-check">✓</span></td>
-                            </tr>
-                            <tr>
-                                <td>Basic Questions</td>
-                                <td><span class="feature-check">✓</span></td>
-                                <td><span class="feature-check">✓</span></td>
-                            </tr>
-                            <tr>
-                                <td>Full Question Bank</td>
-                                <td><span class="feature-cross">✗</span></td>
-                                <td><span class="feature-check">✓</span></td>
-                            </tr>
-                            <tr>
-                                <td>Progress Tracking</td>
-                                <td><span class="feature-cross">✗</span></td>
-                                <td><span class="feature-check">✓</span></td>
-                            </tr>
-                            <tr>
-                                <td>Detailed Analytics</td>
-                                <td><span class="feature-cross">✗</span></td>
-                                <td><span class="feature-check">✓</span></td>
-                            </tr>
-                            <tr>
-                                <td>Notes</td>
-                                <td><span class="feature-limited">Up to 10 notes</span></td>
-                                <td><span class="feature-check">Unlimited</span></td>
-                            </tr>
-                            <tr>
-                                <td>Mock Tests</td>
-                                <td><span class="feature-limited">1 Free Trial Mock</span></td>
-                                <td><span class="feature-check">All Tests</span></td>
-                            </tr>
-                            <tr>
-                                <td>Model Papers</td>
-                                <td><span class="feature-limited">1 Free Trial Model Paper</span></td>
-                                <td><span class="feature-check">All Model Papers</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
             <div class="pricing-note">
                 <strong>Note:</strong> Cancel anytime. No hidden fees.

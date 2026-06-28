@@ -196,6 +196,12 @@ const subjectContentSchema = new mongoose.Schema({
 const academyProfileSchema = new mongoose.Schema({
     id: String,
     aboutAcademyText: String,
+    bankDetails: {
+        bankName: String,
+        accountTitle: String,
+        accountNumber: String,
+        iban: String
+    },
     generalOverview: {
         books: [mongoose.Schema.Types.Mixed],
         premiumNotes: [mongoose.Schema.Types.Mixed],

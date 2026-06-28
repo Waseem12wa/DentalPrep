@@ -352,6 +352,55 @@ function closeQuizResult() {
   closeQuizSolver();
 }
 
+function renderBankDetails(profile) {
+  const container = document.getElementById('bank-details-container');
+  if (!container) return;
+
+  const bank = profile.bankDetails;
+  if (!bank || (!bank.bankName && !bank.accountTitle && !bank.accountNumber && !bank.iban)) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 16px; padding: 2rem; color: white; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 1.5rem;">
+      <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+      <div style="position: absolute; bottom: -30px; right: 20px; width: 100px; height: 100px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; z-index: 1;">
+        <div>
+          <h3 style="font-size: 1.25rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-building-columns" style="color: #60a5fa;"></i>
+            ${escapeHtml(bank.bankName || 'Bank Name')}
+          </h3>
+          <p style="color: #94a3b8; font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;">Official Payment Details</p>
+        </div>
+        <div style="background: rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; color: #bae6fd; backdrop-filter: blur(4px);">
+          Verified Account
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; z-index: 1; margin-top: 0.5rem;">
+        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 12px;">
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem; text-transform: uppercase;">Account Title</div>
+          <div style="font-size: 1.1rem; font-weight: 600; color: white;">${escapeHtml(bank.accountTitle || 'N/A')}</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 12px;">
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem; text-transform: uppercase;">Account Number</div>
+          <div style="font-size: 1.1rem; font-weight: 600; color: white; letter-spacing: 0.05em; font-family: monospace;">${escapeHtml(bank.accountNumber || 'N/A')}</div>
+        </div>
+        ${bank.iban ? `
+        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 12px; grid-column: 1 / -1;">
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem; text-transform: uppercase;">IBAN</div>
+          <div style="font-size: 1.1rem; font-weight: 600; color: white; letter-spacing: 0.05em; font-family: monospace;">${escapeHtml(bank.iban)}</div>
+        </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
 async function loadAcademyContent() {
   const api = window.DentalPrepApi;
   const loader = document.getElementById('academy-loader');
@@ -360,6 +409,10 @@ async function loadAcademyContent() {
   try {
     const academyData = await api.fetch('/academy/content');
     const profile = academyData.profile || {};
+    
+    // Render Bank Details Card
+    renderBankDetails(profile);
+
     const generalOverview = profile.generalOverview || {};
     
     let html = `

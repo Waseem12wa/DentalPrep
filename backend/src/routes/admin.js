@@ -350,6 +350,12 @@ async function ensureAcademyProfile() {
     {
       id: "academy_profile",
       aboutAcademyText: "Dental Prep is your structured BDS preparation platform where each subject is organized into simple blocks, helping students move from fundamentals to clinical confidence.",
+      bankDetails: {
+          bankName: "Meezan Bank",
+          accountTitle: "Dental Prep Official",
+          accountNumber: "0123456789",
+          iban: "PK00 MEZN 0000 0000 0000 0000"
+      },
       generalOverview: {
         books: [{ title: "BDS Core Reading List", url: "#" }],
         premiumNotes: [{ title: "Premium Notes Pack", url: "#" }],
@@ -1369,6 +1375,12 @@ router.post(
         {
           id: "academy_profile",
           aboutAcademyText,
+          bankDetails: {
+              bankName: String(body.bankName || profile.bankDetails?.bankName || "").trim(),
+              accountTitle: String(body.accountTitle || profile.bankDetails?.accountTitle || "").trim(),
+              accountNumber: String(body.accountNumber || profile.bankDetails?.accountNumber || "").trim(),
+              iban: String(body.iban || profile.bankDetails?.iban || "").trim()
+          },
           generalOverview: {
             books,
             premiumNotes,

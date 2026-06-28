@@ -488,6 +488,24 @@ Scenario: ..."></textarea>
                             <label class="form-label">About Academy Intro Text</label>
                             <textarea id="academy-about-text" name="aboutAcademyText" class="form-input" rows="3" placeholder="Homepage intro"></textarea>
                         </div>
+                        <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">Bank Details</h3>
+                        <div class="form-group">
+                            <label class="form-label">Bank Name</label>
+                            <input type="text" id="bank-name-input" name="bankName" class="form-input" placeholder="e.g. Meezan Bank">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Account Title</label>
+                            <input type="text" id="account-title-input" name="accountTitle" class="form-input" placeholder="e.g. Dental Prep Official">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Account Number</label>
+                            <input type="text" id="account-number-input" name="accountNumber" class="form-input" placeholder="e.g. 0123456789">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">IBAN</label>
+                            <input type="text" id="iban-input" name="iban" class="form-input" placeholder="e.g. PK00 MEZN 0000 0000 0000 0000">
+                        </div>
+                        <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #111827; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">General Overview Content</h3>
                         <div class="form-group">
                             <label class="form-label">General Overview Books (PDF/PPT files)</label>
                             <input type="file" id="overview-books-files" name="overviewBooksFiles" class="form-input" multiple accept=".pdf,.ppt,.pptx,.doc,.docx">
@@ -1547,6 +1565,13 @@ Scenario: ..."></textarea>
 
                 const aboutText = document.getElementById("academy-about-text");
                 if (aboutText) aboutText.value = profile.aboutAcademyText || "";
+                
+                if (profile.bankDetails) {
+                    document.getElementById("bank-name-input").value = profile.bankDetails.bankName || "";
+                    document.getElementById("account-title-input").value = profile.bankDetails.accountTitle || "";
+                    document.getElementById("account-number-input").value = profile.bankDetails.accountNumber || "";
+                    document.getElementById("iban-input").value = profile.bankDetails.iban || "";
+                }
 
                 // Store academy data for file removal
                 window.academyProfileData = { overview, about };

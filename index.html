@@ -37,6 +37,7 @@
                 <a href="/learning/" id="nav-dashboard" class="hidden"
                     style="color: var(--primary-color); font-weight: 600;">Dashboard</a>
                 <a href="/contact/">Contact Us</a>
+                <a href="#" id="nav-bank-details" style="font-weight: 500;">Bank Details</a>
             </nav>
 
             <a href="/" class="logo" aria-label="DentalPrep - Home"
@@ -506,6 +507,36 @@
             </div>
         </div>
     </footer>
+
+    <!-- Bank Details Modal -->
+    <div id="bank-details-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="close-bank-modal" aria-label="Close modal">&times;</button>
+            <div class="modal-header-section">
+                <i class="fas fa-university modal-header-icon"></i>
+                <h2>Academy Bank Details</h2>
+                <p>Use these details for manual fee deposits / online transfers.</p>
+            </div>
+            <div class="modal-body-section">
+                <div class="bank-detail-row">
+                    <span class="detail-label">Bank Name</span>
+                    <span class="detail-value" id="modal-bank-name">Loading...</span>
+                </div>
+                <div class="bank-detail-row">
+                    <span class="detail-label">Account Title</span>
+                    <span class="detail-value" id="modal-account-title">Loading...</span>
+                </div>
+                <div class="bank-detail-row">
+                    <span class="detail-label">Account Number</span>
+                    <span class="detail-value" id="modal-account-number">Loading...</span>
+                </div>
+                <div class="bank-detail-row">
+                    <span class="detail-label">IBAN</span>
+                    <span class="detail-value" id="modal-iban">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="static/js/script.js"></script>
     <script src="static/js/api.js"></script>

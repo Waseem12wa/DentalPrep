@@ -754,4 +754,18 @@ router.post("/assistant/explain", authMiddleware, async (req, res) => {
   }
 });
 
+
+router.get("/public/academy-profile", async (req, res) => {
+  try {
+    const profile = await ensureAcademyProfile();
+    return res.json({
+      bankDetails: profile.bankDetails || null,
+      aboutAcademyText: profile.aboutAcademyText || ""
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;
+

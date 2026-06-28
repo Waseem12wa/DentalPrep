@@ -160,4 +160,29 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Load public bank details on signup page
+  if (signupForm) {
+    (async () => {
+      try {
+        const apiBase = window.DentalPrepApi ? window.DentalPrepApi.getApiBase() : "/api";
+        const response = await fetch(`${apiBase}/public/academy-profile`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.bankDetails) {
+            const container = document.getElementById("signup-bank-details");
+            if (container) {
+              document.getElementById("signup-bank-name").textContent = data.bankDetails.bankName || "N/A";
+              document.getElementById("signup-account-title").textContent = data.bankDetails.accountTitle || "N/A";
+              document.getElementById("signup-account-number").textContent = data.bankDetails.accountNumber || "N/A";
+              document.getElementById("signup-iban").textContent = data.bankDetails.iban || "N/A";
+              container.style.display = "block";
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load signup bank details:", err);
+      }
+    })();
+  }
 });

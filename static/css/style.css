@@ -1454,7 +1454,6 @@ header {
     font-weight: 600;
     box-shadow: 0 2px 8px rgba(30, 58, 138, 0.08);
 }
-}
 
 /* Compact Features Section */
 
@@ -1768,7 +1767,6 @@ header {
         font-size: 0.6875rem;
         padding: 0.3125rem 0.625rem;
     }
-    }
 
     .feature-limited {
         font-size: 0.625rem;
@@ -1788,7 +1786,6 @@ header {
         margin: 1.5rem 0 0;
         font-size: 0.8125rem;
         padding: 0.75rem 1rem;
-    }
     }
 
     .features {
@@ -2918,7 +2915,6 @@ footer::before {
     .card-tagline {
         font-size: 0.875rem;
     }
-}
 
     .pricing-card-header {
         padding: 1.5rem 1rem;

@@ -18,7 +18,7 @@ if (!fs.existsSync(uploadsDir)) {
 const quizUpload = multer({ storage: multer.memoryStorage() });
 const contentUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB per file
+  limits: { fileSize: 500 * 1024 * 1024 } // 500MB per file
 });
 
 // Middleware: stream every uploaded buffer to GridFS, then expose the assigned
@@ -538,7 +538,7 @@ function adminAuth(req, res, next) {
 router.post("/admin/login", (req, res) => {
   const { email, password } = req.body || {};
   const adminEmail = process.env.ADMIN_EMAIL || "admin@dentalprep.com";
-  const adminPassword = process.env.ADMIN_PASSWORD || "1234";
+  const adminPassword = process.env.ADMIN_PASSWORD || "Yousaf12+-";
 
   if (email !== adminEmail || password !== adminPassword) {
     return res.status(401).json({ message: "Invalid admin credentials" });

@@ -291,6 +291,23 @@ async function startServer() {
 
   console.log("Routes loaded successfully");
 
+  // Global Error Handler for API routes
+  app.use((err, req, res, next) => {
+    console.error("API Error:", err);
+
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ message: "File is too large. Maximum allowed size is 500MB." });
+    }
+
+    if (err.name === "MulterError") {
+      return res.status(400).json({ message: `Upload error: ${err.message}` });
+    }
+
+    return res.status(res.statusCode && res.statusCode >= 400 ? res.statusCode : 500).json({
+      message: err.message || "An unexpected server error occurred."
+    });
+  });
+
   // Catch-all route to serve index.html for frontend routing
   app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../../index.html"));

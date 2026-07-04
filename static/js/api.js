@@ -1,13 +1,17 @@
 (function () {
   // Auto-detect API base URL
   function getApiBase() {
-    // Check if we're on localhost
+    // Check if we're on localhost or a local network IP (e.g. when accessing from a mobile device)
     const isLocalhost = window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1';
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.') ||
+      window.location.hostname.startsWith('10.') ||
+      window.location.hostname.startsWith('172.') ||
+      window.location.hostname.endsWith('.local');
 
-    // If localhost, use localhost:4000, otherwise use same origin
-    const DEFAULT_API_BASE = isLocalhost
-      ? "http://localhost:4000/api"
+    // If local and the frontend is running on a separate dev server port (e.g. 5500), point to backend port 4000
+    const DEFAULT_API_BASE = (isLocalhost && window.location.port && window.location.port !== '4000')
+      ? `${window.location.protocol}//${window.location.hostname}:4000/api`
       : window.location.origin + "/api";
 
     const meta = document.querySelector("meta[name='dentalprep-api']");

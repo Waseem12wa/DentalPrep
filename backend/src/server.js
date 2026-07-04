@@ -140,6 +140,11 @@ app.get("/api/files/:name", async (req, res) => {
   return res.sendFile(filePath);
 });
 
+// Redirect static uploads to GridFS files route
+app.get("/static/uploads/:name", (req, res) => {
+  res.redirect(`/api/files/${req.params.name}`);
+});
+
 // Serve static files with correct MIME types
 app.use(express.static(path.join(__dirname, "../../"), {
   setHeaders: (res, filePath) => {

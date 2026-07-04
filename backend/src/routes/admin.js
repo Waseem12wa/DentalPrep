@@ -1221,13 +1221,15 @@ router.post(
           }).filter((section) => section.name)
         : [];
 
+      const remainingVideoLinks = removeByIndices(videoItems, blockFilesToDelete.videoItems || []);
+
       let nextSections = existingSections;
       if (sectionName) {
         const lower = sectionName.toLowerCase();
         const currentSection = existingSections.find((section) => String(section.name || "").toLowerCase() === lower) || {};
         const updatedSection = {
           name: sectionName,
-          videoItems: sanitizeLinks(mergeUniqueLinks(removeByIndices(currentSection.videoItems, blockFilesToDelete.videoItems || []), [...videoItems, ...uploadedVideos])),
+          videoItems: sanitizeLinks(mergeUniqueLinks(removeByIndices(currentSection.videoItems, blockFilesToDelete.videoItems || []), [...remainingVideoLinks, ...uploadedVideos])),
           noteText: noteText || currentSection.noteText || "",
           noteResources: mergeUniqueLinks(removeByIndices(currentSection.noteResources, blockFilesToDelete.noteResources || []), noteResources),
           clinicalText: clinicalText || currentSection.clinicalText || "",
@@ -1272,7 +1274,7 @@ router.post(
           sections: nextNormalizedSections,
           videoItems: sectionName
             ? sanitizeLinks(existing?.videoItems || [])
-            : sanitizeLinks(mergeUniqueLinks(removeByIndices(existing?.videoItems || [], blockFilesToDelete.videoItems || []), [...videoItems, ...uploadedVideos])),
+            : sanitizeLinks(mergeUniqueLinks(removeByIndices(existing?.videoItems || [], blockFilesToDelete.videoItems || []), [...remainingVideoLinks, ...uploadedVideos])),
           noteText: sectionName ? (existing?.noteText || "") : (noteText || existing?.noteText || ""),
           clinicalText: sectionName ? (existing?.clinicalText || "") : (clinicalText || existing?.clinicalText || ""),
           noteResources: sectionName
@@ -1363,7 +1365,8 @@ router.post(
       importantSlides = sanitizeLinks(mergeUniqueLinks(importantSlides, overviewSlidesFiles));
       shortNotes = sanitizeLinks(mergeUniqueLinks(shortNotes, overviewShortFiles));
       const manualVideos = String(body.overviewVideos || "").trim() ? parseLineLinks(body.overviewVideos) : [];
-      videos = sanitizeLinks(mergeUniqueLinks(videos, [...manualVideos, ...overviewVideoFiles]));
+      const remainingManualVideos = removeByIndices(manualVideos, filesToDelete.videos || []);
+      videos = sanitizeLinks(mergeUniqueLinks(videos, [...remainingManualVideos, ...overviewVideoFiles]));
       const aboutNotes = sanitizeLinks(mergeUniqueLinks(profile.aboutUs?.notes, String(body.aboutNotes || "").trim() ? parseLineLinks(body.aboutNotes) : []));
       const aboutPdfResources = sanitizeLinks(mergeUniqueLinks(profile.aboutUs?.pdfResources, String(body.aboutPdfResources || "").trim() ? parseLineLinks(body.aboutPdfResources) : []));
       const introVideoUrl = hasIntroVideoField
@@ -1407,8 +1410,9 @@ router.post(
       );
 
       return res.status(201).json({ profile: updated });
-    } catch (_err) {
-      return res.status(500).json({ message: "Server error" });
+    } catch (err) {
+      console.error("Error in POST /admin/academy/profile:", err);
+      return res.status(500).json({ message: `Server error: ${err.message}` });
     }
   }
 );

@@ -1883,6 +1883,25 @@ Scenario: ..."></textarea>
                 deleteBtn.textContent = "Deleted";
             }
 
+            if (deleteKey === "videoItems") {
+                const subjectSelect = document.getElementById("academy-subject-select");
+                const blockSelect = document.getElementById("academy-block-select");
+                const topicSelect = document.getElementById("academy-topic-select");
+                const selectedTopic = topicSelect ? String(topicSelect.value || "").trim() : "";
+                const expectedId = `${subjectSelect.value}_${blockSelect.value}`;
+                const selected = academyBlocks.find((item) => item.id === expectedId)
+                    || academyBlocks.find((item) => item.subjectKey === subjectSelect.value && item.blockKey === blockSelect.value);
+                const selectedSection = selectedTopic
+                    ? ((selected && Array.isArray(selected.sections) ? selected.sections : []).find((section) => String(section.name || "").trim() === selectedTopic) || null)
+                    : null;
+                const sourceVideos = selectedSection ? (selectedSection.videoItems || []) : (selected ? (selected.videoItems || []) : []);
+                const remainingVideos = sourceVideos.filter((_, idx) => !blockFilesToDelete.videoItems.includes(idx));
+                const videoInput = document.getElementById("academy-video-links");
+                if (videoInput) {
+                    videoInput.value = linksToText(remainingVideos);
+                }
+            }
+
             showMessage(generalMsg, "File marked for deletion. Save the block content to apply the change.", "success");
         });
 
@@ -1932,6 +1951,15 @@ Scenario: ..."></textarea>
                     btn.closest("div").style.opacity = "0.5";
                     btn.disabled = true;
                     btn.textContent = "Deleted";
+                    
+                    if (section === "videos") {
+                        const remainingVideos = (window.academyProfileData?.overview?.videos || [])
+                            .filter((_, idx) => !filesToDelete.videos.includes(idx));
+                        const videosInput = document.getElementById("overview-videos-input");
+                        if (videosInput) {
+                            videosInput.value = linksToText(remainingVideos);
+                        }
+                    }
                     
                     showMessage(generalMsg, `File marked for deletion. Click "Save Academy Profile" to confirm.`, "success");
                 }

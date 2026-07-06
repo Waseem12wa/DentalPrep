@@ -414,6 +414,18 @@ Scenario: ..."></textarea>
         </div>
 
         <div id="tab-academy" class="tab-content hidden">
+            <div class="admin-card" style="margin-bottom: 1rem; border-left: 4px solid #dc2626;">
+                <h3 class="text-xl font-bold mb-2" style="color: var(--secondary-color);">Storage</h3>
+                <p style="color: #6b7280; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                    Deleted videos/files leave leftover data in the database. If you see a
+                    "space quota" or "Server error", click below to permanently remove unused
+                    files and free up storage.
+                </p>
+                <button type="button" id="storage-cleanup-btn" class="btn btn-primary">
+                    <i class="fas fa-broom" style="margin-right: 0.5rem;"></i>Free up storage
+                </button>
+                <div id="storage-cleanup-msg" class="status-msg" style="margin-top: 0.75rem;"></div>
+            </div>
             <div class="dashboard-grid" style="margin-top: 0;">
                 <div class="admin-card">
                     <h3 class="text-xl font-bold mb-4" style="color: var(--secondary-color);">Subject Block Content</h3>
@@ -1769,6 +1781,25 @@ Scenario: ..."></textarea>
         document.getElementById("academy-topic-select").addEventListener("change", loadSelectedBlockContent);
         document.getElementById("academy-video-links").addEventListener("input", syncAcademyVideoInputMode);
         document.getElementById("academy-video-files-input").addEventListener("change", syncAcademyVideoInputMode);
+
+        const storageCleanupBtn = document.getElementById("storage-cleanup-btn");
+        const storageCleanupMsg = document.getElementById("storage-cleanup-msg");
+        if (storageCleanupBtn) {
+            storageCleanupBtn.addEventListener("click", async () => {
+                setLoading(storageCleanupBtn, true);
+                showMessage(storageCleanupMsg, "Freeing up storage, please wait...", "success");
+                try {
+                    const res = await adminFetch("/admin/storage/cleanup", { method: "POST" });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || "Cleanup failed");
+                    showMessage(storageCleanupMsg, data.message || "Storage cleaned.", "success");
+                } catch (err) {
+                    showMessage(storageCleanupMsg, err.message || "Cleanup failed", "error");
+                } finally {
+                    setLoading(storageCleanupBtn, false);
+                }
+            });
+        }
 
         document.getElementById("academy-block-form").addEventListener("submit", async (e) => {
             e.preventDefault();

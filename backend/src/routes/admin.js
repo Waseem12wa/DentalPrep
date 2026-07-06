@@ -4,7 +4,7 @@ const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
-const { Course, Lesson, Quiz, Progress, Review, User, Subscription, AiChat, SubjectContent, AcademyProfile, PdfAccessRequest, generateId, getFilesBucket } = require("../db");
+const { Course, Lesson, Quiz, Progress, Review, User, Subscription, AiChat, SubjectContent, AcademyProfile, PdfAccessRequest, generateId, getFilesBucket, isFilesBucketReady, mongoose } = require("../db");
 
 const router = express.Router();
 
@@ -68,6 +68,70 @@ function normalizeId(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+}
+
+// Matches filenames inside URLs like /static/uploads/<name> or /api/files/<name>
+const FILE_URL_REGEX = /(?:static\/uploads|api\/files)\/([^"'\s?\\)]+)/gi;
+
+// Scans every non-GridFS collection for filenames that are still referenced.
+async function collectReferencedFilenames() {
+  const referenced = new Set();
+  const db = mongoose.connection.db;
+  if (!db) return referenced;
+
+  const collections = await db.listCollections().toArray();
+  for (const { name } of collections) {
+    if (name === "uploads.files" || name === "uploads.chunks") continue;
+    const docs = await db.collection(name).find({}).toArray();
+    for (const doc of docs) {
+      const json = JSON.stringify(doc);
+      let match;
+      FILE_URL_REGEX.lastIndex = 0;
+      while ((match = FILE_URL_REGEX.exec(json)) !== null) {
+        try {
+          referenced.add(decodeURIComponent(match[1]));
+        } catch (_err) {
+          referenced.add(match[1]);
+        }
+      }
+    }
+  }
+  return referenced;
+}
+
+// Deletes GridFS files that are no longer referenced by any document. This is
+// the ONLY safe way to reclaim MongoDB storage: removing a reference alone
+// leaves the file bytes behind, which is what filled the free-tier quota.
+async function purgeOrphanGridFs() {
+  const stats = { orphanCount: 0, reclaimedBytes: 0, totalBytes: 0 };
+  if (!isFilesBucketReady()) return stats;
+
+  const referenced = await collectReferencedFilenames();
+  const db = mongoose.connection.db;
+  const bucket = getFilesBucket();
+  const files = await db.collection("uploads.files").find({}).toArray();
+
+  for (const file of files) {
+    stats.totalBytes += file.length || 0;
+    if (referenced.has(file.filename)) continue;
+
+    try {
+      await bucket.delete(file._id);
+      stats.orphanCount += 1;
+      stats.reclaimedBytes += file.length || 0;
+    } catch (err) {
+      console.error(`Failed to delete orphan GridFS file ${file.filename}:`, err.message);
+    }
+  }
+  return stats;
+}
+
+// Fire-and-forget cleanup used after content saves so freeing space never
+// blocks the HTTP response.
+function schedulePurgeOrphanGridFs() {
+  purgeOrphanGridFs().catch((err) => {
+    console.error("Background GridFS purge failed:", err.message);
+  });
 }
 
 function splitValues(value) {
@@ -1288,6 +1352,7 @@ router.post(
         { new: true, upsert: true }
       );
 
+      schedulePurgeOrphanGridFs();
       return res.status(201).json({ block: next });
     } catch (err) {
       return res.status(500).json({ message: `Server error: ${err.message}` });
@@ -1409,6 +1474,7 @@ router.post(
         { new: true, upsert: true }
       );
 
+      schedulePurgeOrphanGridFs();
       return res.status(201).json({ profile: updated });
     } catch (err) {
       console.error("Error in POST /admin/academy/profile:", err);
@@ -1548,6 +1614,7 @@ router.post(
         });
       }
 
+      schedulePurgeOrphanGridFs();
       return res.status(201).json({
         lessons,
         message: lessons.length === 1 ? "Lesson saved successfully" : `${lessons.length} lessons created successfully`
@@ -1752,6 +1819,31 @@ router.get("/quiz", async (req, res) => {
     });
   } catch (_err) {
     return res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Frees MongoDB storage by permanently deleting uploaded files that are no
+// longer referenced by any content. Deletes are allowed by Atlas even when the
+// cluster is over its storage quota, so this is what unblocks writes again.
+router.post("/admin/storage/cleanup", adminAuth, async (_req, res) => {
+  try {
+    if (!isFilesBucketReady()) {
+      return res.status(503).json({ message: "Storage not ready yet. Try again in a moment." });
+    }
+
+    const stats = await purgeOrphanGridFs();
+    const toMB = (bytes) => Math.round(((bytes || 0) / (1024 * 1024)) * 100) / 100;
+
+    return res.json({
+      message: stats.orphanCount
+        ? `Freed ${toMB(stats.reclaimedBytes)} MB by deleting ${stats.orphanCount} unused file(s).`
+        : "No unused files found. Storage is already clean.",
+      deletedFiles: stats.orphanCount,
+      reclaimedMB: toMB(stats.reclaimedBytes),
+      remainingMB: toMB(stats.totalBytes - stats.reclaimedBytes)
+    });
+  } catch (err) {
+    return res.status(500).json({ message: `Cleanup failed: ${err.message}` });
   }
 });
 

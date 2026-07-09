@@ -49,7 +49,7 @@ const DEFAULT_BLOCKS = {
 };
 
 async function ensureAcademyProfile() {
-  const existing = await AcademyProfile.findOne({ id: "academy_profile" });
+  const existing = await AcademyProfile.findOne({ id: "academy_profile" }).lean();
   if (existing) {
     return existing;
   }
@@ -118,7 +118,7 @@ function normalizeLinkItems(value) {
 }
 
 async function getSubjectBlocks(subjectKey) {
-  const storedRows = await SubjectContent.find({ subjectKey });
+  const storedRows = await SubjectContent.find({ subjectKey }).lean();
   const rowLookup = storedRows.reduce((acc, row) => {
     acc[row.blockKey] = row;
     return acc;
@@ -225,9 +225,9 @@ function buildWeakAreas(progressItems, quizzesById, lessonsById, coursesById) {
 
 async function findAssistantContext(prompt, courseId, lessonId) {
   const tokens = tokenize(prompt);
-  const courses = courseId ? await Course.find({ courseId }) : await Course.find({});
-  const lessons = lessonId ? await Lesson.find({ lessonId }) : courseId ? await Lesson.find({ courseId }) : await Lesson.find({});
-  const allQuizzes = (courseId || lessonId) ? await Quiz.find({}) : await Quiz.find({});
+  const courses = courseId ? await Course.find({ courseId }).lean() : await Course.find({}).lean();
+  const lessons = lessonId ? await Lesson.find({ lessonId }).lean() : courseId ? await Lesson.find({ courseId }).lean() : await Lesson.find({}).lean();
+  const allQuizzes = (courseId || lessonId) ? await Quiz.find({}).lean() : await Quiz.find({}).lean();
   const quizzes = allQuizzes.filter((quiz) => (!courseId || quiz.courseId === courseId) && (!lessonId || quiz.lessonId === lessonId));
 
   const matchedCourses = courses
@@ -359,9 +359,15 @@ async function maybeGenerateAiReply(prompt, context) {
 
 router.get("/courses", authMiddleware, async (req, res) => {
   try {
-    const courses = await Course.find({}).sort({ title: 1 });
-    const lessons = await Lesson.find({});
-    const quizzes = await Quiz.find({});
+    const courses = await Course.find({}).sort({ title: 1 }).lean();
+
+    // Use parallel count queries instead of loading all lessons/quizzes into memory
+    const [lessonCounts, quizCounts] = await Promise.all([
+      Lesson.aggregate([{ $group: { _id: "$courseId", count: { $sum: 1 } } }]),
+      Quiz.aggregate([{ $group: { _id: "$courseId", count: { $sum: 1 } } }])
+    ]);
+    const lessonMap = new Map(lessonCounts.map((r) => [r._id, r.count]));
+    const quizMap = new Map(quizCounts.map((r) => [r._id, r.count]));
 
     return res.json({
       courses: courses.map((course) => ({
@@ -370,8 +376,8 @@ router.get("/courses", authMiddleware, async (req, res) => {
         description: course.description || "",
         category: course.category || "",
         curriculumTags: normalizeArray(course.curriculumTags),
-        lessonsCount: lessons.filter((lesson) => lesson.courseId === course.courseId).length,
-        quizCount: quizzes.filter((quiz) => quiz.courseId === course.courseId).length
+        lessonsCount: lessonMap.get(course.courseId) || 0,
+        quizCount: quizMap.get(course.courseId) || 0
       }))
     });
   } catch (err) {
@@ -432,14 +438,89 @@ router.get("/subjects/:subjectKey/content", authMiddleware, async (req, res) => 
 
 router.get("/courses/:id", authMiddleware, async (req, res) => {
   try {
-    const course = await Course.findOne({ courseId: req.params.id });
+    const course = await Course.findOne({ courseId: req.params.id }).lean();
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    const lessons = await Lesson.find({ courseId: course.courseId }).sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
-    const quizzes = await Quiz.find({ courseId: course.courseId });
+    const lessons = await Lesson.find({ courseId: course.courseId }).sort({ createdAt: 1 }).lean();
     const lessonSummaries = lessons.map((lesson) => buildLessonResponse(lesson, course));
+
+    return res.json({
+      course: {
+        id: course.courseId,
+        title: course.title,
+        description: course.description || "",
+        category: course.category || "",
+        curriculumTags: normalizeArray(course.curriculumTags),
+        lessons: lessonSummaries,
+        quizCount: await Quiz.countDocuments({ courseId: course.courseId }),
+        materialsCount: lessonSummaries.reduce((sum, lesson) => sum + lesson.materials.length, 0),
+        caseStudiesCount: lessonSummaries.reduce((sum, lesson) => sum + lesson.caseStudies.length, 0)
+      }
+    });
+  } catch (_err) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Combined endpoint: returns course + lessons + quizzes + progress + reviews
+// in a single request. This eliminates 5 redundant HTTP round-trips from the
+// course-player page and uses parallel DB queries.
+router.get("/courses/:id/full", authMiddleware, async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const userId = req.user.id;
+
+    const [course, lessons, quizzes, progressItems, reviews] = await Promise.all([
+      Course.findOne({ courseId }).lean(),
+      Lesson.find({ courseId }).sort({ createdAt: 1 }).lean(),
+      Quiz.find({ courseId }).sort({ createdAt: 1 }).lean(),
+      Progress.find({ userId, courseId }).lean(),
+      Review.find({ courseId }).sort({ updatedAt: -1, createdAt: -1 }).lean()
+    ]);
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Batch user lookup for reviews (fixes N+1 query)
+    const userIds = [...new Set(reviews.map((r) => r.userId).filter(Boolean))];
+    const users = userIds.length > 0 ? await User.find({ _id: { $in: userIds } }).lean() : [];
+    const userMap = new Map(users.map((u) => [String(u._id), u.name]));
+
+    const lessonSummaries = lessons.map((lesson) => buildLessonResponse(lesson, course));
+    const quizSummaries = quizzes.map((quiz) => ({
+      id: quiz.quizId,
+      courseId: quiz.courseId,
+      lessonId: quiz.lessonId,
+      title: quiz.title,
+      questions: normalizeArray(quiz.questions).length
+    }));
+
+    const completedLessonIds = new Set(
+      progressItems
+        .filter((item) => item.itemType === "lesson" && item.completed)
+        .map((item) => item.referenceId || item.lessonId || item.videoId)
+    );
+    const quizProgressById = progressItems
+      .filter((item) => item.itemType === "quiz")
+      .reduce((acc, item) => {
+        const id = item.referenceId || item.quizId;
+        if (id && (!acc[id] || Number(item.score) > Number(acc[id].score || 0))) {
+          acc[id] = item;
+        }
+        return acc;
+      }, {});
+
+    const reviewsWithNames = reviews.map((review) => ({
+      id: review._id,
+      courseId: review.courseId,
+      rating: review.rating,
+      comment: review.comment,
+      userName: userMap.get(String(review.userId)) || review.userName || "Student",
+      createdAt: review.createdAt
+    }));
 
     return res.json({
       course: {
@@ -452,9 +533,26 @@ router.get("/courses/:id", authMiddleware, async (req, res) => {
         quizCount: quizzes.length,
         materialsCount: lessonSummaries.reduce((sum, lesson) => sum + lesson.materials.length, 0),
         caseStudiesCount: lessonSummaries.reduce((sum, lesson) => sum + lesson.caseStudies.length, 0)
-      }
+      },
+      quizzes: quizSummaries,
+      progress: progressItems.map((item) => ({
+        id: item._id,
+        itemType: item.itemType,
+        referenceId: item.referenceId,
+        lessonId: item.lessonId,
+        quizId: item.quizId,
+        videoId: item.videoId,
+        courseId: item.courseId,
+        completed: item.completed,
+        score: item.score,
+        title: item.title
+      })),
+      reviews: reviewsWithNames,
+      completedLessonIds: [...completedLessonIds],
+      quizProgress: Object.keys(quizProgressById).map((id) => ({ id, score: Number(quizProgressById[id].score) || 0 }))
     });
   } catch (_err) {
+    console.error("GET /api/courses/:id/full failed:", _err);
     return res.status(500).json({ message: "Server error" });
   }
 });
@@ -462,10 +560,12 @@ router.get("/courses/:id", authMiddleware, async (req, res) => {
 router.get("/lessons", authMiddleware, async (req, res) => {
   try {
     const filter = req.query.courseId ? { courseId: req.query.courseId } : {};
-    const lessons = await Lesson.find(filter);
-    lessons.sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
-    const allCourses = await Course.find({});
-    const coursesById = allCourses.reduce((acc, course) => {
+    const lessons = await Lesson.find(filter).sort({ createdAt: 1 }).lean();
+
+    // Only fetch courses that are referenced by these lessons
+    const courseIds = [...new Set(lessons.map((l) => l.courseId).filter(Boolean))];
+    const courses = courseIds.length > 0 ? await Course.find({ courseId: { $in: courseIds } }).lean() : [];
+    const coursesById = courses.reduce((acc, course) => {
       acc[course.courseId] = course;
       return acc;
     }, {});
@@ -479,14 +579,17 @@ router.get("/lessons", authMiddleware, async (req, res) => {
 
 router.get("/videos/:id", authMiddleware, async (req, res) => {
   try {
-    const lesson = await Lesson.findOne({ lessonId: req.params.id });
+    const lesson = await Lesson.findOne({ lessonId: req.params.id }).lean();
     if (!lesson) {
       return res.status(404).json({ message: "Video not found" });
     }
 
-    const course = await Course.findOne({ courseId: lesson.courseId });
-    const quiz = lesson.quizId ? await Quiz.findOne({ quizId: lesson.quizId }) : null;
-    const progressList = req.user.id ? await Progress.find({ userId: req.user.id, courseId: lesson.courseId }) : [];
+    // Parallel queries for course, quiz, and progress
+    const [course, quiz, progressList] = await Promise.all([
+      Course.findOne({ courseId: lesson.courseId }).lean(),
+      lesson.quizId ? Quiz.findOne({ quizId: lesson.quizId }).lean() : null,
+      req.user.id ? Progress.find({ userId: req.user.id, courseId: lesson.courseId }).lean() : []
+    ]);
     const progressItem = progressList.find((item) => item.referenceId === lesson.lessonId || item.lessonId === lesson.lessonId) || null;
 
     return res.json({
@@ -505,14 +608,21 @@ router.get("/materials", authMiddleware, async (req, res) => {
   try {
     const courseFilter = req.query.courseId;
     const lessonFilter = req.query.lessonId;
-    const allCourses = await Course.find({});
-    const coursesById = allCourses.reduce((acc, course) => {
+
+    // Build DB filter instead of loading all lessons into memory
+    const lessonFilterObj = {};
+    if (courseFilter) lessonFilterObj.courseId = courseFilter;
+    if (lessonFilter) lessonFilterObj.lessonId = lessonFilter;
+
+    const lessons = await Lesson.find(lessonFilterObj).lean();
+
+    // Only fetch courses that are referenced
+    const courseIds = [...new Set(lessons.map((l) => l.courseId).filter(Boolean))];
+    const courses = courseIds.length > 0 ? await Course.find({ courseId: { $in: courseIds } }).lean() : [];
+    const coursesById = courses.reduce((acc, course) => {
       acc[course.courseId] = course;
       return acc;
     }, {});
-
-    const allLessons = await Lesson.find({});
-    const lessons = allLessons.filter((lesson) => (!courseFilter || lesson.courseId === courseFilter) && (!lessonFilter || lesson.lessonId === lessonFilter));
 
     const materials = lessons.flatMap((lesson) => normalizeArray(lesson.materials).map((material) => ({
       id: material.id,
@@ -540,7 +650,7 @@ router.get("/quizzes", authMiddleware, async (req, res) => {
     if (req.query.courseId) filter.courseId = req.query.courseId;
     if (req.query.lessonId) filter.lessonId = req.query.lessonId;
 
-    const progressList = req.user.id ? await Progress.find({ userId: req.user.id, itemType: "quiz" }) : [];
+    const progressList = req.user.id ? await Progress.find({ userId: req.user.id, itemType: "quiz" }).lean() : [];
     const progressByQuizId = progressList.reduce((acc, item) => {
       const id = item.quizId || item.referenceId;
       if (!id) return acc;
@@ -550,12 +660,24 @@ router.get("/quizzes", authMiddleware, async (req, res) => {
       return acc;
     }, {});
 
-    const quizzes = await Quiz.find(filter);
-    quizzes.sort((left, right) => new Date(left.createdAt || 0) - new Date(right.createdAt || 0));
+    const quizzes = await Quiz.find(filter).sort({ createdAt: 1 }).lean();
+
+    // Batch lookup lesson and course titles for quiz cards
+    const lessonIds = [...new Set(quizzes.map((q) => q.lessonId).filter(Boolean))];
+    const courseIds = [...new Set(quizzes.map((q) => q.courseId).filter(Boolean))];
+    const [lessons, courses] = await Promise.all([
+      lessonIds.length > 0 ? Lesson.find({ lessonId: { $in: lessonIds } }).lean() : [],
+      courseIds.length > 0 ? Course.find({ courseId: { $in: courseIds } }).lean() : []
+    ]);
+    const lessonTitleMap = new Map(lessons.map((l) => [l.lessonId, l.title]));
+    const courseTitleMap = new Map(courses.map((c) => [c.courseId, c.title]));
+
     const summaries = quizzes.map((quiz) => ({
       id: quiz.quizId,
       courseId: quiz.courseId,
+      courseTitle: courseTitleMap.get(quiz.courseId) || quiz.courseId,
       lessonId: quiz.lessonId,
+      lessonTitle: lessonTitleMap.get(quiz.lessonId) || quiz.lessonId,
       title: quiz.title,
       questions: normalizeArray(quiz.questions).length,
       bestScore: progressByQuizId[quiz.quizId] ? Number(progressByQuizId[quiz.quizId].score) || 0 : null
@@ -570,7 +692,7 @@ router.get("/quizzes", authMiddleware, async (req, res) => {
 
 router.get("/quizzes/:id", authMiddleware, async (req, res) => {
   try {
-    const quiz = await Quiz.findOne({ quizId: req.params.id });
+    const quiz = await Quiz.findOne({ quizId: req.params.id }).lean();
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }
@@ -591,35 +713,58 @@ router.get("/quizzes/:id", authMiddleware, async (req, res) => {
 
 router.get("/analytics", authMiddleware, async (req, res) => {
   try {
-    const courses = await Course.find({});
-    const lessons = await Lesson.find({});
-    const quizzes = await Quiz.find({});
-    const items = await Progress.find({ userId: req.user.id }).sort(byDateDesc);
+    const userId = req.user.id;
+
+    // Use parallel queries + countDocuments instead of loading all docs
+    const [totalCourses, totalLessons, totalQuizzes, items] = await Promise.all([
+      Course.countDocuments({}),
+      Lesson.countDocuments({}),
+      Quiz.countDocuments({}),
+      Progress.find({ userId }).sort(byDateDesc).lean()
+    ]);
+
     const completedLessons = items.filter((item) => item.itemType === "lesson" && item.completed).length;
     const quizAttempts = items.filter((item) => item.itemType === "quiz");
     const completedQuizAttempts = quizAttempts.filter((item) => item.completed).length;
     const avgScore = quizAttempts.length ? Math.round(quizAttempts.reduce((sum, item) => sum + (Number(item.score) || 0), 0) / quizAttempts.length) : 0;
-    const totalTrackableItems = lessons.length + quizzes.length;
+    const totalTrackableItems = totalLessons + totalQuizzes;
     const completionRate = totalTrackableItems ? Math.round(((completedLessons + completedQuizAttempts) / totalTrackableItems) * 100) : 0;
 
-    const quizzesById = quizzes.reduce((acc, quiz) => { acc[quiz.quizId] = quiz; return acc; }, {});
-    const lessonsById = lessons.reduce((acc, lesson) => { acc[lesson.lessonId] = lesson; return acc; }, {});
-    const coursesById = courses.reduce((acc, course) => { acc[course.courseId] = course; return acc; }, {});
+    // Only fetch quizzes/lessons/courses needed for weak areas
+    const weakQuizIds = quizAttempts.filter((q) => Number(q.score) < 70).map((q) => q.quizId || q.referenceId).filter(Boolean);
+    const weakLessonIds = quizAttempts.map((q) => q.lessonId).filter(Boolean);
+    const weakCourseIds = quizAttempts.map((q) => q.courseId).filter(Boolean);
+
+    const [weakQuizzes, weakLessons, weakCourses] = await Promise.all([
+      weakQuizIds.length > 0 ? Quiz.find({ quizId: { $in: weakQuizIds } }).lean() : [],
+      weakLessonIds.length > 0 ? Lesson.find({ lessonId: { $in: weakLessonIds } }).lean() : [],
+      weakCourseIds.length > 0 ? Course.find({ courseId: { $in: weakCourseIds } }).lean() : []
+    ]);
+
+    const quizzesById = weakQuizzes.reduce((acc, quiz) => { acc[quiz.quizId] = quiz; return acc; }, {});
+    const lessonsById = weakLessons.reduce((acc, lesson) => { acc[lesson.lessonId] = lesson; return acc; }, {});
+    const coursesById = weakCourses.reduce((acc, course) => { acc[course.courseId] = course; return acc; }, {});
 
     const weakAreas = buildWeakAreas(items, quizzesById, lessonsById, coursesById);
+
+    // Fetch course titles for recent activity
+    const recentCourseIds = [...new Set(items.slice(0, 8).map((item) => item.courseId).filter(Boolean))];
+    const recentCourses = recentCourseIds.length > 0 ? await Course.find({ courseId: { $in: recentCourseIds } }).lean() : [];
+    const recentCoursesById = recentCourses.reduce((acc, course) => { acc[course.courseId] = course; return acc; }, {});
+
     const recentActivity = items.slice(0, 8).map((item) => ({
       id: item._id,
       title: item.title || item.referenceId,
       itemType: item.itemType,
-      courseTitle: coursesById[item.courseId]?.title || item.courseId,
+      courseTitle: recentCoursesById[item.courseId]?.title || item.courseId,
       score: item.itemType === "quiz" ? Number(item.score) || 0 : null,
       completed: Boolean(item.completed),
       updatedAt: item.updatedAt || item.createdAt
     }));
 
     return res.json({
-      totalCourses: courses.length,
-      totalLessons: lessons.length,
+      totalCourses,
+      totalLessons,
       completedLessons,
       totalQuizAttempts: quizAttempts.length,
       avgScore,
@@ -635,17 +780,20 @@ router.get("/analytics", authMiddleware, async (req, res) => {
 router.get("/reviews", authMiddleware, async (req, res) => {
   try {
     const filter = req.query.courseId ? { courseId: req.query.courseId } : {};
-    const reviews = await Review.find(filter).sort(byDateDesc);
-    const reviewsWithUserNames = await Promise.all(reviews.map(async (review) => {
-      const user = await User.findById(review.userId);
-      return {
-        id: review._id,
-        courseId: review.courseId,
-        rating: review.rating,
-        comment: review.comment,
-        userName: user ? user.name : review.userName || "Student",
-        createdAt: review.createdAt
-      };
+    const reviews = await Review.find(filter).sort(byDateDesc).lean();
+
+    // Batch user lookup instead of N+1 queries
+    const userIds = [...new Set(reviews.map((r) => r.userId).filter(Boolean))];
+    const users = userIds.length > 0 ? await User.find({ _id: { $in: userIds } }).lean() : [];
+    const userMap = new Map(users.map((u) => [String(u._id), u.name]));
+
+    const reviewsWithUserNames = reviews.map((review) => ({
+      id: review._id,
+      courseId: review.courseId,
+      rating: review.rating,
+      comment: review.comment,
+      userName: userMap.get(String(review.userId)) || review.userName || "Student",
+      createdAt: review.createdAt
     }));
 
     return res.json({ reviews: reviewsWithUserNames });
@@ -661,17 +809,17 @@ router.post("/reviews", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "courseId, rating, and comment are required" });
     }
 
-    const course = await Course.findOne({ courseId });
+    const course = await Course.findOne({ courseId }).lean();
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    const lessons = await Lesson.find({ courseId });
+    const lessons = await Lesson.find({ courseId }).lean();
     if (lessons.length === 0) {
       return res.status(400).json({ message: "This course has no lessons yet" });
     }
 
-    const completedLessonsList = await Progress.find({ userId: req.user.id, courseId, itemType: "lesson", completed: true });
+    const completedLessonsList = await Progress.find({ userId: req.user.id, courseId, itemType: "lesson", completed: true }).lean();
     if (completedLessonsList.length < lessons.length) {
       return res.status(400).json({ message: "Complete all lessons before leaving a review" });
     }
@@ -698,7 +846,7 @@ router.post("/reviews", authMiddleware, async (req, res) => {
 
 router.get("/assistant/history", authMiddleware, async (req, res) => {
   try {
-    const chats = await AiChat.find({ userId: req.user.id }).sort(byDateDesc).limit(100);
+    const chats = await AiChat.find({ userId: req.user.id }).sort(byDateDesc).limit(100).lean();
     const filteredChats = chats.filter((chat) => (!req.query.courseId || chat.courseId === req.query.courseId) && (!req.query.lessonId || chat.lessonId === req.query.lessonId)).slice(0, 25).map((chat) => ({
       id: chat._id,
       prompt: chat.prompt,

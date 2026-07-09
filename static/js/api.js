@@ -1,7 +1,6 @@
 (function () {
   // Auto-detect API base URL
   function getApiBase() {
-    // Check if we're on localhost or a local network IP (e.g. when accessing from a mobile device)
     const isLocalhost = window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1' ||
       window.location.hostname.startsWith('192.168.') ||
@@ -9,7 +8,6 @@
       window.location.hostname.startsWith('172.') ||
       window.location.hostname.endsWith('.local');
 
-    // If local and the frontend is running on a separate dev server port (e.g. 5500), point to backend port 4000
     const DEFAULT_API_BASE = (isLocalhost && window.location.port && window.location.port !== '4000')
       ? `${window.location.protocol}//${window.location.hostname}:4000/api`
       : window.location.origin + "/api";
@@ -37,46 +35,109 @@
     localStorage.removeItem("dentalprep_token");
   }
 
-  async function apiFetch(path, options = {}) {
-    const url = `${getApiBase()}${path}`;
-    const headers = Object.assign(
+  // ===== Client-side GET cache =====
+  // Short-lived cache for GET requests. Eliminates duplicate API calls when
+  // navigating between pages or re-rendering components.
+  var GET_CACHE_TTL_MS = 15000; // 15 seconds
+  var getCache = new Map();
+
+  function getCached(key) {
+    var entry = getCache.get(key);
+    if (!entry) return undefined;
+    if (Date.now() - entry.ts > GET_CACHE_TTL_MS) {
+      getCache.delete(key);
+      return undefined;
+    }
+    return entry.data;
+  }
+
+  function setCached(key, data) {
+    getCache.set(key, { data: data, ts: Date.now() });
+    if (getCache.size > 80) {
+      var oldest = getCache.keys().next().value;
+      getCache.delete(oldest);
+    }
+  }
+
+  // ===== In-flight request deduplication =====
+  // If two callers request the same GET URL simultaneously, only one fetch
+  // is made; both receive the same promise.
+  var inflightGets = new Map();
+
+  async function apiFetch(path, options) {
+    options = options || {};
+    var method = (options.method || 'GET').toUpperCase();
+    var url = getApiBase() + path;
+
+    var headers = Object.assign(
       { "Content-Type": "application/json" },
       options.headers || {}
     );
 
-    const token = getToken();
+    var token = getToken();
     if (token) {
-      headers.Authorization = `Bearer ${token}`;
+      headers.Authorization = 'Bearer ' + token;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers
-    });
+    // Cache + deduplicate GET requests
+    if (method === 'GET') {
+      // Check cache first
+      var cached = getCached(url);
+      if (cached !== undefined) {
+        return Promise.resolve(cached);
+      }
 
-    let data = null;
+      // Deduplicate identical in-flight GETs
+      if (inflightGets.has(url)) {
+        return inflightGets.get(url);
+      }
+
+      var promise = _doFetch(url, options, headers, true, url);
+      inflightGets.set(url, promise);
+      return promise;
+    }
+
+    return _doFetch(url, options, headers, false, url);
+  }
+
+  async function _doFetch(url, options, headers, isGet, cacheKey) {
     try {
-      data = await response.json();
-    } catch (err) {
-      data = null;
-    }
+      var response = await fetch(url, Object.assign({}, options, { headers: headers }));
 
-    if (!response.ok) {
-      const message = (data && data.message) || "Request failed";
-      const error = new Error(message);
-      error.status = response.status;
-      error.data = data;
-      throw error;
-    }
+      var data = null;
+      try {
+        data = await response.json();
+      } catch (err) {
+        data = null;
+      }
 
-    return data;
+      if (!response.ok) {
+        var message = (data && data.message) || "Request failed";
+        var error = new Error(message);
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+
+      // Cache successful GET responses
+      if (isGet && data) {
+        setCached(cacheKey, data);
+      }
+
+      return data;
+    } finally {
+      if (isGet) {
+        inflightGets.delete(cacheKey);
+      }
+    }
   }
 
   async function getProfile() {
     return apiFetch("/user/profile", { method: "GET" });
   }
 
-  function requireAuth(redirectUrl = "/login/") {
+  function requireAuth(redirectUrl) {
+    redirectUrl = redirectUrl || '/login/';
     if (!getToken()) {
       window.location.href = redirectUrl;
       return false;
@@ -84,14 +145,20 @@
     return true;
   }
 
+  // Clear all cached GET data (call after mutations like POST/PUT/DELETE)
+  function invalidateCache() {
+    getCache.clear();
+  }
+
   window.DentalPrepApi = {
-    getApiBase,
-    getToken,
-    setToken,
-    clearToken,
+    getApiBase: getApiBase,
+    getToken: getToken,
+    setToken: setToken,
+    clearToken: clearToken,
     fetch: apiFetch,
-    apiFetch,
-    getProfile,
-    requireAuth
+    apiFetch: apiFetch,
+    getProfile: getProfile,
+    requireAuth: requireAuth,
+    invalidateCache: invalidateCache
   };
 })();

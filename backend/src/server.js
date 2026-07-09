@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 const dotenv = require("dotenv");
 const path = require("path");
 const fs = require("fs");
@@ -7,6 +8,9 @@ const fs = require("fs");
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const app = express();
+
+// Enable gzip/brotli compression for all responses
+app.use(compression({ level: 6, threshold: 1024 }));
 
 // CORS Configuration
 const allowedOrigins = (process.env.CORS_ORIGIN || "*")

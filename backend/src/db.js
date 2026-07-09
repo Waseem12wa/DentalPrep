@@ -66,6 +66,8 @@ const courseSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: "courses" });
+courseSchema.index({ courseId: 1 });
+courseSchema.index({ category: 1 });
 
 // Lesson Schema
 const lessonSchema = new mongoose.Schema({
@@ -83,6 +85,8 @@ const lessonSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: "lessons" });
+lessonSchema.index({ lessonId: 1 });
+lessonSchema.index({ courseId: 1, createdAt: 1 });
 
 // Quiz Schema
 const quizSchema = new mongoose.Schema({
@@ -94,6 +98,9 @@ const quizSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: "quizzes" });
+quizSchema.index({ quizId: 1 });
+quizSchema.index({ courseId: 1 });
+quizSchema.index({ lessonId: 1 });
 
 // Progress Schema
 const progressSchema = new mongoose.Schema({
@@ -113,6 +120,9 @@ const progressSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: "progress" });
+progressSchema.index({ userId: 1, courseId: 1 });
+progressSchema.index({ userId: 1, itemType: 1 });
+progressSchema.index({ userId: 1, courseId: 1, itemType: 1, completed: 1 });
 
 // Contact Schema
 const contactSchema = new mongoose.Schema({
@@ -151,6 +161,8 @@ const reviewSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: "reviews" });
+reviewSchema.index({ courseId: 1, updatedAt: -1 });
+reviewSchema.index({ userId: 1, courseId: 1 });
 
 // AI Chat Schema
 const aiChatSchema = new mongoose.Schema({
@@ -165,6 +177,7 @@ const aiChatSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: "ai_chats" });
+aiChatSchema.index({ userId: 1, createdAt: -1 });
 
 // Subject Content Schema - For storing Block content with sections
 const subjectContentSchema = new mongoose.Schema({
@@ -191,6 +204,8 @@ const subjectContentSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: "subject_content" });
+subjectContentSchema.index({ subjectKey: 1 });
+subjectContentSchema.index({ id: 1 });
 
 // Academy Profile Schema
 const academyProfileSchema = new mongoose.Schema({
@@ -246,6 +261,8 @@ const pdfAccessRequestSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: "pdf_access_requests" });
+pdfAccessRequestSchema.index({ userId: 1, status: 1 });
+pdfAccessRequestSchema.index({ status: 1 });
 
 // ===== MODELS =====
 

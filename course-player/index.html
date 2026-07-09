@@ -499,9 +499,26 @@
 
                 <div id="error-container"></div>
 
-                <div id="loading-container" class="loading">
-                    <div class="spinner"></div>
-                    <p style="color: #6b7280; margin-top: 1rem;">Loading lessons...</p>
+                <!-- Skeleton loader for lessons -->
+                <div id="loading-container" class="lessons-grid">
+                    <div class="lesson-card" style="opacity: 0.5; pointer-events: none;">
+                        <div class="lesson-header"><div style="width: 24px; height: 24px; background: #e5e7eb; border-radius: 4px;"></div><div style="flex:1; height: 18px; background: #e5e7eb; border-radius: 4px;"></div><div style="width: 80px; height: 24px; background: #e5e7eb; border-radius: 12px;"></div></div>
+                        <div style="margin-top: 1rem; height: 14px; background: #e5e7eb; border-radius: 4px; width: 60%;"></div>
+                        <div style="margin-top: 0.5rem; height: 14px; background: #e5e7eb; border-radius: 4px; width: 80%;"></div>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;"><div style="height: 28px; width: 100px; background: #e5e7eb; border-radius: 6px;"></div><div style="height: 28px; width: 100px; background: #e5e7eb; border-radius: 6px;"></div></div>
+                    </div>
+                    <div class="lesson-card" style="opacity: 0.5; pointer-events: none;">
+                        <div class="lesson-header"><div style="width: 24px; height: 24px; background: #e5e7eb; border-radius: 4px;"></div><div style="flex:1; height: 18px; background: #e5e7eb; border-radius: 4px;"></div><div style="width: 80px; height: 24px; background: #e5e7eb; border-radius: 12px;"></div></div>
+                        <div style="margin-top: 1rem; height: 14px; background: #e5e7eb; border-radius: 4px; width: 60%;"></div>
+                        <div style="margin-top: 0.5rem; height: 14px; background: #e5e7eb; border-radius: 4px; width: 80%;"></div>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;"><div style="height: 28px; width: 100px; background: #e5e7eb; border-radius: 6px;"></div><div style="height: 28px; width: 100px; background: #e5e7eb; border-radius: 6px;"></div></div>
+                    </div>
+                    <div class="lesson-card" style="opacity: 0.5; pointer-events: none;">
+                        <div class="lesson-header"><div style="width: 24px; height: 24px; background: #e5e7eb; border-radius: 4px;"></div><div style="flex:1; height: 18px; background: #e5e7eb; border-radius: 4px;"></div><div style="width: 80px; height: 24px; background: #e5e7eb; border-radius: 12px;"></div></div>
+                        <div style="margin-top: 1rem; height: 14px; background: #e5e7eb; border-radius: 4px; width: 60%;"></div>
+                        <div style="margin-top: 0.5rem; height: 14px; background: #e5e7eb; border-radius: 4px; width: 80%;"></div>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;"><div style="height: 28px; width: 100px; background: #e5e7eb; border-radius: 6px;"></div><div style="height: 28px; width: 100px; background: #e5e7eb; border-radius: 6px;"></div></div>
+                    </div>
                 </div>
 
                 <div id="lessons-container" class="lessons-grid hidden" style="display: none;"></div>
@@ -629,48 +646,26 @@
             };
 
             try {
-                const [courseData, coursesData, lessonsData, quizzesData, progressData, reviewsData] = await Promise.all([
-                    fetchSafe(`/courses/${encodeURIComponent(courseId)}`, { course: null }),
-                    fetchSafe(`/courses`, { courses: [] }),
-                    fetchSafe(`/lessons?courseId=${encodeURIComponent(courseId)}`, { lessons: [] }),
-                    fetchSafe(`/quizzes?courseId=${encodeURIComponent(courseId)}`, { quizzes: [] }),
-                    fetchSafe(`/progress?courseId=${encodeURIComponent(courseId)}`, { items: [] }),
-                    fetchSafe(`/reviews?courseId=${encodeURIComponent(courseId)}`, { reviews: [] })
-                ]);
+                // Single combined API call replaces 6 parallel requests
+                const data = await api.apiFetch(`/courses/${encodeURIComponent(courseId)}/full`);
 
-                const listedCourse = (coursesData.courses || []).find((item) => item && item.id === courseId) || null;
-                const detailCourse = courseData.course || null;
-                const lessonsFromDetail = detailCourse?.lessons || [];
-                const lessonsFromList = lessonsData.lessons || [];
-                const lessons = lessonsFromDetail.length ? lessonsFromDetail : lessonsFromList;
-                const course = detailCourse || {
-                    id: courseId,
-                    title: listedCourse?.title || "Course",
-                    description: listedCourse?.description || "",
-                    category: listedCourse?.category || "",
-                    curriculumTags: listedCourse?.curriculumTags || [],
-                    materialsCount: 0,
-                    caseStudiesCount: 0
-                };
-                const quizzes = quizzesData.quizzes || [];
-                const progressItems = progressData.items || [];
-                const reviews = reviewsData.reviews || [];
+                const course = data.course || null;
+                if (!course) {
+                    loadingContainer.style.display = "none";
+                    errorContainer.innerHTML = '<div class="error-msg">Course not found.</div>';
+                    return;
+                }
+
+                const lessons = course.lessons || [];
+                const quizzes = data.quizzes || [];
+                const reviews = data.reviews || [];
+                const completedLessonIds = new Set(data.completedLessonIds || []);
+                const quizProgressArr = data.quizProgress || [];
+                const quizProgressById = {};
+                quizProgressArr.forEach((qp) => { quizProgressById[qp.id] = qp; });
+
                 const freeLessonCount = lessons.filter((lesson) => (lesson.accessLevel || 'free') !== 'paid').length;
                 const paidLessonCount = lessons.filter((lesson) => (lesson.accessLevel || 'free') === 'paid').length;
-                const completedLessonIds = new Set(
-                    progressItems
-                        .filter((item) => item.itemType === "lesson" && item.completed)
-                        .map((item) => item.referenceId || item.lessonId || item.videoId)
-                );
-                const quizProgressById = progressItems
-                    .filter((item) => item.itemType === "quiz")
-                    .reduce((acc, item) => {
-                        const id = item.referenceId || item.quizId;
-                        if (id) {
-                            acc[id] = item;
-                        }
-                        return acc;
-                    }, {});
                 const quizzesByLessonId = quizzes.reduce((acc, quiz) => {
                     const lid = quiz.lessonId;
                     if (!acc[lid]) acc[lid] = [];
@@ -678,8 +673,8 @@
                     return acc;
                 }, {});
 
+                // Render course header immediately
                 loadingContainer.style.display = "none";
-
                 courseTitleEl.textContent = course.title || "Untitled Course";
                 courseDescEl.textContent = course.description || `${lessons.length} lessons available`;
                 courseSummary.innerHTML = `
@@ -692,6 +687,8 @@
                     <div class="summary-chip">${course.caseStudiesCount || 0} case studies</div>
                     ${((course.curriculumTags || []).slice(0, 4)).map((tag) => `<div class="summary-chip">${escapeHtml(tag)}</div>`).join("")}
                 `;
+
+                // Render reviews and review state
                 renderReviews(reviews);
                 setReviewState({
                     completedLessons: completedLessonIds.size,
@@ -699,6 +696,7 @@
                     reviewCount: reviews.length
                 });
 
+                // Render lessons
                 if (lessons.length === 0) {
                     lessonsContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #6b7280;">No lessons available yet.</div>';
                 } else {
@@ -777,7 +775,10 @@
                             })
                         });
 
-                        const refreshed = await fetchSafe(`/reviews?courseId=${encodeURIComponent(courseId)}`, { reviews: [] });
+                        // Invalidate cache so next visit gets fresh data
+                        api.invalidateCache();
+
+                        const refreshed = await api.apiFetch(`/reviews?courseId=${encodeURIComponent(courseId)}`);
                         renderReviews(refreshed.reviews || []);
                         reviewStatus.className = "success-banner";
                         reviewStatus.textContent = "Review saved successfully.";

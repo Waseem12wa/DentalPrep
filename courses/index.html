@@ -492,19 +492,13 @@
             };
 
             try {
-                const [coursesData, quizzesData, lessonsData] = await Promise.all([
+                const [coursesData, quizzesData] = await Promise.all([
                     api.apiFetch("/courses"),
-                    api.apiFetch("/quizzes"),
-                    api.apiFetch("/lessons")
+                    api.apiFetch("/quizzes")
                 ]);
 
                 const courses = coursesData.courses || [];
                 const quizzes = quizzesData.quizzes || [];
-                const lessons = lessonsData.lessons || [];
-                const lessonLookup = lessons.reduce((acc, lesson) => {
-                    acc[lesson.id] = lesson;
-                    return acc;
-                }, {});
                 const courseLookup = courses.reduce((acc, course) => {
                     acc[course.id] = course;
                     return acc;
@@ -584,13 +578,12 @@
                     quizzesEmpty.style.display = "none";
                     quizzesGrid.style.display = "grid";
                     quizzes.forEach((quiz) => {
-                        const lesson = lessonLookup[quiz.lessonId];
                         const course = courseLookup[quiz.courseId];
                         const quizCard = document.createElement("div");
                         quizCard.className = "quiz-item";
                         quizCard.innerHTML = `
                             <div style="font-size: 1.1rem; font-weight: 700; color: #111827;">${escapeHtml(quiz.title || "Untitled Quiz")}</div>
-                            <div style="color: #6b7280; margin-top: 0.5rem; line-height: 1.5;">${escapeHtml(course?.title || "Course")} • ${escapeHtml(lesson ? lesson.title : "Lesson")} • ${quiz.questions || 0} questions</div>
+                            <div style="color: #6b7280; margin-top: 0.5rem; line-height: 1.5;">${escapeHtml(quiz.courseTitle || course?.title || "Course")} • ${escapeHtml(quiz.lessonTitle || "Lesson")} • ${quiz.questions || 0} questions</div>
                             <div class="tag-row">
                                 <span class="tag-chip">${quiz.bestScore == null ? "No attempts yet" : `Best score ${quiz.bestScore}%`}</span>
                             </div>

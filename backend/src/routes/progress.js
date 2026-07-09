@@ -11,7 +11,7 @@ router.get("/progress", authMiddleware, async (req, res) => {
       filter.courseId = req.query.courseId;
     }
 
-    const items = (await Progress.find(filter)).sort((left, right) => {
+    const items = (await Progress.find(filter).lean()).sort((left, right) => {
       const leftTime = new Date(left.updatedAt || left.createdAt || 0).getTime();
       const rightTime = new Date(right.updatedAt || right.createdAt || 0).getTime();
       return rightTime - leftTime;
@@ -63,7 +63,7 @@ router.post("/quiz-submit", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "quizId, courseId, and answers are required" });
     }
 
-    const quiz = await Quiz.findOne({ quizId });
+    const quiz = await Quiz.findOne({ quizId }).lean();
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }

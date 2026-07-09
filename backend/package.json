@@ -5,13 +5,14 @@
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
-    "dev": "node src/server.js",
-    "start": "node src/server.js",
+    "dev": "node init && node src/server.js",
+    "start": "node init && node src/server.js",
     "seed": "node src/seed.js",
     "migrate-files": "node migrate-files.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
